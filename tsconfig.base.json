@@ -10,8 +10,8 @@
         "allowImportingTsExtensions": true,
         "types": ["node"],
         "paths": {
-            "@radon/shared": ["./libs/shared/src/index.ts"],
-            "@radon/design-system": ["./libs/design-system/tokens.ts"]
+            "@raiden/shared": ["./libs/shared/src/index.ts"],
+            "@raiden/design-system": ["./libs/design-system/tokens.ts"]
         }
     }
 }

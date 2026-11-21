@@ -1,5 +1,5 @@
 ---
-product: Radon
+product: Raiden
 last_updated: 2026-11-13
 ---
 
@@ -7,7 +7,7 @@ last_updated: 2026-11-13
 
 ## Product Overview
 
-Radon is a self-hostable Chrome extension that injects agile views into GitHub Projects pages: sprint goals and a hierarchical timeline that GitHub Projects lacks. It is built first for teams running the Nexus pipeline, where epics, stories and decision records are GitHub issues linked as parent/sub-issues.
+Raiden is a self-hostable Chrome extension that injects agile views into GitHub Projects pages: sprint goals and a hierarchical timeline that GitHub Projects lacks. It is built first for teams running the Nexus pipeline, where epics, stories and decision records are GitHub issues linked as parent/sub-issues.
 
 - **Category**: Developer / project-management tool, self-hosted, Chrome extension (Manifest V3)
 - **Distribution**: Self-hosted per team <!-- Inferred: "self hostable for any team"; open-source assumed — TODO: verify licence -->
@@ -23,7 +23,7 @@ Radon is a self-hostable Chrome extension that injects agile views into GitHub P
 
 - **No multi-tenant SaaS.** Each team self-hosts.
 - **No standalone app replacing GitHub.** Users stay on github.com.
-- **No issue editing in Radon.** Issues, fields and iterations are edited in GitHub directly. Radon edits only its own data (e.g. sprint goals).
+- **No issue editing in Raiden.** Issues, fields and iterations are edited in GitHub directly. Raiden edits only its own data (e.g. sprint goals).
 - **No generic-project feature that degrades the Nexus experience.**
 
 ## Personas
@@ -59,19 +59,19 @@ Runs sprints on GitHub Projects iterations.
 | Metric | Benchmark | Note |
 | ------ | --------- | ---- |
 | Extension 30-day retention | ~50% or lower is typical | <!-- TODO: verify --> |
-| Activation | First sprint goal set in first session | Radon-defined |
+| Activation | First sprint goal set in first session | Raiden-defined |
 
 ## Regulatory & Compliance
 
 | Area | Requirement | Applies When |
 | ---- | ----------- | ------------ |
 | GitHub App permissions | Minimal scopes; read access to issues/projects, no issue write | Always |
-| Chrome Web Store | Privacy disclosure; host permissions limited to `github.com` and the team's Radon host | Publishing to the store |
-| Data residency | Radon data stays in the team's own AWS account | Self-hosting; regulated teams apply their own policies |
+| Chrome Web Store | Privacy disclosure; host permissions limited to `github.com` and the team's Raiden host | Publishing to the store |
+| Data residency | Raiden data stays in the team's own AWS account | Self-hosting; regulated teams apply their own policies |
 
 ## Competitive Landscape
 
-| Competitor | Model | Gap Radon fills |
+| Competitor | Model | Gap Raiden fills |
 | ---------- | ----- | --------------- |
 | ZenHub | Paid SaaS; browser extension inside GitHub with sprints, epics, roadmaps | Closest analog. Own data model, not self-hosted, unaware of Nexus |
 | GitHub Projects (native) | Roadmap layout, iterations | No sprint goals, no hierarchy roll-up |
@@ -89,7 +89,7 @@ Runs sprints on GitHub Projects iterations.
 
 1. **Stay inside GitHub.** Never make the user switch tools.
 2. **Nexus first.** Generic support never costs Nexus users.
-3. **GitHub is the source of truth.** Issues are edited in GitHub; Radon stores and edits only what GitHub cannot hold.
+3. **GitHub is the source of truth.** Issues are edited in GitHub; Raiden stores and edits only what GitHub cannot hold.
 4. **Team-owned.** Self-hosted; the team owns its data.
 
 ## Company Scale

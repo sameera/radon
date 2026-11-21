@@ -4,7 +4,7 @@ A pill states one item's or one sprint's state in a word, with a dot in the stat
 
 | Class | State | Words to use |
 |---|---|---|
-| `rd-pill--brand` | The current sprint, Radon-owned data | Current sprint |
+| `rd-pill--brand` | The current sprint, Raiden-owned data | Current sprint |
 | `rd-pill--success` | Done story, met goal | Done, Goal met |
 | `rd-pill--attention` | At risk, partly met, `needs-design` | At risk, Partly met |
 | `rd-pill--danger` | Blocked, missed | Blocked, Missed |

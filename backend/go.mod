@@ -1,4 +1,4 @@
-module github.com/radon/radon/backend
+module github.com/raiden/raiden/backend
 
 go 1.27
 

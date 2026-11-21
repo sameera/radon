@@ -1,4 +1,4 @@
-import { sync } from "@radon/shared";
+import { sync } from "@raiden/shared";
 
 // GitHub re-renders the tab bar on in-page navigation and on hydration, which drops the
 // injected tab. Re-sync on every DOM change, at most once per frame.

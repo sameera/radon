@@ -14,8 +14,8 @@ import (
 
 	"github.com/aws/aws-lambda-go/events"
 
-	"github.com/radon/radon/backend/internal/handler"
-	"github.com/radon/radon/backend/internal/store"
+	"github.com/raiden/raiden/backend/internal/handler"
+	"github.com/raiden/raiden/backend/internal/store"
 )
 
 func main() {
@@ -58,7 +58,7 @@ func main() {
 		_, _ = io.WriteString(w, res.Body)
 	})
 
-	addr := os.Getenv("RADON_LOCAL_ADDR")
+	addr := os.Getenv("RAIDEN_LOCAL_ADDR")
 	if addr == "" {
 		addr = "127.0.0.1:8080"
 	}

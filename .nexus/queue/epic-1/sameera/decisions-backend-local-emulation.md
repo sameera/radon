@@ -1,5 +1,5 @@
-## 2026-11-21 — Clone the Code tab to build the Radon tab
-- **Choice:** Copy GitHub's Code `<li>` and rewrite href, icon, label; no Radon CSS.
+## 2026-11-21 — Clone the Code tab to build the Raiden tab
+- **Choice:** Copy GitHub's Code `<li>` and rewrite href, icon, label; no Raiden CSS.
 - **Why:** Reuses GitHub's own classes, so size, spacing, font and light/dark match without tracking selectors.
 - **Refuted alternative:** Hand-built markup styled with `rd-` tokens (would drift from GitHub's tab styling).
 
@@ -9,12 +9,12 @@
 - **Refuted alternative:** Match the URL path (breaks on reserved first segments like `/settings/x`).
 
 ## 2026-11-21 — Overflow: add a menu item when the More menu opens
-- **Choice:** When the More menu is open and the Radon tab is hidden or clipped, clone the last repo entry into the menu.
+- **Choice:** When the More menu is open and the Raiden tab is hidden or clipped, clone the last repo entry into the menu.
 - **Why:** The menu is rendered by React only while open, and React owns the list, so a one-time injection cannot reach it.
 - **Refuted alternative:** Move the tab into the bar's React state (not reachable from a content script).
 
-## 2026-11-21 — Tab href is /owner/repo/radon, page not built
-- **Choice:** Link to `/owner/repo/radon`; no placeholder page in this story.
+## 2026-11-21 — Tab href is /owner/repo/raiden, page not built
+- **Choice:** Link to `/owner/repo/raiden`; no placeholder page in this story.
 - **Why:** Story acceptance criteria cover the tab only; the page is a later epic.
 - **Refuted alternative:** Render a placeholder over GitHub's 404 (extra scope, and the 404 page has no tab bar).
 

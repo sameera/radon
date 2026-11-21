@@ -1,15 +1,15 @@
 ---
-standard: Radon Project Standards
+standard: Raiden Project Standards
 category: architecture
 applies_to: ["typescript", "go", "github-app", "dynamodb", "pnpm"]
 description: Stack-level decisions made before any code exists
 ---
 
-# Radon Project Standards
+# Raiden Project Standards
 
 ## Overview
 
-Radon has no code yet. These are the decisions already made. Add exemplar paths as the first code lands.
+Raiden has no code yet. These are the decisions already made. Add exemplar paths as the first code lands.
 
 ## Decisions
 
@@ -25,7 +25,7 @@ Radon has no code yet. These are the decisions already made. Add exemplar paths 
 
 **Rationale**: Fine-grained permissions and webhooks; actions on GitHub stay attributable to the user.
 
-### DynamoDB for Radon-only data
+### DynamoDB for Raiden-only data
 
 **Decision**: DynamoDB stores only data GitHub Projects cannot hold. GitHub remains the source of truth for issues, project items, fields and iterations.
 
@@ -39,7 +39,7 @@ Radon has no code yet. These are the decisions already made. Add exemplar paths 
 
 ## Prohibitions
 
-- **Never** write to GitHub issues, project fields or iterations — users edit those in GitHub. Radon writes only its own data (e.g. sprint goals). Request no issue-write permission on the GitHub App.
+- **Never** write to GitHub issues, project fields or iterations — users edit those in GitHub. Raiden writes only its own data (e.g. sprint goals). Request no issue-write permission on the GitHub App.
 - **Never** authenticate with personal access tokens or a classic OAuth App — use the GitHub App.
 - **Never** treat a DynamoDB copy of GitHub data as authoritative — re-read GitHub or invalidate the cache.
 - **Never** commit `package-lock.json` or `yarn.lock` — use `pnpm-lock.yaml`.
@@ -49,5 +49,5 @@ Radon has no code yet. These are the decisions already made. Add exemplar paths 
 
 - [ ] New source files are `.ts` / `.tsx`
 - [ ] GitHub calls use App tokens
-- [ ] New DynamoDB tables hold Radon-only data or are marked rebuildable cache
+- [ ] New DynamoDB tables hold Raiden-only data or are marked rebuildable cache
 - [ ] No secrets in the repo

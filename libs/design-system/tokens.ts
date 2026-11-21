@@ -1,4 +1,4 @@
-// Radon — generated from tokens.json by build-tokens.ts. Do not edit.
+// Raiden — generated from tokens.json by build-tokens.ts. Do not edit.
 
 export const themes = ["light", "dark"] as const;
 export type Theme = (typeof themes)[number];

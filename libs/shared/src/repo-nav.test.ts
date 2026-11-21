@@ -29,21 +29,21 @@ describe("repo tab bar", () => {
         document.body.innerHTML = "";
     });
 
-    it("adds a Radon tab after Pull requests", () => {
+    it("adds a Raiden tab after Pull requests", () => {
         document.body.innerHTML = repoBar();
         sync(document);
         const labels: string[] = Array.from(
             document.querySelectorAll("nav[aria-label=\"Repository\"] li [data-component=\"text\"]"),
         ).map((e: Element) => e.textContent ?? "");
-        expect(labels).toEqual(["Code", "Issues", "Pull requests", "Radon", "Actions"]);
+        expect(labels).toEqual(["Code", "Issues", "Pull requests", "Raiden", "Actions"]);
     });
 
     it("copies GitHub's classes and drops state and routing attributes", () => {
         document.body.innerHTML = repoBar();
         sync(document);
-        const a: HTMLAnchorElement = document.querySelector("[data-radon-tab] a")!;
+        const a: HTMLAnchorElement = document.querySelector("[data-raiden-tab] a")!;
         expect(a.className).toBe("prc-components-UnderlineItem");
-        expect(a.getAttribute("href")).toBe("/acme/app/radon");
+        expect(a.getAttribute("href")).toBe("/acme/app/raiden");
         expect(a.hasAttribute("aria-current")).toBe(false);
         expect(a.hasAttribute("data-react-nav")).toBe(false);
         expect(a.hasAttribute("data-turbo-frame")).toBe(false);
@@ -54,7 +54,7 @@ describe("repo tab bar", () => {
         document.body.innerHTML = repoBar();
         sync(document);
         sync(document);
-        expect(document.querySelectorAll("[data-radon-tab]").length).toBe(1);
+        expect(document.querySelectorAll("[data-raiden-tab]").length).toBe(1);
     });
 
     it("re-adds the tab after the bar is re-rendered", () => {
@@ -62,14 +62,14 @@ describe("repo tab bar", () => {
         sync(document);
         document.body.innerHTML = repoBar();
         sync(document);
-        expect(document.querySelectorAll("[data-radon-tab]").length).toBe(1);
+        expect(document.querySelectorAll("[data-raiden-tab]").length).toBe(1);
     });
 
     it("adds nothing outside a repository", () => {
         document.body.innerHTML =
             "<nav aria-label=\"Organization\"><ul><li><a data-tab-item=\"overview\" href=\"/acme\">Overview</a></li></ul></nav>";
         sync(document);
-        expect(document.querySelector("[data-radon-tab]")).toBeNull();
+        expect(document.querySelector("[data-raiden-tab]")).toBeNull();
         expect(findRepoNav(document)).toBeNull();
     });
 
@@ -80,11 +80,11 @@ describe("repo tab bar", () => {
         const repo = findRepoNav(document)!;
         injectTab(repo);
         document.querySelector("button")!.setAttribute("aria-expanded", "true");
-        (document.querySelector("[data-radon-tab]") as HTMLElement).style.visibility = "hidden";
+        (document.querySelector("[data-raiden-tab]") as HTMLElement).style.visibility = "hidden";
         expect(injectMenuItem(document, repo)).toBe(true);
-        const added: HTMLAnchorElement = document.querySelector("[role=\"menu\"] [data-radon-tab] a")!;
-        expect(added.getAttribute("href")).toBe("/acme/app/radon");
-        expect(added.textContent).toBe("Radon");
+        const added: HTMLAnchorElement = document.querySelector("[role=\"menu\"] [data-raiden-tab] a")!;
+        expect(added.getAttribute("href")).toBe("/acme/app/raiden");
+        expect(added.textContent).toBe("Raiden");
         expect(injectMenuItem(document, repo)).toBe(false);
     });
 

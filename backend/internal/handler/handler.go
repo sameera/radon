@@ -10,7 +10,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
 
-	"github.com/radon/radon/backend/internal/store"
+	"github.com/raiden/raiden/backend/internal/store"
 )
 
 // DB is the DynamoDB surface the handler uses.

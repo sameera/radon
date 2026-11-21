@@ -25,7 +25,7 @@ Self-hosted per team; no multi-tenant SaaS.
 
 ## Database
 
-- **Primary**: DynamoDB — holds only Radon-specific data GitHub Projects cannot store (e.g. sprint objectives, timeline hierarchy metadata)
+- **Primary**: DynamoDB — holds only Raiden-specific data GitHub Projects cannot store (e.g. sprint objectives, timeline hierarchy metadata)
 - **Local emulation**: AWS Emulator (DynamoDB only; Lambda cannot be invoked locally). See [local-dev.md](local-dev.md)
 
 ## Infrastructure

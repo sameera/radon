@@ -1,6 +1,6 @@
-# Radon design system
+# Raiden design system
 
-The source of truth for Radon's colors, type, spacing and components. A browsable copy with live previews lives at https://claude.ai/artifact/NoSySPhHMWeFwED4TDypKF; this folder wins if they differ.
+The source of truth for Raiden's colors, type, spacing and components. A browsable copy with live previews lives at https://claude.ai/artifact/NoSySPhHMWeFwED4TDypKF; this folder wins if they differ.
 
 ## Files
 
@@ -16,14 +16,14 @@ The source of truth for Radon's colors, type, spacing and components. A browsabl
 
 After editing `tokens.json`, run the build and commit all three files together.
 
-Radon puts agile views inside GitHub Projects pages. Its UI must sit flush with github.com in light and dark mode, then add a little more color and character so people can tell what Radon added. Start from GitHub's calm neutrals; spend vibrancy on Radon's own surfaces.
+Raiden puts agile views inside GitHub Projects pages. Its UI must sit flush with github.com in light and dark mode, then add a little more color and character so people can tell what Raiden added. Start from GitHub's calm neutrals; spend vibrancy on Raiden's own surfaces.
 
 ## Principles
 
-1. **Blend, then mark.** Neutrals (`rd-canvas`, `rd-fg`, `rd-border`) track GitHub's so an injected view looks native. `rd-brand` teal marks every surface Radon owns: the sprint goal, the current sprint, the today line, primary actions.
+1. **Blend, then mark.** Neutrals (`rd-canvas`, `rd-fg`, `rd-border`) track GitHub's so an injected view looks native. `rd-brand` teal marks every surface Raiden owns: the sprint goal, the current sprint, the today line, primary actions.
 2. **Shape before color.** Epics are diamonds, stories are circles, decision records are squares. Every status pill carries a word. Color reinforces; it never carries meaning alone.
-3. **One glow per view.** `rd-shadow-glow` is Radon's signature. Use it on the sprint-goal card or the active-sprint column, never both.
-4. **Read-only on GitHub data.** Nothing that shows an issue, iteration or field looks editable. Only Radon data (sprint goals) gets edit controls.
+3. **One glow per view.** `rd-shadow-glow` is Raiden's signature. Use it on the sprint-goal card or the active-sprint column, never both.
+4. **Read-only on GitHub data.** Nothing that shows an issue, iteration or field looks editable. Only Raiden data (sprint goals) gets edit controls.
 
 ## Content
 
@@ -46,11 +46,11 @@ Two themes, `light` and `dark`, follow GitHub's color mode. Every token is prefi
 - **Status:** `rd-success` done or met, `rd-attention` at risk or `needs-design`, `rd-danger` blocked or missed, `rd-done` closed or approved. Each has a `-muted` ground for pills; status text on its own muted ground meets 4.5:1 in both themes.
 - **Hierarchy:** `rd-epic` magenta, `rd-story` (aliases `rd-accent`), `rd-decision` orange, each with a `-muted` ground for unfilled bar segments.
 
-Compared to GitHub's palette, Radon's hues are more saturated, and dark-mode neutrals lean slightly blue-black for a cooler, deeper ground.
+Compared to GitHub's palette, Raiden's hues are more saturated, and dark-mode neutrals lean slightly blue-black for a cooler, deeper ground.
 
 ## Type
 
-- **Body:** GitHub's system stack (`--font-sans`) at 14/20, so Radon text matches the page. Styles `title`, `body`, `body-strong`, `small`.
+- **Body:** GitHub's system stack (`--font-sans`) at 14/20, so Raiden text matches the page. Styles `title`, `body`, `body-strong`, `small`.
 - **Display:** Bricolage Grotesque (`--font-display`), only for `goal-lg` (the sprint goal) and `view-title`. Ship the font files inside the extension as web-accessible resources; github.com's CSP blocks Google Fonts.
 - **Axis:** `axis` style, 11px uppercase with 0.06em tracking, for timeline ticks and eyebrows.
 - **Mono:** `ref` style (`--font-mono`) for issue numbers and repo names.
@@ -58,7 +58,7 @@ Compared to GitHub's palette, Radon's hues are more saturated, and dark-mode neu
 ## Space, radius, elevation
 
 - Spacing is a 4px scale: `rd-space-1` 4, `-2` 8, `-3` 12, `-4` 16, `-6` 24, `-8` 32. Card padding `rd-space-4`; the sprint-goal card `rd-space-6`.
-- Radii: `rd-radius-sm` (4) for bars and small glyphs; `rd-radius-md` (6, GitHub's) for buttons, inputs and cards; `rd-radius-lg` (12) for Radon's hero surfaces and popovers; `rd-radius-full` for pills.
+- Radii: `rd-radius-sm` (4) for bars and small glyphs; `rd-radius-md` (6, GitHub's) for buttons, inputs and cards; `rd-radius-lg` (12) for Raiden's hero surfaces and popovers; `rd-radius-full` for pills.
 - Shadows: `rd-shadow-sm` at rest, `rd-shadow-overlay` for floating layers, `rd-shadow-glow` per principle 3.
 
 ## States and focus
@@ -71,8 +71,8 @@ Compared to GitHub's palette, Radon's hues are more saturated, and dark-mode neu
 ## Iconography
 
 - Hierarchy glyphs are CSS shapes (`rd-glyph--epic|story|decision`, `rd-glyph--closed` for an outlined closed state). No icon font needed.
-- For other icons use GitHub's Octicons (MIT licensed, `@primer/octicons`) at 16px in `rd-fg-muted`, so Radon's icons match the page. No Octicons are bundled in this system yet.
-- No logo yet: set "Radon" in Bricolage Grotesque 800 where a mark is needed.
+- For other icons use GitHub's Octicons (MIT licensed, `@primer/octicons`) at 16px in `rd-fg-muted`, so Raiden's icons match the page. No Octicons are bundled in this system yet.
+- No logo yet: set "Raiden" in Bricolage Grotesque 800 where a mark is needed.
 
 ## Injecting into github.com
 

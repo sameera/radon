@@ -1,4 +1,4 @@
-/* Radon components. Every class is prefixed rd- so injected views never collide with github.com styles. */
+/* Raiden components. Every class is prefixed rd- so injected views never collide with github.com styles. */
 
 .rd-root, .rd-root * { box-sizing: border-box; }
 .rd-root {

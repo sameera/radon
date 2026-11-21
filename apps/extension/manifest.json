@@ -1,10 +1,10 @@
 {
     "manifest_version": 3,
-    "name": "Radon",
+    "name": "Raiden",
     "version": "0.0.0",
     "description": "Sprint goals and a hierarchical timeline for GitHub Projects.",
     "icons": {
-        "128": "radon-icon.png"
+        "128": "raiden.png"
     },
     "content_scripts": [
         {

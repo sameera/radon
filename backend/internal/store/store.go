@@ -1,4 +1,4 @@
-// Package store wraps DynamoDB access for Radon-only data.
+// Package store wraps DynamoDB access for Raiden-only data.
 package store
 
 import (
@@ -9,12 +9,12 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
 )
 
-// TableName returns the table name from RADON_TABLE, default "radon".
+// TableName returns the table name from RAIDEN_TABLE, default "raiden".
 func TableName() string {
-	if v := os.Getenv("RADON_TABLE"); v != "" {
+	if v := os.Getenv("RAIDEN_TABLE"); v != "" {
 		return v
 	}
-	return "radon"
+	return "raiden"
 }
 
 // NewClient builds a DynamoDB client from the standard AWS environment.

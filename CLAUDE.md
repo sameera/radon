@@ -1,14 +1,14 @@
-# Radon
+# Raiden
 
-Radon is a self-hostable Chrome extension that adds agile views to GitHub Projects: sprint goals and a hierarchical timeline. It is optimized for teams using the Nexus pipeline. Product context: [docs/product/context.md](docs/product/context.md).
+Raiden is a self-hostable Chrome extension that adds agile views to GitHub Projects: sprint goals and a hierarchical timeline. It is optimized for teams using the Nexus pipeline. Product context: [docs/product/context.md](docs/product/context.md).
 
 ## Status
 
 Early code. Nx monorepo with a React/TypeScript frontend and a Go backend.
 
 - `apps/extension/` — Chrome MV3 host (content script, manifest). A `apps/web/` host may follow; both would share the libs.
-- `libs/shared/` — host-agnostic TypeScript (repo-nav parsing). Imported as `@radon/shared`.
-- `libs/design-system/` — tokens and components. Imported as `@radon/design-system`.
+- `libs/shared/` — host-agnostic TypeScript (repo-nav parsing). Imported as `@raiden/shared`.
+- `libs/design-system/` — tokens and components. Imported as `@raiden/design-system`.
 - `backend/` — Go Lambda, wrapped as an Nx project by `backend/project.json`.
 
 Libs must not import from apps. Apps must not import from each other.

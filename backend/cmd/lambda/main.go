@@ -7,8 +7,8 @@ import (
 
 	"github.com/aws/aws-lambda-go/lambda"
 
-	"github.com/radon/radon/backend/internal/handler"
-	"github.com/radon/radon/backend/internal/store"
+	"github.com/raiden/raiden/backend/internal/handler"
+	"github.com/raiden/raiden/backend/internal/store"
 )
 
 func main() {

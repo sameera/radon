@@ -38,4 +38,4 @@ Change the port with `EMULATOR_PORT`.
 
 ## Table
 
-One table, `radon`, with string keys `pk` (hash) and `sk` (range), on-demand billing. Override the name with `RADON_TABLE`.
+One table, `raiden`, with string keys `pk` (hash) and `sk` (range), on-demand billing. Override the name with `RAIDEN_TABLE`.

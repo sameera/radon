@@ -1,5 +1,5 @@
 const NAV_SELECTOR: string = "nav[aria-label=\"Repository\"]";
-const TAB_ATTR: string = "data-radon-tab";
+const TAB_ATTR: string = "data-raiden-tab";
 const REPO_PATH: RegExp = /^\/[^/]+\/[^/]+$/;
 
 const ICON_SVG: string =
@@ -29,8 +29,8 @@ export function findRepoNav(doc: Document): RepoNav | null {
     return { nav, list, base };
 }
 
-function radonHref(base: string): string {
-    return `${base}/radon`;
+function raidenHref(base: string): string {
+    return `${base}/raiden`;
 }
 
 // Clone an existing tab so size, spacing, font and theme colors come from GitHub's own classes.
@@ -43,8 +43,8 @@ function buildTab(template: HTMLElement, base: string): HTMLElement {
             a.removeAttribute(name);
         }
     }
-    a.setAttribute("data-tab-item", "radon");
-    a.setAttribute("href", radonHref(base));
+    a.setAttribute("data-tab-item", "raiden");
+    a.setAttribute("href", raidenHref(base));
     li.querySelector("[data-component=\"counter\"]")?.remove();
     const icon: Element | null = li.querySelector("[data-component=\"icon\"]");
     if (icon) {
@@ -52,13 +52,13 @@ function buildTab(template: HTMLElement, base: string): HTMLElement {
     }
     const text: Element | null = li.querySelector("[data-component=\"text\"]");
     if (text) {
-        text.setAttribute("data-content", "Radon");
-        text.textContent = "Radon";
+        text.setAttribute("data-content", "Raiden");
+        text.textContent = "Raiden";
     }
     return li;
 }
 
-// Adds the Radon tab after Pull requests (or at the end). Returns true when it added one.
+// Adds the Raiden tab after Pull requests (or at the end). Returns true when it added one.
 export function injectTab(repo: RepoNav): boolean {
     if (repo.list.querySelector(`[${TAB_ATTR}]`)) {
         return false;
@@ -97,7 +97,7 @@ export function isTabHidden(repo: RepoNav): boolean {
 }
 
 // GitHub renders the "More" menu only while it is open. When it is open and lists repository
-// tabs, add a Radon entry if the tab does not fit in the bar. Returns true when it added one.
+// tabs, add a Raiden entry if the tab does not fit in the bar. Returns true when it added one.
 export function injectMenuItem(doc: Document, repo: RepoNav): boolean {
     const button: Element | null = repo.nav.querySelector(
         "button[data-component=\"overflow-menu-button\"][aria-expanded=\"true\"]",
@@ -124,9 +124,9 @@ export function injectMenuItem(doc: Document, repo: RepoNav): boolean {
         if (!a) {
             continue;
         }
-        a.setAttribute("href", radonHref(repo.base));
+        a.setAttribute("href", raidenHref(repo.base));
         a.removeAttribute("aria-current");
-        relabel(a, "Radon");
+        relabel(a, "Raiden");
         (last.closest("li") ?? last).after(item);
         return true;
     }

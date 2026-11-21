@@ -1,5 +1,5 @@
 {
-    "TableName": "radon",
+    "TableName": "raiden",
     "BillingMode": "PAY_PER_REQUEST",
     "AttributeDefinitions": [
         { "AttributeName": "pk", "AttributeType": "S" },

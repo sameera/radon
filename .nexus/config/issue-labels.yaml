@@ -30,7 +30,7 @@ labels:
 
     - name: data
       color: "c5def5"
-      purpose: Radon's own SQLite store for data GitHub cannot hold
+      purpose: Raiden's own SQLite store for data GitHub cannot hold
       use_for:
           - Schema and migrations
           - Sync and cache consistency with GitHub
@@ -44,5 +44,5 @@ labels:
 
 usage_guidelines:
     - Every implementation issue carries exactly one primary feature or layer label.
-    - Use github-sync as a secondary label when a feature issue changes how Radon calls GitHub.
+    - Use github-sync as a secondary label when a feature issue changes how Raiden calls GitHub.
     - Use infrastructure for work with no user-visible change.

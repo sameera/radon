@@ -15,4 +15,4 @@ await build({
     outfile: `${out}/content.js`,
 });
 await cp("apps/extension/manifest.json", `${out}/manifest.json`);
-await cp("docs/assets/raiden.png", `${out}/raiden.png`);
+await cp("docs/assets/raiden-128x.png", `${out}/raiden-128x.png`);

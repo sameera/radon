@@ -3,15 +3,35 @@
         "target": "ES2022",
         "module": "ESNext",
         "moduleResolution": "Bundler",
-        "lib": ["ES2022", "DOM"],
+        "lib": [
+            "ES2022",
+            "DOM"
+        ],
         "strict": true,
         "noEmit": true,
         "skipLibCheck": true,
         "allowImportingTsExtensions": true,
-        "types": ["node"],
+        "types": [
+            "node"
+        ],
         "paths": {
-            "@raiden/shared": ["./libs/shared/src/index.ts"],
-            "@raiden/design-system": ["./libs/design-system/tokens.ts"]
-        }
+            "@raiden/shared": [
+                "./libs/shared/src/index.ts"
+            ],
+            "@raiden/design-system": [
+                "./libs/design-system/tokens.ts"
+            ],
+            "@raiden/app": [
+                "./libs/app/src/index.ts"
+            ],
+            "@raiden/app/*": [
+                "./libs/app/src/*"
+            ],
+            "@raiden/design-system/*": [
+                "./libs/design-system/*"
+            ]
+        },
+        "jsx": "react-jsx",
+        "jsxImportSource": "preact"
     }
 }

@@ -4,10 +4,11 @@ Raiden is a self-hostable Chrome extension that adds agile views to GitHub Proje
 
 ## Status
 
-Early code. Nx monorepo with a React/TypeScript frontend and a Go backend.
+Early code. Nx monorepo with a Preact/TypeScript frontend and a Go backend.
 
 - `apps/extension/` — Chrome MV3 host (content script, manifest). A `apps/web/` host may follow; both would share the libs.
-- `libs/shared/` — host-agnostic TypeScript (repo-nav parsing). Imported as `@raiden/shared`.
+- `libs/app/` — the Raiden pages (sidebar, Grooming), Preact, host-agnostic. Imported as `@raiden/app`.
+- `libs/shared/` — host-agnostic TypeScript (repo-nav parsing, Raiden address and host). Imported as `@raiden/shared`.
 - `libs/design-system/` — tokens and components. Imported as `@raiden/design-system`.
 - `backend/` — Go Lambda, wrapped as an Nx project by `backend/project.json`.
 

@@ -29,8 +29,12 @@ export function findRepoNav(doc: Document): RepoNav | null {
     return { nav, list, base };
 }
 
-function raidenHref(base: string): string {
-    return `${base}/raiden`;
+export const RAIDEN_PARAM: string = "raiden";
+
+// The Raiden address is the repository main page with a marker. GitHub always serves that page
+// and draws its tab bar on it, and it ignores the marker.
+export function raidenHref(base: string): string {
+    return `${base}?${RAIDEN_PARAM}=1`;
 }
 
 // Clone an existing tab so size, spacing, font and theme colors come from GitHub's own classes.

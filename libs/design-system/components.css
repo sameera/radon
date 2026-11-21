@@ -348,3 +348,35 @@ a.rd-ref:hover .rd-ref__title { color: var(--rd-accent); text-decoration: underl
 @media (prefers-reduced-motion: reduce) {
     .rd-switch__input, .rd-switch__input::after { transition: none; }
 }
+
+/* ---------- Popup menu ---------- */
+.rd-menu {
+    position: absolute;
+    top: 100%;
+    right: 0;
+    z-index: 10;
+    min-width: 168px;
+    margin-top: var(--rd-space-1);
+    padding: var(--rd-space-1);
+    border-radius: var(--rd-radius-lg);
+    background: var(--rd-overlay);
+    box-shadow: var(--rd-shadow-overlay);
+}
+.rd-menu__item {
+    display: block;
+    width: 100%;
+    padding: 6px var(--rd-space-2);
+    border: 0;
+    border-radius: var(--rd-radius-md);
+    background: transparent;
+    color: var(--rd-fg);
+    font: 400 14px/20px var(--font-sans);
+    text-align: left;
+    cursor: pointer;
+}
+.rd-menu__item:hover { background: var(--rd-canvas-subtle); }
+.rd-menu__item:focus-visible { outline: 2px solid var(--rd-accent); outline-offset: -2px; }
+.rd-menu__item[disabled] { color: var(--rd-fg-subtle); cursor: not-allowed; background: transparent; }
+.rd-menu__item--danger { color: var(--rd-danger); }
+.rd-menu__item--danger:hover { background: var(--rd-danger-muted); }
+.rd-menu__sep { height: 1px; margin: var(--rd-space-1) 0; background: var(--rd-border-muted); }

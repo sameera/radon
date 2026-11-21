@@ -117,3 +117,53 @@ export function planItem(
 export function unplanItem(state: SessionState, kind: ItemKind, num: number): SessionState {
     return { ...state, plan: state.plan.filter((p: PlanEntry) => !(p.kind === kind && p.num === num)) };
 }
+
+export function addGoal(state: SessionState): SessionState {
+    const goal: Goal = { id: `g${state.nextId}`, title: "", desc: "" };
+    return { ...state, goals: [...state.goals, goal], nextId: state.nextId + 1 };
+}
+
+export function setGoalText(state: SessionState, id: string, text: Partial<Pick<Goal, "title" | "desc">>): SessionState {
+    return { ...state, goals: state.goals.map((g: Goal) => (g.id === id ? { ...g, ...text } : g)) };
+}
+
+export function canMoveGoal(state: SessionState, id: string, delta: -1 | 1): boolean {
+    const at: number = state.goals.findIndex((g: Goal) => g.id === id);
+    return at >= 0 && at + delta >= 0 && at + delta < state.goals.length;
+}
+
+export function moveGoalBy(state: SessionState, id: string, delta: -1 | 1): SessionState {
+    if (!canMoveGoal(state, id, delta)) {
+        return state;
+    }
+    const goals: Goal[] = [...state.goals];
+    const at: number = goals.findIndex((g: Goal) => g.id === id);
+    const [moved] = goals.splice(at, 1);
+    goals.splice(at + delta, 0, moved!);
+    return { ...state, goals };
+}
+
+// Places a goal just before or just after another one. Returns the same state when the order
+// would not change.
+export function moveGoalNextTo(state: SessionState, id: string, targetId: string, side: "before" | "after"): SessionState {
+    if (id === targetId) {
+        return state;
+    }
+    const moved: Goal | undefined = state.goals.find((g: Goal) => g.id === id);
+    const rest: Goal[] = state.goals.filter((g: Goal) => g.id !== id);
+    const at: number = rest.findIndex((g: Goal) => g.id === targetId);
+    if (!moved || at < 0) {
+        return state;
+    }
+    const goals: Goal[] = [...rest.slice(0, side === "before" ? at : at + 1), moved, ...rest.slice(side === "before" ? at : at + 1)];
+    return goals.every((g: Goal, i: number) => g.id === state.goals[i]!.id) ? state : { ...state, goals };
+}
+
+// Removes the goal and the own plans in it. Items planned on their own in other goals stay.
+export function deleteGoal(state: SessionState, id: string): SessionState {
+    return {
+        ...state,
+        goals: state.goals.filter((g: Goal) => g.id !== id),
+        plan: state.plan.filter((p: PlanEntry) => p.goal !== id),
+    };
+}

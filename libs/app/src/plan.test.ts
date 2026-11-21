@@ -125,3 +125,66 @@ describe("taking an item's own plan out", () => {
         expect(eff(s, 50)).toBe("g1");
     });
 });
+
+import { addGoal, canMoveGoal, deleteGoal, moveGoalBy, moveGoalNextTo, setGoalText } from "./plan.ts";
+
+const ids = (s: ReturnType<typeof initialState>): string[] => s.goals.map((g) => g.id);
+const ranks = (s: ReturnType<typeof initialState>): number[] => s.goals.map((g) => goalRank(s, g.id));
+
+describe("adding, naming and ordering goals", () => {
+    it("adds an empty goal last with a new id", () => {
+        const s = addGoal(state);
+        expect(s.goals.length).toBe(4);
+        const added = s.goals[3]!;
+        expect(added).toMatchObject({ title: "", desc: "" });
+        expect(new Set(ids(s)).size).toBe(4);
+        expect(goalItems(s, added.id)).toEqual([]);
+        expect(ranks(s)).toEqual([1, 2, 3, 4]);
+        expect(ids(addGoal(addGoal(state)))).toHaveLength(5);
+        expect(new Set(ids(addGoal(addGoal(state)))).size).toBe(5);
+    });
+    it("keeps edited text", () => {
+        const s = setGoalText(state, "g2", { title: "New name" });
+        expect(s.goals[1]).toMatchObject({ title: "New name", desc: state.goals[1]!.desc });
+        expect(setGoalText(s, "g2", { desc: "More" }).goals[1]).toMatchObject({ title: "New name", desc: "More" });
+    });
+    it("moves a goal one position up or down", () => {
+        expect(ids(moveGoalBy(state, "g2", -1))).toEqual(["g2", "g1", "g3"]);
+        expect(ids(moveGoalBy(state, "g2", 1))).toEqual(["g1", "g3", "g2"]);
+        expect(ranks(moveGoalBy(state, "g2", -1))).toEqual([1, 2, 3]);
+    });
+    it("cannot move the first goal up or the last goal down", () => {
+        expect(canMoveGoal(state, "g1", -1)).toBe(false);
+        expect(canMoveGoal(state, "g3", 1)).toBe(false);
+        expect(canMoveGoal(state, "g2", -1)).toBe(true);
+        expect(moveGoalBy(state, "g1", -1)).toBe(state);
+        expect(moveGoalBy(state, "g3", 1)).toBe(state);
+    });
+    it("places a goal before or after another goal", () => {
+        expect(ids(moveGoalNextTo(state, "g3", "g1", "before"))).toEqual(["g3", "g1", "g2"]);
+        expect(ids(moveGoalNextTo(state, "g1", "g2", "after"))).toEqual(["g2", "g1", "g3"]);
+        expect(ids(moveGoalNextTo(state, "g1", "g3", "after"))).toEqual(["g2", "g3", "g1"]);
+        expect(moveGoalNextTo(state, "g2", "g1", "after")).toBe(state);
+        expect(moveGoalNextTo(state, "g1", "g1", "before")).toBe(state);
+    });
+});
+
+describe("deleting a goal", () => {
+    it("returns the items planned on their own in it to the backlog", () => {
+        const s = deleteGoal(state, "g1");
+        expect(ids(s)).toEqual(["g2", "g3"]);
+        expect(eff(s, 31)).toBeNull();
+        expect(eff(s, 40)).toBeNull();
+    });
+    it("leaves epics planned on their own in other goals where they are", () => {
+        const s = deleteGoal(state, "g2");
+        expect(eff(s, 50)).toBe("g1");
+        expect(eff(s, 51)).toBeNull();
+        expect(eff(s, 60)).toBeNull();
+        expect(ranks(s)).toEqual([1, 2]);
+    });
+    it("leaves no plan entry pointing at a missing goal", () => {
+        const s = deleteGoal(state, "g1");
+        expect(s.plan.every((p) => ids(s).includes(p.goal))).toBe(true);
+    });
+});

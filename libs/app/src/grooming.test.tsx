@@ -322,3 +322,200 @@ describe("drags from outside the Raiden page", () => {
         expect(planItems(2)).toEqual([]);
     });
 });
+
+// ---------- goals: add, edit, reorder, delete ----------
+
+const titles = (): string[] => $$<HTMLInputElement>("input.rd-goal-card__title").map((i) => i.value);
+const ranksShown = (): string[] => $$(".rd-goal-card__rank").map((e) => e.textContent!);
+const goalNames = ["Pilot team plans its next sprint from Raiden", "Teams install Raiden without help", "Nexus status shows in every view"];
+const optionsBtn = (n: number): HTMLButtonElement => card(n).querySelector("[aria-label=\"Goal options\"]")!;
+const menuItem = (n: number, label: string): HTMLButtonElement =>
+    Array.from(card(n).querySelectorAll<HTMLButtonElement>("[role=\"menu\"] [role=\"menuitem\"]")).find((b) => b.textContent === label)!;
+const type = async (el: HTMLInputElement | HTMLTextAreaElement, value: string): Promise<void> => {
+    await act(() => {
+        el.value = value;
+        el.dispatchEvent(new Event("input", { bubbles: true }));
+    });
+};
+const addGoalBtn = (): HTMLButtonElement => $$<HTMLButtonElement>("button").find((b) => b.textContent!.trim() === "Add goal")!;
+
+describe("Add goal", () => {
+    it("adds an empty goal last and focuses its name field", async () => {
+        await open();
+        await act(() => addGoalBtn().click());
+        expect($$(".rd-goal-card").length).toBe(4);
+        expect(titles()[3]).toBe("");
+        expect(ranksShown()).toEqual(["1", "2", "3", "4"]);
+        expect(card(3).querySelector(".rd-goal-card__drop")).not.toBeNull();
+        expect(document.activeElement).toBe(card(3).querySelector("input.rd-goal-card__title"));
+    });
+});
+
+describe("editing a goal", () => {
+    it("keeps edited name and description", async () => {
+        await open();
+        await type(card(1).querySelector("input.rd-goal-card__title")!, "Teams install in minutes");
+        await type(card(1).querySelector("textarea.rd-goal-card__desc")!, "Short.");
+        expect(titles()[1]).toBe("Teams install in minutes");
+        expect(card(1).querySelector<HTMLTextAreaElement>("textarea")!.value).toBe("Short.");
+    });
+
+    it("grows the description field to fit its text", async () => {
+        const original = Object.getOwnPropertyDescriptor(HTMLElement.prototype, "scrollHeight");
+        Object.defineProperty(HTMLElement.prototype, "scrollHeight", { configurable: true, get: () => 84 });
+        try {
+            await open();
+            const desc: HTMLTextAreaElement = card(0).querySelector("textarea.rd-goal-card__desc")!;
+            expect(desc.style.height).toBe("84px");
+            await type(desc, "A much longer description that wraps onto several lines.");
+            expect(desc.style.height).toBe("84px");
+        } finally {
+            if (original) {
+                Object.defineProperty(HTMLElement.prototype, "scrollHeight", original);
+            } else {
+                delete (HTMLElement.prototype as unknown as Record<string, unknown>).scrollHeight;
+            }
+        }
+    });
+});
+
+describe("goal options menu", () => {
+    it("moves a goal up or down one position and updates every rank", async () => {
+        await open();
+        await act(() => optionsBtn(1).click());
+        await act(() => menuItem(1, "Move up").click());
+        expect(titles()).toEqual([goalNames[1], goalNames[0], goalNames[2]]);
+        expect(ranksShown()).toEqual(["1", "2", "3"]);
+        expect(meta("epic", 60)).toBe("Goal 1");
+        await act(() => optionsBtn(1).click());
+        await act(() => menuItem(1, "Move down").click());
+        expect(titles()).toEqual([goalNames[1], goalNames[2], goalNames[0]]);
+    });
+
+    it("disables Move up on the first goal and Move down on the last", async () => {
+        await open();
+        await act(() => optionsBtn(0).click());
+        expect(menuItem(0, "Move up").disabled).toBe(true);
+        expect(menuItem(0, "Move down").disabled).toBe(false);
+        await act(() => optionsBtn(2).click());
+        expect(menuItem(2, "Move down").disabled).toBe(true);
+        expect(menuItem(2, "Move up").disabled).toBe(false);
+    });
+
+    it("opens as a menu, shows one at a time and closes on Escape", async () => {
+        await open();
+        await act(() => optionsBtn(0).click());
+        expect(optionsBtn(0).getAttribute("aria-expanded")).toBe("true");
+        expect($$("[role=\"menu\"]").length).toBe(1);
+        await act(() => optionsBtn(1).click());
+        expect($$("[role=\"menu\"]").length).toBe(1);
+        await act(() => {
+            document.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true }));
+        });
+        expect($$("[role=\"menu\"]").length).toBe(0);
+    });
+
+    it("deletes a goal and returns its items to the backlog", async () => {
+        await open();
+        await act(() => optionsBtn(0).click());
+        await act(() => menuItem(0, "Delete goal").click());
+        expect(titles()).toEqual([goalNames[1], goalNames[2]]);
+        expect(ranksShown()).toEqual(["1", "2"]);
+        expect(meta("epic", 31)).toBe("");
+        expect(meta("epic", 40)).toBe("");
+        expect(meta("epic", 50)).toBe("Goal 1");
+        expect(summary()).toBe("3 of 9 epics planned");
+    });
+});
+
+describe("reordering goals by their handle", () => {
+    const handle = (n: number): HTMLElement => card(n).querySelector(".rd-goal-card__grip")!;
+    const place = (n: number): void => {
+        card(n).getBoundingClientRect = () => ({ top: 0, height: 100, bottom: 100, left: 0, right: 100, width: 100, x: 0, y: 0, toJSON() {} });
+    };
+    async function dragOver(from: number, to: number, clientY: number): Promise<void> {
+        place(to);
+        await act(() => {
+            drag(handle(from), "dragstart");
+        });
+        await act(() => {
+            const event = new Event("dragover", { bubbles: true, cancelable: true });
+            Object.defineProperty(event, "clientY", { value: clientY });
+            Object.defineProperty(event, "dataTransfer", { value: { dropEffect: "" } });
+            card(to).dispatchEvent(event);
+        });
+    }
+    async function dropAt(from: number, to: number, clientY: number): Promise<void> {
+        await dragOver(from, to, clientY);
+        await act(() => {
+            const event = new Event("drop", { bubbles: true, cancelable: true });
+            Object.defineProperty(event, "clientY", { value: clientY });
+            card(to).dispatchEvent(event);
+            drag(handle(from), "dragend");
+        });
+    }
+
+    it("moves the goal before the card when dropped on its upper half, and updates ranks", async () => {
+        await open();
+        await dropAt(2, 0, 25);
+        expect(titles()).toEqual([goalNames[2], goalNames[0], goalNames[1]]);
+        expect(ranksShown()).toEqual(["1", "2", "3"]);
+    });
+
+    it("moves the goal after the card when dropped on its lower half", async () => {
+        await open();
+        await dropAt(2, 0, 75);
+        expect(titles()).toEqual([goalNames[0], goalNames[2], goalNames[1]]);
+    });
+
+    it("shows where the goal will land and highlights no other kind of target", async () => {
+        await open();
+        await dragOver(2, 0, 25);
+        expect(card(0).classList.contains("insert-before")).toBe(true);
+        expect(card(0).classList.contains("insert-after")).toBe(false);
+        expect(backlogPanel().classList.contains("is-over")).toBe(false);
+        await act(() => {
+            drag(card(0), "dragleave");
+        });
+        expect(card(0).classList.contains("insert-before")).toBe(false);
+    });
+
+    it("does not accept a goal dropped on itself or on the backlog", async () => {
+        await open();
+        place(2);
+        await act(() => {
+            drag(handle(2), "dragstart");
+        });
+        let over: Event | undefined;
+        await act(() => {
+            over = drag(card(2), "dragover");
+        });
+        expect(over!.defaultPrevented).toBe(false);
+        await act(() => {
+            over = drag(backlogPanel(), "dragover");
+            drag(backlogPanel(), "drop");
+        });
+        expect(over!.defaultPrevented).toBe(false);
+        expect(titles()).toEqual(goalNames);
+    });
+
+    it("lets no handle start a drag when there is only one goal", async () => {
+        await open();
+        for (const n of [2, 1]) {
+            await act(() => optionsBtn(n).click());
+            await act(() => menuItem(n, "Delete goal").click());
+        }
+        expect(handle(0).getAttribute("draggable")).toBe("false");
+    });
+
+    it("does not let an item drag act on a goal's position, or a goal drag act on a plan", async () => {
+        await open();
+        await act(() => {
+            drag(handle(2), "dragstart");
+        });
+        await act(() => {
+            drag(card(1), "drop");
+        });
+        expect(planItems(1)).toEqual(["init:14", "epic:60"]);
+    });
+});

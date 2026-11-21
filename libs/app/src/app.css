@@ -43,3 +43,26 @@
 .rd-bl-row[draggable="true"], .rd-plan-item[draggable="true"] { cursor: grab; }
 .rd-goal-card.is-over, .rd-backlog.is-over { border-color: var(--rd-brand); box-shadow: var(--rd-shadow-glow); }
 .rd-goal-card.is-over .rd-goal-card__drop { background: var(--rd-brand-muted); color: var(--rd-brand-fg); }
+
+/* ---------- Goals: add, reorder, options ---------- */
+.rd-goals__add { margin-top: var(--rd-space-3); }
+.rd-goal-card { position: relative; }
+.rd-goal-card__rail { display: flex; flex-direction: column; align-items: center; gap: var(--rd-space-1); }
+.rd-goal-card__grip { display: flex; padding: var(--rd-space-1) 2px; color: var(--rd-fg-subtle); cursor: grab; border-radius: var(--rd-radius-sm); }
+.rd-goal-card__grip svg { width: 16px; height: 16px; }
+.rd-goal-card__grip:hover { color: var(--rd-fg-muted); background: var(--rd-canvas-subtle); }
+.rd-goal-card__grip[draggable="false"] { cursor: default; opacity: 0.4; }
+.rd-goal-card__menu-wrap { position: relative; }
+.rd-goal-card.is-dragged { opacity: 0.45; }
+.rd-goal-card.insert-before::before, .rd-goal-card.insert-after::after {
+    content: "";
+    position: absolute;
+    left: 0;
+    right: 0;
+    height: 3px;
+    border-radius: var(--rd-radius-full);
+    background: var(--rd-brand);
+}
+.rd-goal-card.insert-before::before { top: calc(-1 * var(--rd-space-2)); }
+.rd-goal-card.insert-after::after { bottom: calc(-1 * var(--rd-space-2)); }
+.rd-goal-card.is-over.insert-before, .rd-goal-card.is-over.insert-after { border-color: var(--rd-border); box-shadow: none; }

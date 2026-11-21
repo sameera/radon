@@ -10,7 +10,7 @@ The source of truth for Raiden's colors, type, spacing and components. A browsab
 | `tokens.css` | CSS custom properties and `.rd-text-*` classes. | No. Generated. |
 | `tokens.ts` | Typed token references for TypeScript. | No. Generated. |
 | `build-tokens.ts` | Regenerates `tokens.css` and `tokens.ts`: `node libs/design-system/build-tokens.ts` (Node 22.18+). | Yes |
-| `components.css` | Component classes (`rd-btn`, `rd-pill`, `rd-ref`, `rd-progress`, `rd-goal`, `rd-tl`, `rd-icon-btn`, `rd-nav`, `rd-input`, `rd-switch`). | Yes |
+| `components.css` | Component classes (`rd-btn`, `rd-pill`, `rd-ref`, `rd-progress`, `rd-goal`, `rd-tl`, `rd-icon-btn`, `rd-nav`, `rd-input`, `rd-switch`, `rd-menu`). | Yes |
 | `components/*.md` | Guidelines per component: structure, variants, what the consumer provides, don'ts. | Yes |
 | `preview.html` | All components on one page with a light/dark toggle. Open it in a browser. | Yes |
 

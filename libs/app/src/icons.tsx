@@ -41,3 +41,32 @@ export function ChevronIcon({ open }: { open: boolean }): VNode {
         </svg>
     );
 }
+
+export function MoreIcon(): VNode {
+    return (
+        <svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
+            <circle cx="3" cy="8" r="1.3" />
+            <circle cx="8" cy="8" r="1.3" />
+            <circle cx="13" cy="8" r="1.3" />
+        </svg>
+    );
+}
+export function GripIcon(): VNode {
+    return (
+        <svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
+            <circle cx="6" cy="4" r="1.1" />
+            <circle cx="10" cy="4" r="1.1" />
+            <circle cx="6" cy="8" r="1.1" />
+            <circle cx="10" cy="8" r="1.1" />
+            <circle cx="6" cy="12" r="1.1" />
+            <circle cx="10" cy="12" r="1.1" />
+        </svg>
+    );
+}
+export function PlusIcon(): VNode {
+    return (
+        <svg {...SVG} stroke-linecap="round" aria-hidden="true">
+            <path d="M8 3v10M3 8h10" />
+        </svg>
+    );
+}

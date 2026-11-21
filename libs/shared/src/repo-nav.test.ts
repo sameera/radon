@@ -43,7 +43,7 @@ describe("repo tab bar", () => {
         sync(document);
         const a: HTMLAnchorElement = document.querySelector("[data-raiden-tab] a")!;
         expect(a.className).toBe("prc-components-UnderlineItem");
-        expect(a.getAttribute("href")).toBe("/acme/app/raiden");
+        expect(a.getAttribute("href")).toBe("/acme/app?raiden=1");
         expect(a.hasAttribute("aria-current")).toBe(false);
         expect(a.hasAttribute("data-react-nav")).toBe(false);
         expect(a.hasAttribute("data-turbo-frame")).toBe(false);
@@ -83,7 +83,7 @@ describe("repo tab bar", () => {
         (document.querySelector("[data-raiden-tab]") as HTMLElement).style.visibility = "hidden";
         expect(injectMenuItem(document, repo)).toBe(true);
         const added: HTMLAnchorElement = document.querySelector("[role=\"menu\"] [data-raiden-tab] a")!;
-        expect(added.getAttribute("href")).toBe("/acme/app/raiden");
+        expect(added.getAttribute("href")).toBe("/acme/app?raiden=1");
         expect(added.textContent).toBe("Raiden");
         expect(injectMenuItem(document, repo)).toBe(false);
     });

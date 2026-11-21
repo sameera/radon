@@ -1,0 +1,151 @@
+/* Radon — generated from tokens.json by build-tokens.ts. Do not edit. */
+
+:root, :host, [data-theme="light"], :host([data-theme="light"]) {
+    color-scheme: light;
+    --rd-canvas: #ffffff;
+    --rd-canvas-subtle: #f5f7fb;
+    --rd-canvas-inset: #eef2f8;
+    --rd-overlay: #ffffff;
+    --rd-border: #c9d2df;
+    --rd-border-control: #828da0;
+    --rd-border-muted: #e3e8f0;
+    --rd-fg: #1b2130;
+    --rd-fg-muted: #556073;
+    --rd-fg-subtle: #7c8698;
+    --rd-brand: #007d8c;
+    --rd-brand-fg: #006f7c;
+    --rd-on-brand: #ffffff;
+    --rd-brand-muted: #dcf4f6;
+    --rd-accent: #0a5fd1;
+    --rd-accent-muted: #e2edff;
+    --rd-success: #0f7a35;
+    --rd-success-muted: #dcf6e4;
+    --rd-attention: #8f5200;
+    --rd-attention-muted: #fff0c7;
+    --rd-danger: #c8102e;
+    --rd-danger-muted: #ffe2e5;
+    --rd-done: #6e2fd6;
+    --rd-done-muted: #eee5ff;
+    --rd-epic: #b3126f;
+    --rd-epic-muted: #fde3f1;
+    --rd-story: var(--rd-accent);
+    --rd-story-muted: var(--rd-accent-muted);
+    --rd-decision: #b8470a;
+    --rd-decision-muted: #ffe8d9;
+    --rd-shadow-sm: 0 1px 0 rgba(31,35,48,0.06);
+    --rd-shadow-overlay: 0 8px 24px rgba(27,33,48,0.14), 0 0 0 1px rgba(27,33,48,0.06);
+    --rd-shadow-glow: 0 0 0 1px rgba(0,125,140,0.25), 0 6px 20px rgba(0,125,140,0.18);
+}
+
+[data-theme="dark"], :host([data-theme="dark"]) {
+    color-scheme: dark;
+    --rd-canvas: #0b0f17;
+    --rd-canvas-subtle: #121925;
+    --rd-canvas-inset: #070a10;
+    --rd-overlay: #171f2c;
+    --rd-border: #3a4456;
+    --rd-border-control: #6e7a8e;
+    --rd-border-muted: #232b38;
+    --rd-fg: #eef3fb;
+    --rd-fg-muted: #9aa5b8;
+    --rd-fg-subtle: #6f7a8d;
+    --rd-brand: #2cc9d8;
+    --rd-brand-fg: #5ad9e5;
+    --rd-on-brand: #03191d;
+    --rd-brand-muted: #0a2c33;
+    --rd-accent: #58a4ff;
+    --rd-accent-muted: #0f2748;
+    --rd-success: #4ad67f;
+    --rd-success-muted: #0b2e19;
+    --rd-attention: #f5b83d;
+    --rd-attention-muted: #33260a;
+    --rd-danger: #ff6b78;
+    --rd-danger-muted: #3a1218;
+    --rd-done: #b597ff;
+    --rd-done-muted: #261a45;
+    --rd-epic: #f569bb;
+    --rd-epic-muted: #3a1028;
+    --rd-story: var(--rd-accent);
+    --rd-story-muted: var(--rd-accent-muted);
+    --rd-decision: #ff9257;
+    --rd-decision-muted: #3a1a0a;
+    --rd-shadow-sm: 0 1px 0 rgba(0,0,0,0.4);
+    --rd-shadow-overlay: 0 8px 24px rgba(0,0,0,0.55), 0 0 0 1px rgba(255,255,255,0.06);
+    --rd-shadow-glow: 0 0 0 1px rgba(44,201,216,0.35), 0 6px 24px rgba(44,201,216,0.22);
+}
+
+:root, :host {
+    --rd-space-1: 4px;
+    --rd-space-2: 8px;
+    --rd-space-3: 12px;
+    --rd-space-4: 16px;
+    --rd-space-6: 24px;
+    --rd-space-8: 32px;
+    --rd-radius-sm: 4px;
+    --rd-radius-md: 6px;
+    --rd-radius-lg: 12px;
+    --rd-radius-full: 999px;
+    --font-display: "Bricolage Grotesque", -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans", Helvetica, Arial, sans-serif;
+    --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans", Helvetica, Arial, sans-serif;
+    --font-mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
+}
+
+.rd-text-goal-lg {
+    font-family: var(--font-display);
+    font-size: 28px;
+    line-height: 34px;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+}
+
+.rd-text-view-title {
+    font-family: var(--font-display);
+    font-size: 20px;
+    line-height: 26px;
+    font-weight: 650;
+    letter-spacing: -0.01em;
+}
+
+.rd-text-title {
+    font-family: var(--font-sans);
+    font-size: 16px;
+    line-height: 24px;
+    font-weight: 600;
+}
+
+.rd-text-body {
+    font-family: var(--font-sans);
+    font-size: 14px;
+    line-height: 20px;
+    font-weight: 400;
+}
+
+.rd-text-body-strong {
+    font-family: var(--font-sans);
+    font-size: 14px;
+    line-height: 20px;
+    font-weight: 600;
+}
+
+.rd-text-small {
+    font-family: var(--font-sans);
+    font-size: 12px;
+    line-height: 18px;
+    font-weight: 400;
+}
+
+.rd-text-axis {
+    font-family: var(--font-sans);
+    font-size: 11px;
+    line-height: 16px;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+}
+
+.rd-text-ref {
+    font-family: var(--font-mono);
+    font-size: 12px;
+    line-height: 18px;
+    font-weight: 500;
+}

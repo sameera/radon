@@ -1,0 +1,225 @@
+/* Radon components. Every class is prefixed rd- so injected views never collide with github.com styles. */
+
+.rd-root, .rd-root * { box-sizing: border-box; }
+.rd-root {
+    font-family: var(--font-sans);
+    font-size: 14px;
+    line-height: 20px;
+    color: var(--rd-fg);
+    background: var(--rd-canvas);
+}
+
+.rd-focusable:focus-visible,
+.rd-btn:focus-visible {
+    outline: 2px solid var(--rd-accent);
+    outline-offset: 2px;
+}
+
+/* ---------- Button ---------- */
+.rd-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--rd-space-2);
+    height: 32px;
+    padding: 0 var(--rd-space-3);
+    border-radius: var(--rd-radius-md);
+    border: 1px solid var(--rd-border-control);
+    background: var(--rd-canvas-subtle);
+    color: var(--rd-fg);
+    font: 600 14px/20px var(--font-sans);
+    cursor: pointer;
+    transition: background-color 120ms ease, box-shadow 120ms ease;
+}
+.rd-btn:hover { background: var(--rd-canvas-inset); }
+.rd-btn--primary {
+    background: var(--rd-brand);
+    border-color: var(--rd-brand);
+    color: var(--rd-on-brand);
+    box-shadow: var(--rd-shadow-sm);
+}
+.rd-btn--primary:hover { background: var(--rd-brand); box-shadow: var(--rd-shadow-glow); }
+.rd-btn--ghost { background: transparent; border-color: transparent; color: var(--rd-brand-fg); }
+.rd-btn--ghost:hover { background: var(--rd-brand-muted); }
+.rd-btn--danger { color: var(--rd-danger); }
+.rd-btn--danger:hover { background: var(--rd-danger-muted); border-color: var(--rd-danger); }
+.rd-btn--sm { height: 28px; padding: 0 var(--rd-space-2); font-size: 12px; }
+.rd-btn[disabled] { color: var(--rd-fg-subtle); cursor: not-allowed; box-shadow: none; }
+.rd-btn--primary[disabled] { background: var(--rd-canvas-inset); border-color: var(--rd-border); }
+
+/* ---------- Pill ---------- */
+.rd-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    height: 22px;
+    padding: 0 var(--rd-space-2);
+    border-radius: var(--rd-radius-full);
+    font: 600 12px/18px var(--font-sans);
+    white-space: nowrap;
+    background: var(--rd-canvas-subtle);
+    color: var(--rd-fg-muted);
+    border: 1px solid var(--rd-border);
+}
+.rd-pill::before {
+    content: "";
+    width: 6px;
+    height: 6px;
+    border-radius: var(--rd-radius-full);
+    background: currentColor;
+}
+.rd-pill--brand     { background: var(--rd-brand-muted);     color: var(--rd-brand-fg);  border-color: transparent; }
+.rd-pill--success   { background: var(--rd-success-muted);   color: var(--rd-success);   border-color: transparent; }
+.rd-pill--attention { background: var(--rd-attention-muted); color: var(--rd-attention); border-color: transparent; }
+.rd-pill--danger    { background: var(--rd-danger-muted);    color: var(--rd-danger);    border-color: transparent; }
+.rd-pill--done      { background: var(--rd-done-muted);      color: var(--rd-done);      border-color: transparent; }
+
+/* ---------- Hierarchy glyphs + IssueRef ---------- */
+.rd-glyph { display: inline-block; flex: none; width: 10px; height: 10px; }
+.rd-glyph--epic { background: var(--rd-epic); transform: rotate(45deg) scale(0.85); border-radius: 2px; }
+.rd-glyph--story { background: var(--rd-story); border-radius: var(--rd-radius-full); }
+.rd-glyph--decision { background: var(--rd-decision); border-radius: 2px; }
+.rd-glyph--closed { background: transparent; box-shadow: inset 0 0 0 2px var(--rd-done); }
+
+.rd-ref {
+    display: flex;
+    align-items: center;
+    gap: var(--rd-space-2);
+    min-width: 0;
+    color: var(--rd-fg);
+    text-decoration: none;
+}
+.rd-ref__num { font: 500 12px/18px var(--font-mono); color: var(--rd-fg-muted); flex: none; }
+.rd-ref__title { font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
+a.rd-ref:hover .rd-ref__title { color: var(--rd-accent); text-decoration: underline; }
+
+/* ---------- Progress ---------- */
+.rd-progress {
+    display: flex;
+    gap: 2px;
+    height: 8px;
+    border-radius: var(--rd-radius-full);
+    background: var(--rd-canvas-inset);
+    overflow: hidden;
+}
+.rd-progress__seg { height: 100%; }
+.rd-progress__seg--done { background: var(--rd-success); }
+.rd-progress__seg--active { background: var(--rd-brand); }
+.rd-progress__seg--blocked { background: var(--rd-danger); }
+.rd-progress__legend { display: flex; flex-wrap: wrap; gap: var(--rd-space-4); margin-top: var(--rd-space-2); font-size: 12px; line-height: 18px; color: var(--rd-fg-muted); }
+.rd-progress__legend b { color: var(--rd-fg); font-variant-numeric: tabular-nums; }
+
+/* ---------- Sprint goal ---------- */
+.rd-goal {
+    position: relative;
+    display: grid;
+    gap: var(--rd-space-3);
+    padding: var(--rd-space-6);
+    border-radius: var(--rd-radius-lg);
+    background: var(--rd-brand-muted);
+    border: 1px solid var(--rd-brand);
+    box-shadow: var(--rd-shadow-glow);
+    overflow: hidden;
+}
+.rd-goal::after {
+    content: "";
+    position: absolute;
+    top: -40px;
+    right: -40px;
+    width: 140px;
+    height: 140px;
+    border-radius: var(--rd-radius-full);
+    border: 18px solid var(--rd-brand);
+    opacity: 0.12;
+    pointer-events: none;
+}
+.rd-goal__eyebrow {
+    display: flex;
+    align-items: center;
+    gap: var(--rd-space-2);
+    font: 600 11px/16px var(--font-sans);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--rd-brand-fg);
+}
+.rd-goal__text {
+    margin: 0;
+    font: 700 28px/34px var(--font-display);
+    letter-spacing: -0.02em;
+    color: var(--rd-fg);
+    text-wrap: balance;
+    max-width: 36ch;
+}
+.rd-goal__meta { display: flex; flex-wrap: wrap; align-items: center; gap: var(--rd-space-3); color: var(--rd-fg-muted); font-size: 12px; line-height: 18px; }
+.rd-goal--empty { background: var(--rd-canvas); border-style: dashed; border-color: var(--rd-border-control); box-shadow: none; }
+.rd-goal--empty::after { display: none; }
+.rd-goal--empty .rd-goal__text { color: var(--rd-fg-muted); font-weight: 600; }
+
+/* ---------- Timeline ---------- */
+.rd-tl {
+    --rd-tl-cols: 6;
+    --rd-tl-label: 220px;
+    border: 1px solid var(--rd-border);
+    border-radius: var(--rd-radius-md);
+    background: var(--rd-canvas);
+    overflow-x: auto;
+}
+.rd-tl__grid { min-width: 640px; position: relative; }
+.rd-tl__row {
+    display: grid;
+    grid-template-columns: var(--rd-tl-label) 1fr;
+    align-items: center;
+    min-height: 36px;
+    border-top: 1px solid var(--rd-border-muted);
+}
+.rd-tl__row:first-child { border-top: 0; }
+.rd-tl__label { padding: 0 var(--rd-space-3); min-width: 0; }
+.rd-tl__row--child .rd-tl__label { padding-left: 32px; }
+.rd-tl__track {
+    position: relative;
+    height: 100%;
+    min-height: 36px;
+    background:
+        repeating-linear-gradient(to right, transparent 0, transparent calc(100% / var(--rd-tl-cols) - 1px), var(--rd-border-muted) calc(100% / var(--rd-tl-cols) - 1px), var(--rd-border-muted) calc(100% / var(--rd-tl-cols)));
+}
+.rd-tl__head { background: var(--rd-canvas-subtle); min-height: 32px; }
+.rd-tl__axis { display: grid; grid-template-columns: repeat(var(--rd-tl-cols), 1fr); height: 100%; }
+.rd-tl__tick {
+    display: flex;
+    align-items: center;
+    padding: 0 var(--rd-space-2);
+    font: 600 11px/16px var(--font-sans);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--rd-fg-muted);
+}
+.rd-tl__tick--current { color: var(--rd-brand-fg); background: var(--rd-brand-muted); }
+.rd-tl__bar {
+    position: absolute;
+    top: 50%;
+    height: 14px;
+    transform: translateY(-50%);
+    border-radius: var(--rd-radius-sm);
+    overflow: hidden;
+    background: var(--rd-story-muted);
+}
+.rd-tl__bar > i { display: block; height: 100%; background: var(--rd-story); }
+.rd-tl__bar--epic { height: 18px; background: var(--rd-epic-muted); }
+.rd-tl__bar--epic > i { background: var(--rd-epic); }
+.rd-tl__bar--blocked { background: var(--rd-danger-muted); box-shadow: inset 0 0 0 1px var(--rd-danger); }
+.rd-tl__bar--blocked > i { background: var(--rd-danger); }
+.rd-tl__bar--done { background: var(--rd-success-muted); }
+.rd-tl__bar--done > i { background: var(--rd-success); }
+.rd-tl__today {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    width: 2px;
+    margin-left: -1px;
+    background: var(--rd-brand);
+    box-shadow: var(--rd-shadow-glow);
+    pointer-events: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .rd-btn { transition: none; }
+}

@@ -1,0 +1,129 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Radon components</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400..800&display=swap">
+<link rel="stylesheet" href="tokens.css">
+<link rel="stylesheet" href="components.css">
+<style>
+    body { margin: 0; }
+    .ds-page { display: grid; gap: var(--rd-space-8); max-width: 960px; margin: 0 auto; padding: var(--rd-space-8) var(--rd-space-4); }
+    .ds-top { display: flex; justify-content: space-between; align-items: center; gap: var(--rd-space-4); }
+    .ds-top h1 { margin: 0; font: 800 32px/1 var(--font-display); letter-spacing: -0.03em; }
+    .ds-section { display: grid; gap: var(--rd-space-2); }
+    .ds-h { margin: 0; font: 600 16px/24px var(--font-sans); display: flex; gap: var(--rd-space-3); align-items: baseline; }
+    .ds-h a { font-size: 12px; font-weight: 400; color: var(--rd-accent); }
+    .row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+    .col { display: grid; gap: 12px; max-width: 640px; }
+    .wrap { max-width: 100%; }
+</style>
+</head>
+<body class="rd-root">
+<main class="ds-page">
+    <header class="ds-top">
+        <h1>Radon</h1>
+        <button class="rd-btn rd-btn--sm" id="theme-toggle" type="button">Switch to dark</button>
+    </header>
+    <section class="ds-section">
+        <h2 class="ds-h">Button <a href="components/Button.md">guidelines</a></h2>
+        <div class="row">
+            <button class="rd-btn rd-btn--primary">Set sprint goal</button>
+            <button class="rd-btn">Edit goal</button>
+            <button class="rd-btn rd-btn--ghost">View timeline</button>
+            <button class="rd-btn rd-btn--danger">Clear goal</button>
+            <button class="rd-btn rd-btn--sm">Expand epic</button>
+            <button class="rd-btn rd-btn--primary" disabled>Saving…</button>
+        </div>
+    </section>
+    <section class="ds-section">
+        <h2 class="ds-h">Pill <a href="components/Pill.md">guidelines</a></h2>
+        <div class="row">
+            <span class="rd-pill rd-pill--brand">Current sprint</span>
+            <span class="rd-pill rd-pill--success">Goal met</span>
+            <span class="rd-pill rd-pill--attention">At risk</span>
+            <span class="rd-pill rd-pill--attention">needs-design</span>
+            <span class="rd-pill rd-pill--danger">Blocked</span>
+            <span class="rd-pill rd-pill--done">Closed</span>
+            <span class="rd-pill">Unplanned</span>
+        </div>
+    </section>
+    <section class="ds-section">
+        <h2 class="ds-h">IssueRef <a href="components/IssueRef.md">guidelines</a></h2>
+        <div class="col">
+            <a class="rd-ref" href="#"><span class="rd-glyph rd-glyph--epic"></span><span class="rd-ref__num">#118</span><span class="rd-ref__title">Hierarchical timeline view</span></a>
+            <a class="rd-ref" href="#" style="padding-left:18px"><span class="rd-glyph rd-glyph--story"></span><span class="rd-ref__num">#124</span><span class="rd-ref__title">Roll story iterations up to the epic bar</span></a>
+            <a class="rd-ref" href="#" style="padding-left:18px"><span class="rd-glyph rd-glyph--decision"></span><span class="rd-ref__num">#119</span><span class="rd-ref__title">Decision record: timeline data source</span></a>
+            <a class="rd-ref" href="#" style="padding-left:18px"><span class="rd-glyph rd-glyph--story rd-glyph--closed"></span><span class="rd-ref__num">#121</span><span class="rd-ref__title">Inject the view tab into Projects pages</span></a>
+        </div>
+    </section>
+    <section class="ds-section">
+        <h2 class="ds-h">ProgressBar <a href="components/ProgressBar.md">guidelines</a></h2>
+        <div class="wrap">
+            <div class="rd-progress" role="img" aria-label="Sprint 14: 9 of 16 stories done, 4 in progress, 1 blocked">
+                <span class="rd-progress__seg rd-progress__seg--done" style="width:56.25%"></span>
+                <span class="rd-progress__seg rd-progress__seg--active" style="width:25%"></span>
+                <span class="rd-progress__seg rd-progress__seg--blocked" style="width:6.25%"></span>
+            </div>
+            <div class="rd-progress__legend"><span><b>9</b> done</span><span><b>4</b> in progress</span><span><b>1</b> blocked</span><span><b>2</b> not started</span></div>
+        </div>
+    </section>
+    <section class="ds-section">
+        <h2 class="ds-h">SprintGoal <a href="components/SprintGoal.md">guidelines</a></h2>
+        <div class="col">
+            <section class="rd-goal" aria-label="Sprint goal">
+                <div class="rd-goal__eyebrow">Sprint 14 · Goal <span class="rd-pill rd-pill--attention">At risk</span></div>
+                <p class="rd-goal__text">Pilot team plans its next sprint from the epic timeline</p>
+                <div class="rd-goal__meta"><span>Nov 17 – Nov 28 · 7 days left</span><button class="rd-btn rd-btn--sm">Edit goal</button></div>
+            </section>
+            <section class="rd-goal rd-goal--empty" aria-label="Sprint goal">
+                <div class="rd-goal__eyebrow">Sprint 15 · Goal</div>
+                <p class="rd-goal__text">No goal set for this sprint yet</p>
+                <div class="rd-goal__meta"><button class="rd-btn rd-btn--primary rd-btn--sm">Set sprint goal</button></div>
+            </section>
+        </div>
+    </section>
+    <section class="ds-section">
+        <h2 class="ds-h">Timeline <a href="components/Timeline.md">guidelines</a></h2>
+        <div class="wrap">
+        <div class="rd-tl" style="--rd-tl-cols:6">
+            <div class="rd-tl__grid">
+                <div class="rd-tl__row rd-tl__head">
+                    <div class="rd-tl__label rd-tl__tick">Epic / story</div>
+                    <div class="rd-tl__axis">
+                        <span class="rd-tl__tick">S12 · Oct 20</span><span class="rd-tl__tick">S13 · Nov 3</span><span class="rd-tl__tick rd-tl__tick--current">S14 · Nov 17</span><span class="rd-tl__tick">S15 · Dec 1</span><span class="rd-tl__tick">S16 · Dec 15</span><span class="rd-tl__tick">S17 · Jan 5</span>
+                    </div>
+                </div>
+                <div class="rd-tl__row">
+                    <div class="rd-tl__label"><a class="rd-ref" href="#"><span class="rd-glyph rd-glyph--epic"></span><span class="rd-ref__num">#118</span><span class="rd-ref__title">Hierarchical timeline</span></a></div>
+                    <div class="rd-tl__track"><span class="rd-tl__bar rd-tl__bar--epic" style="left:2%;width:62%"><i style="width:55%"></i></span><span class="rd-tl__today" style="left:41%"></span></div>
+                </div>
+                <div class="rd-tl__row rd-tl__row--child">
+                    <div class="rd-tl__label"><a class="rd-ref" href="#"><span class="rd-glyph rd-glyph--story rd-glyph--closed"></span><span class="rd-ref__num">#121</span><span class="rd-ref__title">Inject view tab</span></a></div>
+                    <div class="rd-tl__track"><span class="rd-tl__bar rd-tl__bar--done" style="left:2%;width:15%"><i style="width:100%"></i></span><span class="rd-tl__today" style="left:41%"></span></div>
+                </div>
+                <div class="rd-tl__row rd-tl__row--child">
+                    <div class="rd-tl__label"><a class="rd-ref" href="#"><span class="rd-glyph rd-glyph--story"></span><span class="rd-ref__num">#124</span><span class="rd-ref__title">Roll up iterations</span></a></div>
+                    <div class="rd-tl__track"><span class="rd-tl__bar" style="left:18%;width:30%"><i style="width:60%"></i></span><span class="rd-tl__today" style="left:41%"></span></div>
+                </div>
+                <div class="rd-tl__row rd-tl__row--child">
+                    <div class="rd-tl__label"><a class="rd-ref" href="#"><span class="rd-glyph rd-glyph--story"></span><span class="rd-ref__num">#127</span><span class="rd-ref__title">Blocked-by arrows</span></a></div>
+                    <div class="rd-tl__track"><span class="rd-tl__bar rd-tl__bar--blocked" style="left:34%;width:30%"><i style="width:10%"></i></span><span class="rd-tl__today" style="left:41%"></span></div>
+                </div>
+            </div>
+        </div>
+        </div>
+    </section>
+</main>
+<script>
+    const root = document.documentElement;
+    const toggle = document.getElementById("theme-toggle");
+    toggle.addEventListener("click", () => {
+        const next = root.dataset.theme === "dark" ? "light" : "dark";
+        root.dataset.theme = next;
+        toggle.textContent = next === "dark" ? "Switch to light" : "Switch to dark";
+    });
+</script>
+</body>
+</html>

@@ -1,0 +1,48 @@
+labels:
+    - name: github-sync
+      color: "24292f"
+      purpose: Reading from and writing to GitHub (Projects V2 GraphQL, REST, webhooks)
+      use_for:
+          - GitHub App installation, tokens and permissions
+          - Project, field, item and issue queries and mutations
+          - Webhook handling and rate-limit behaviour
+
+    - name: sprints
+      color: "1d76db"
+      purpose: Sprint planning features layered on GitHub iterations
+      use_for:
+          - Sprint objectives and their link to work items
+          - Sprint scope, progress and review
+
+    - name: timeline
+      color: "5319e7"
+      purpose: The hierarchical timeline view (initiative, epic, story roll-ups over time)
+      use_for:
+          - Hierarchy building from parent/sub-issues
+          - Date roll-ups, rendering and interaction
+
+    - name: frontend
+      color: "fbca04"
+      purpose: UI shell, components and client state not specific to one feature
+      use_for:
+          - Layout, navigation, shared components
+          - Accessibility and client performance
+
+    - name: data
+      color: "c5def5"
+      purpose: Radon's own SQLite store for data GitHub cannot hold
+      use_for:
+          - Schema and migrations
+          - Sync and cache consistency with GitHub
+
+    - name: infrastructure
+      color: "0e8a16"
+      purpose: AWS hosting, GitHub Actions CI/CD, repo tooling
+      use_for:
+          - Deployment, environments and secrets
+          - CI pipelines and dependency checks
+
+usage_guidelines:
+    - Every implementation issue carries exactly one primary feature or layer label.
+    - Use github-sync as a secondary label when a feature issue changes how Radon calls GitHub.
+    - Use infrastructure for work with no user-visible change.

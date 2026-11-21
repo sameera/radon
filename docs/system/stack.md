@@ -18,13 +18,15 @@ Greenfield. Entries below are decided; anything not listed is still open (notabl
 Self-hosted per team; no multi-tenant SaaS.
 
 
-- **Language**: TypeScript (Node.js)
+- **Language**: Go
+- **Runtime**: AWS Lambda (`provided.al2023`), source in `backend/`
 - **Authentication**: GitHub App (user-to-server tokens for user actions, installation tokens for background work)
 - **External API**: GitHub Projects V2 (GraphQL) and GitHub REST
 
 ## Database
 
-- **Primary**: SQLite — holds only Radon-specific data GitHub Projects cannot store (e.g. sprint objectives, timeline hierarchy metadata)
+- **Primary**: DynamoDB — holds only Radon-specific data GitHub Projects cannot store (e.g. sprint objectives, timeline hierarchy metadata)
+- **Local emulation**: AWS Emulator (DynamoDB only; Lambda cannot be invoked locally). See [local-dev.md](local-dev.md)
 
 ## Infrastructure
 

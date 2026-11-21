@@ -1,7 +1,7 @@
 ---
 standard: Radon Project Standards
 category: architecture
-applies_to: ["typescript", "github-app", "sqlite", "pnpm"]
+applies_to: ["typescript", "go", "github-app", "dynamodb", "pnpm"]
 description: Stack-level decisions made before any code exists
 ---
 
@@ -15,7 +15,7 @@ Radon has no code yet. These are the decisions already made. Add exemplar paths 
 
 ### TypeScript only
 
-**Decision**: All source is TypeScript with explicit type annotations. No JavaScript source files.
+**Decision**: Extension source is TypeScript with explicit type annotations. No JavaScript source files. The backend (`backend/`) is Go.
 
 **Rationale**: Project-wide choice; keeps GitHub API payload types checked end to end.
 
@@ -25,9 +25,9 @@ Radon has no code yet. These are the decisions already made. Add exemplar paths 
 
 **Rationale**: Fine-grained permissions and webhooks; actions on GitHub stay attributable to the user.
 
-### SQLite for Radon-only data
+### DynamoDB for Radon-only data
 
-**Decision**: SQLite stores only data GitHub Projects cannot hold. GitHub remains the source of truth for issues, project items, fields and iterations.
+**Decision**: DynamoDB stores only data GitHub Projects cannot hold. GitHub remains the source of truth for issues, project items, fields and iterations.
 
 **Rationale**: Users keep working in GitHub directly; a second copy of GitHub data would drift.
 
@@ -41,7 +41,7 @@ Radon has no code yet. These are the decisions already made. Add exemplar paths 
 
 - **Never** write to GitHub issues, project fields or iterations — users edit those in GitHub. Radon writes only its own data (e.g. sprint goals). Request no issue-write permission on the GitHub App.
 - **Never** authenticate with personal access tokens or a classic OAuth App — use the GitHub App.
-- **Never** treat a SQLite copy of GitHub data as authoritative — re-read GitHub or invalidate the cache.
+- **Never** treat a DynamoDB copy of GitHub data as authoritative — re-read GitHub or invalidate the cache.
 - **Never** commit `package-lock.json` or `yarn.lock` — use `pnpm-lock.yaml`.
 - **Never** commit GitHub App private keys or secrets — load them from the environment / AWS secrets.
 
@@ -49,5 +49,5 @@ Radon has no code yet. These are the decisions already made. Add exemplar paths 
 
 - [ ] New source files are `.ts` / `.tsx`
 - [ ] GitHub calls use App tokens
-- [ ] New SQLite tables hold Radon-only data or are marked rebuildable cache
+- [ ] New DynamoDB tables hold Radon-only data or are marked rebuildable cache
 - [ ] No secrets in the repo

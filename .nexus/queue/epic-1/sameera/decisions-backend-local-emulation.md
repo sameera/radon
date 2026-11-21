@@ -17,3 +17,8 @@
 - **Choice:** Link to `/owner/repo/radon`; no placeholder page in this story.
 - **Why:** Story acceptance criteria cover the tab only; the page is a later epic.
 - **Refuted alternative:** Render a placeholder over GitHub's 404 (extra scope, and the 404 page has no tab bar).
+
+## 2026-11-21 — Local Lambda via HTTP harness, emulator for DynamoDB only
+- **Choice:** aws-emulator hosts DynamoDB; `backend/cmd/local` runs the handler behind HTTP using API Gateway v2 events.
+- **Why:** aws-emulator accepts provided.al2023 but cannot Invoke Go Lambdas (aws-emulator#539).
+- **Refuted alternative:** LocalStack (runs Go Lambdas in Docker, but is a second emulator).

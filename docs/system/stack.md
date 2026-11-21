@@ -12,7 +12,7 @@ Greenfield. Entries below are decided; anything not listed is still open.
 
 - **Form factor**: Chrome extension (Manifest V3) that injects views into github.com Projects pages
 - **Language**: TypeScript
-- **UI framework**: Preact, with its React compatibility layer on. The Raiden pages live in a library that does not depend on the extension, and their code loads only when the Raiden tab opens. Decided in [decision record #11](https://github.com/sameera/raiden/issues/11), D2.
+- **UI framework**: Preact
 
 ## Backend
 

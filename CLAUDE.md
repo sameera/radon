@@ -4,7 +4,11 @@ Radon is a self-hostable Chrome extension that adds agile views to GitHub Projec
 
 ## Status
 
-Greenfield — no code yet. Development commands and architecture go here as they land.
+Early code. Chrome MV3 content script in `src/`, manifest in `extension/`.
+
+- `pnpm install` — install
+- `pnpm build` — bundle to `dist/` (load unpacked in `chrome://extensions`)
+- `pnpm typecheck`, `pnpm test` — tsc, vitest (jsdom)
 
 ## Technical Patterns and Standards
 

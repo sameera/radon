@@ -1,0 +1,19 @@
+{
+    "name": "radon",
+    "version": "0.0.0",
+    "private": true,
+    "type": "module",
+    "packageManager": "pnpm@12.18.0",
+    "scripts": {
+        "build": "node scripts/build.ts",
+        "typecheck": "tsc --noEmit",
+        "test": "vitest run"
+    },
+    "devDependencies": {
+        "@types/node": "^26.6.6",
+        "esbuild": "^0.28.2",
+        "jsdom": "^31.0.1",
+        "typescript": "^7.0.2",
+        "vitest": "^5.1.1"
+    }
+}

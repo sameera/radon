@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { beforeEach, describe, expect, it } from "vitest";
-import { findRepoNav, injectMenuItem, injectTab, sync } from "../src/repo-nav.ts";
+import { findRepoNav, injectMenuItem, injectTab, sync } from "./repo-nav.ts";
 
 function item(key: string, label: string, href: string, current: boolean = false): string {
     return (

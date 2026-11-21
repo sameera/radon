@@ -9,7 +9,7 @@ The source of truth for Radon's colors, type, spacing and components. A browsabl
 | `tokens.json` | All tokens: colors per theme, type styles, spacing, radius, shadows. Each has a usage note. | Yes. The only place token values change. |
 | `tokens.css` | CSS custom properties and `.rd-text-*` classes. | No. Generated. |
 | `tokens.ts` | Typed token references for TypeScript. | No. Generated. |
-| `build-tokens.ts` | Regenerates `tokens.css` and `tokens.ts`: `node design-system/build-tokens.ts` (Node 22.18+). | Yes |
+| `build-tokens.ts` | Regenerates `tokens.css` and `tokens.ts`: `node libs/design-system/build-tokens.ts` (Node 22.18+). | Yes |
 | `components.css` | Component classes (`rd-btn`, `rd-pill`, `rd-ref`, `rd-progress`, `rd-goal`, `rd-tl`). | Yes |
 | `components/*.md` | Guidelines per component: structure, variants, what the consumer provides, don'ts. | Yes |
 | `preview.html` | All components on one page with a light/dark toggle. Open it in a browser. | Yes |

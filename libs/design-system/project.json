@@ -1,0 +1,15 @@
+{
+    "name": "design-system",
+    "projectType": "library",
+    "tags": ["scope:shared"],
+    "targets": {
+        "typecheck": {
+            "executor": "nx:run-commands",
+            "options": { "command": "tsc --noEmit -p libs/design-system/tsconfig.json", "cwd": "{workspaceRoot}" }
+        },
+        "build-tokens": {
+            "executor": "nx:run-commands",
+            "options": { "command": "node libs/design-system/build-tokens.ts", "cwd": "{workspaceRoot}" }
+        }
+    }
+}

@@ -36,3 +36,4 @@ Self-hosted per team; no multi-tenant SaaS.
 ## Development
 
 - **Package Manager**: pnpm
+- **Monorepo**: Nx (`apps/`, `libs/`, plus `backend/` as a Go project via `nx:run-commands`)

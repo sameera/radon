@@ -4,17 +4,26 @@ Radon is a self-hostable Chrome extension that adds agile views to GitHub Projec
 
 ## Status
 
-Early code. Chrome MV3 content script in `src/`, manifest in `extension/`.
+Early code. Nx monorepo with a React/TypeScript frontend and a Go backend.
+
+- `apps/extension/` — Chrome MV3 host (content script, manifest). A `apps/web/` host may follow; both would share the libs.
+- `libs/shared/` — host-agnostic TypeScript (repo-nav parsing). Imported as `@radon/shared`.
+- `libs/design-system/` — tokens and components. Imported as `@radon/design-system`.
+- `backend/` — Go Lambda, wrapped as an Nx project by `backend/project.json`.
+
+Libs must not import from apps. Apps must not import from each other.
 
 - `pnpm install` — install
-- `pnpm build` — bundle to `dist/` (load unpacked in `chrome://extensions`)
-- `pnpm typecheck`, `pnpm test` — tsc, vitest (jsdom)
+- `pnpm build` — bundle the extension to `dist/apps/extension/` (load unpacked in `chrome://extensions`) and the Lambda zip
+- `pnpm typecheck`, `pnpm test` — tsc, vitest (jsdom), `go test`; all through Nx
+- `pnpm affected` — run the same targets on changed projects only
+- Go needs `/usr/local/go/bin` on `PATH`.
 
 ## Technical Patterns and Standards
 
 - [docs/system/stack.md](docs/system/stack.md) — technology stack
 - [docs/system/standards/standards.md](docs/system/standards/standards.md) — project decisions and prohibitions
-- [design-system/README.md](design-system/README.md) — design system: tokens, components, usage rules. Style UI only through its `rd-` tokens and classes.
+- [libs/design-system/README.md](libs/design-system/README.md) — design system: tokens, components, usage rules. Style UI only through its `rd-` tokens and classes.
 
 ## In-flight decision stubs
 

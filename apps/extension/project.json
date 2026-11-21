@@ -1,0 +1,18 @@
+{
+    "name": "extension",
+    "projectType": "application",
+    "sourceRoot": "apps/extension/src",
+    "tags": ["scope:extension"],
+    "implicitDependencies": ["shared"],
+    "targets": {
+        "build": {
+            "executor": "nx:run-commands",
+            "options": { "command": "node apps/extension/build.ts", "cwd": "{workspaceRoot}" },
+            "outputs": ["{workspaceRoot}/dist/apps/extension"]
+        },
+        "typecheck": {
+            "executor": "nx:run-commands",
+            "options": { "command": "tsc --noEmit -p apps/extension/tsconfig.json", "cwd": "{workspaceRoot}" }
+        }
+    }
+}

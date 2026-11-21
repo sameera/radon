@@ -1,0 +1,16 @@
+{
+    "name": "shared",
+    "projectType": "library",
+    "sourceRoot": "libs/shared/src",
+    "tags": ["scope:shared"],
+    "targets": {
+        "typecheck": {
+            "executor": "nx:run-commands",
+            "options": { "command": "tsc --noEmit -p libs/shared/tsconfig.json", "cwd": "{workspaceRoot}" }
+        },
+        "test": {
+            "executor": "nx:run-commands",
+            "options": { "command": "vitest run --root libs/shared", "cwd": "{workspaceRoot}" }
+        }
+    }
+}

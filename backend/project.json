@@ -1,0 +1,19 @@
+{
+    "name": "backend",
+    "projectType": "application",
+    "tags": ["scope:backend"],
+    "targets": {
+        "test": {
+            "executor": "nx:run-commands",
+            "options": { "command": "go test ./...", "cwd": "backend" }
+        },
+        "build": {
+            "executor": "nx:run-commands",
+            "options": { "command": "scripts/emulator.sh build", "cwd": "{workspaceRoot}" }
+        },
+        "vet": {
+            "executor": "nx:run-commands",
+            "options": { "command": "go vet ./...", "cwd": "backend" }
+        }
+    }
+}

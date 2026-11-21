@@ -1,7 +1,8 @@
+import type { PreferenceStore } from "@raiden/app";
 import { sync, syncRaiden, type PageEnv, type RaidenRuntime } from "@raiden/shared";
 
 interface AppModule {
-    mountRaiden(root: ShadowRoot): Promise<() => void>;
+    mountRaiden(root: ShadowRoot, prefs: PreferenceStore): Promise<() => void>;
 }
 
 const FONT_STYLE_ID: string = "raiden-font";
@@ -22,6 +23,16 @@ function declareFont(): void {
     document.head.append(style);
 }
 
+// Preferences live in the extension's own storage, never in github.com's.
+const prefs: PreferenceStore = {
+    async get(key: string): Promise<unknown> {
+        return (await chrome.storage?.local.get(key))?.[key];
+    },
+    async set(key: string, value: unknown): Promise<void> {
+        await chrome.storage?.local.set({ [key]: value });
+    },
+};
+
 const runtime: RaidenRuntime = {
     mount(root: ShadowRoot): void {
         declareFont();
@@ -30,7 +41,7 @@ const runtime: RaidenRuntime = {
             if (!root.host.isConnected) {
                 return;
             }
-            const unmount: () => void = await app.mountRaiden(root);
+            const unmount: () => void = await app.mountRaiden(root, prefs);
             if (root.host.isConnected) {
                 unmounts.set(root, unmount);
             } else {

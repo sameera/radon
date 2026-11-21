@@ -33,3 +33,11 @@ export function SettingsIcon(): VNode {
         </svg>
     );
 }
+
+export function ChevronIcon({ open }: { open: boolean }): VNode {
+    return (
+        <svg {...SVG} stroke-linecap="round" stroke-linejoin="round" style={open ? undefined : "transform: rotate(-90deg)"}>
+            <path d="M4 6l4 4 4-4" />
+        </svg>
+    );
+}

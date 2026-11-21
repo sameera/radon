@@ -1,1 +1,1 @@
-export { mountApp, type AppOptions } from "./mount.tsx";
+export { mountApp, type AppOptions, type PreferenceStore } from "./mount.tsx";

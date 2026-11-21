@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { beforeEach, describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { findRepoNav, injectMenuItem, injectTab, sync } from "./repo-nav.ts";
 
 function item(key: string, label: string, href: string, current: boolean = false): string {
@@ -86,6 +86,20 @@ describe("repo tab bar", () => {
         expect(added.getAttribute("href")).toBe("/acme/app?raiden=1");
         expect(added.textContent).toBe("Raiden");
         expect(injectMenuItem(document, repo)).toBe(false);
+    });
+
+    it("adds to the menu when GitHub wraps the tab onto a second row", () => {
+        document.body.innerHTML = repoBar("<ul role=\"menu\"><li><a href=\"/acme/app/security\">Security</a></li></ul>");
+        const repo = findRepoNav(document)!;
+        injectTab(repo);
+        document.querySelector("button")!.setAttribute("aria-expanded", "true");
+        const rect = (top: number): DOMRect => ({ top, width: 80, right: 100, left: 0, bottom: top + 40, height: 40 }) as DOMRect;
+        const code = document.querySelector("a[data-tab-item=\"code\"]")!.closest("li")!;
+        vi.spyOn(code, "getBoundingClientRect").mockReturnValue(rect(112));
+        vi.spyOn(document.querySelector("[data-raiden-tab]")!, "getBoundingClientRect").mockReturnValue(rect(160));
+        vi.spyOn(repo.list, "getBoundingClientRect").mockReturnValue(rect(112));
+        expect(injectMenuItem(document, repo)).toBe(true);
+        vi.restoreAllMocks();
     });
 
     it("leaves the menu alone when the tab is visible", () => {

@@ -97,7 +97,14 @@ export function isTabHidden(repo: RepoNav): boolean {
     }
     const rect: DOMRect = tab.getBoundingClientRect();
     const limit: DOMRect = repo.list.getBoundingClientRect();
-    return rect.width > 0 && rect.right > limit.right + 1;
+    if (rect.width > 0 && rect.right > limit.right + 1) {
+        return true;
+    }
+    // GitHub wraps tabs that do not fit onto a second row, which the list clips. It only marks
+    // its own tabs hidden, so the Raiden tab stays "visible" there. Compare it to the Code tab.
+    const first: Element | undefined = repo.list.querySelector("a[data-tab-item=\"code\"]")?.closest("li") ?? undefined;
+    const firstTop: number | undefined = first?.getBoundingClientRect().top;
+    return rect.width > 0 && firstTop !== undefined && rect.top > firstTop + 1;
 }
 
 // GitHub renders the "More" menu only while it is open. When it is open and lists repository

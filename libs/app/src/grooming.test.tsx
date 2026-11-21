@@ -147,3 +147,178 @@ describe("no network", () => {
         expect(root.querySelectorAll("a[href]").length).toBe(0);
     });
 });
+
+// ---------- drag and drop ----------
+
+function drag(el: Element, type: string): Event {
+    const event: Event = new Event(type, { bubbles: true, cancelable: true });
+    Object.defineProperty(event, "dataTransfer", {
+        value: { setData: vi.fn(), getData: () => "", effectAllowed: "", dropEffect: "" },
+    });
+    el.dispatchEvent(event);
+    return event;
+}
+const backlogRow = (kind: string, num: number): HTMLElement =>
+    kind === "init" ? $(`.rd-bl-init[data-num="${num}"] .rd-bl-row--init`) : $(`.rd-bl-epic[data-num="${num}"]`);
+const planRow = (kind: string, num: number): HTMLElement => $(`.rd-plan-item[data-kind="${kind}"][data-num="${num}"]`);
+const backlogPanel = (): HTMLElement => $(".rd-backlog");
+const summary = (): string => $(".rd-groom__summary").textContent!;
+
+async function dragTo(source: Element, target: Element): Promise<void> {
+    await act(() => {
+        drag(source, "dragstart");
+    });
+    await act(() => {
+        drag(target, "dragover");
+    });
+    await act(() => {
+        drag(target, "drop");
+    });
+    await act(() => {
+        drag(source, "dragend");
+    });
+}
+
+describe("planning by drag and drop", () => {
+    it("drops an unplanned epic on a goal: it appears there, the backlog row and count update", async () => {
+        await open();
+        await dragTo(backlogRow("epic", 34), card(2));
+        expect(planItems(2)).toEqual(["epic:34"]);
+        expect(meta("epic", 34)).toBe("Goal 3");
+        expect(summary()).toBe("6 of 9 epics planned");
+        expect(card(2).querySelector(".rd-goal-card__drop")).toBeNull();
+        expect(card(2).querySelector(".rd-goal-card__count")!.textContent).toBe("1 epic");
+    });
+
+    it("drops an unplanned initiative on a goal", async () => {
+        await open();
+        await dragTo(backlogRow("init", 13), card(2));
+        expect(planItems(2)).toEqual(["init:13"]);
+        expect(meta("init", 13)).toBe("Goal 3");
+        expect(meta("epic", 41)).toBe("Goal 3");
+        expect(meta("epic", 40)).toBe("Goal 1");
+    });
+
+    it("moves a planned item to a different goal, and it leaves the first", async () => {
+        await open();
+        await dragTo(planRow("epic", 31), card(1));
+        expect(planItems(0)).toEqual(["epic:40", "epic:50"]);
+        expect(planItems(1)).toEqual(["init:14", "epic:60", "epic:31"]);
+        expect(meta("epic", 31)).toBe("Goal 2");
+        expect(summary()).toBe("5 of 9 epics planned");
+    });
+
+    it("drops a planned item on the backlog: it is no longer planned", async () => {
+        await open();
+        await dragTo(planRow("epic", 40), backlogPanel());
+        expect(planItems(0)).toEqual(["epic:31", "epic:50"]);
+        expect(meta("epic", 40)).toBe("");
+        expect(summary()).toBe("4 of 9 epics planned");
+    });
+
+    it("drops an epic whose initiative is planned on the backlog: it stays with its initiative", async () => {
+        await open();
+        await dragTo(planRow("epic", 50), backlogPanel());
+        expect(planItems(0)).toEqual(["epic:31", "epic:40"]);
+        expect(meta("epic", 50)).toBe("Goal 2");
+        expect(summary()).toBe("5 of 9 epics planned");
+        expect(card(1).querySelector(".rd-goal-card__count")!.textContent).toBe("3 epics");
+    });
+
+    it("plans an epic of a planned initiative in another goal on its own", async () => {
+        await open();
+        await dragTo(backlogRow("epic", 51), card(0));
+        expect(planItems(0)).toContain("epic:51");
+        expect(planItems(1)).toContain("init:14");
+        expect(meta("epic", 51)).toBe("Goal 1");
+        expect(meta("init", 14)).toBe("Goal 2");
+        expect(summary()).toBe("5 of 9 epics planned");
+    });
+
+    it("changes nothing when an item is dropped on the goal it is already in", async () => {
+        await open();
+        await dragTo(backlogRow("epic", 51), card(1));
+        expect(planItems(1)).toEqual(["init:14", "epic:60"]);
+        expect(meta("epic", 51)).toBe("Goal 2");
+    });
+});
+
+describe("drag highlighting", () => {
+    it("highlights a goal that can accept the drag while the pointer is over it, and clears it on leave", async () => {
+        await open();
+        await act(() => {
+            drag(backlogRow("epic", 34), "dragstart");
+        });
+        let over: Event | undefined;
+        await act(() => {
+            over = drag(card(2), "dragover");
+        });
+        expect(over!.defaultPrevented).toBe(true);
+        expect(card(2).classList.contains("is-over")).toBe(true);
+        expect(card(0).classList.contains("is-over")).toBe(false);
+        await act(() => {
+            drag(card(2), "dragleave");
+        });
+        expect(card(2).classList.contains("is-over")).toBe(false);
+    });
+
+    it("highlights the backlog only for an item dragged out of a goal", async () => {
+        await open();
+        await act(() => {
+            drag(backlogRow("epic", 34), "dragstart");
+        });
+        let over: Event | undefined;
+        await act(() => {
+            over = drag(backlogPanel(), "dragover");
+        });
+        expect(over!.defaultPrevented).toBe(false);
+        expect(backlogPanel().classList.contains("is-over")).toBe(false);
+        await act(() => {
+            drag(backlogRow("epic", 34), "dragend");
+            drag(planRow("epic", 31), "dragstart");
+        });
+        await act(() => {
+            over = drag(backlogPanel(), "dragover");
+        });
+        expect(over!.defaultPrevented).toBe(true);
+        expect(backlogPanel().classList.contains("is-over")).toBe(true);
+    });
+
+    it("does not highlight the goal an item is already planned in", async () => {
+        await open();
+        await act(() => {
+            drag(planRow("epic", 31), "dragstart");
+        });
+        await act(() => {
+            drag(card(0), "dragover");
+        });
+        expect(card(0).classList.contains("is-over")).toBe(false);
+    });
+});
+
+describe("drags from outside the Raiden page", () => {
+    it("change nothing when dropped", async () => {
+        await open();
+        const before: string = root.innerHTML;
+        let over: Event | undefined;
+        await act(() => {
+            over = drag(card(2), "dragover");
+            drag(card(2), "drop");
+            drag(backlogPanel(), "drop");
+        });
+        expect(over!.defaultPrevented).toBe(false);
+        expect(root.innerHTML).toBe(before);
+    });
+
+    it("are not accepted after a Raiden drag ends", async () => {
+        await open();
+        await act(() => {
+            drag(backlogRow("epic", 34), "dragstart");
+            drag(backlogRow("epic", 34), "dragend");
+        });
+        await act(() => {
+            drag(card(2), "drop");
+        });
+        expect(planItems(2)).toEqual([]);
+    });
+});

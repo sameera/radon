@@ -70,3 +70,58 @@ describe("collapsed initiatives", () => {
         expect(state.collapsed).toEqual([]);
     });
 });
+
+import { planItem, unplanItem } from "./plan.ts";
+
+const eff = (s: ReturnType<typeof initialState>, n: number) => effectiveGoal(INITIATIVES, s, n);
+
+describe("planning an item in a goal", () => {
+    it("plans an unplanned epic", () => {
+        const s = planItem(INITIATIVES, state, "epic", 34, "g3");
+        expect(eff(s, 34)).toBe("g3");
+        expect(goalItems(s, "g3").map((i) => i.num)).toEqual([34]);
+    });
+    it("moves a planned item to a different goal and removes it from the first", () => {
+        const s = planItem(INITIATIVES, state, "epic", 31, "g2");
+        expect(goalItems(s, "g1").map((i) => i.num)).toEqual([40, 50]);
+        expect(goalItems(s, "g2").map((i) => i.num)).toContain(31);
+        expect(s.plan.filter((p) => p.kind === "epic" && p.num === 31).length).toBe(1);
+    });
+    it("plans an epic whose initiative is planned elsewhere on its own, and the initiative stays", () => {
+        const s = planItem(INITIATIVES, state, "epic", 51, "g1");
+        expect(eff(s, 51)).toBe("g1");
+        expect(goalItems(s, "g2").some((i) => i.kind === "init" && i.num === 14)).toBe(true);
+    });
+    it("changes nothing when the item is already effectively in that goal", () => {
+        expect(planItem(INITIATIVES, state, "epic", 51, "g2")).toBe(state);
+        expect(planItem(INITIATIVES, state, "epic", 31, "g1")).toBe(state);
+        expect(planItem(INITIATIVES, state, "init", 14, "g2")).toBe(state);
+    });
+    it("drops the epic's own plan when it moves to its initiative's goal", () => {
+        const s = planItem(INITIATIVES, state, "epic", 50, "g2");
+        expect(eff(s, 50)).toBe("g2");
+        expect(s.plan.some((p) => p.kind === "epic" && p.num === 50)).toBe(false);
+    });
+    it("keeps counting each epic once", () => {
+        const s = planItem(INITIATIVES, planItem(INITIATIVES, state, "init", 13, "g3"), "epic", 41, "g1");
+        expect(eff(s, 40)).toBe("g1");
+        expect(eff(s, 41)).toBe("g1");
+        expect(eff(s, 42)).toBe("g3");
+        const sum: number = s.goals.reduce((n, g) => n + goalEpicCount(INITIATIVES, s, g.id), 0);
+        expect(sum).toBe(plannedEpicCount(INITIATIVES, s));
+    });
+});
+
+describe("taking an item's own plan out", () => {
+    it("leaves an epic unplanned when its initiative is not planned", () => {
+        expect(eff(unplanItem(state, "epic", 31), 31)).toBeNull();
+    });
+    it("leaves an epic in its initiative's goal when that initiative is planned", () => {
+        expect(eff(unplanItem(state, "epic", 50), 50)).toBe("g2");
+    });
+    it("unplans an initiative and leaves epics planned on their own where they are", () => {
+        const s = unplanItem(state, "init", 14);
+        expect(eff(s, 51)).toBeNull();
+        expect(eff(s, 50)).toBe("g1");
+    });
+});

@@ -17,3 +17,13 @@
 - **Choice:** #5 renders goal name and description as read-only `rd-input` fields; #7 makes them editable.
 - **Why:** #5 owns the text input control, and its acceptance criteria only show the values.
 - **Refuted alternative:** Plain text now and swap to inputs in #7, which would change the card markup twice.
+
+## 2026-11-21 — Drag target is tracked in a ref, the drag data is a bare marker
+- **Choice:** The dragged item lives in a `useRef` in the Grooming page. `dataTransfer` carries only a custom `application/x-raiden` marker.
+- **Why:** Text or files dragged in from GitHub leave the ref empty, so every drop zone ignores them (G17).
+- **Refuted alternative:** Read the item from `dataTransfer`, which a drag from outside the page could fake.
+
+## 2026-11-21 — An epic dropped on its initiative's goal drops its own plan
+- **Choice:** `planItem` removes the epic's own plan when the target is its initiative's goal.
+- **Why:** The epic is then effectively in that goal and keeps one plan source (G12).
+- **Refuted alternative:** Keep a redundant own plan that would survive the initiative being unplanned.

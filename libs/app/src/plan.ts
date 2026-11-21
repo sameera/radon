@@ -75,3 +75,45 @@ export function toggleCollapsed(state: SessionState, initNum: number): SessionSt
         : [...state.collapsed, initNum];
     return { ...state, collapsed };
 }
+
+function parentOf(initiatives: Initiative[], epicNum: number): Initiative | undefined {
+    return initiatives.find((i: Initiative) => i.epics.some((e) => e.num === epicNum));
+}
+
+// Whether planning the item in the goal would change anything.
+export function canPlanIn(
+    initiatives: Initiative[],
+    state: SessionState,
+    kind: ItemKind,
+    num: number,
+    goalId: string,
+): boolean {
+    const current: string | null =
+        kind === "epic" ? effectiveGoal(initiatives, state, num) : ownGoal(state, "init", num);
+    return current !== goalId;
+}
+
+// Planning an item in a goal removes its own plan anywhere else. An epic planned in its
+// initiative's goal needs no plan of its own. Returns the same state when nothing changes.
+export function planItem(
+    initiatives: Initiative[],
+    state: SessionState,
+    kind: ItemKind,
+    num: number,
+    goalId: string,
+): SessionState {
+    if (!canPlanIn(initiatives, state, kind, num, goalId)) {
+        return state;
+    }
+    const rest: PlanEntry[] = state.plan.filter((p: PlanEntry) => !(p.kind === kind && p.num === num));
+    const parent: Initiative | undefined = kind === "epic" ? parentOf(initiatives, num) : undefined;
+    if (parent && ownGoal(state, "init", parent.num) === goalId) {
+        return { ...state, plan: rest };
+    }
+    return { ...state, plan: [...rest, { kind, num, goal: goalId }] };
+}
+
+// Takes the item's own plan out. An epic then falls back to its initiative's goal, if any.
+export function unplanItem(state: SessionState, kind: ItemKind, num: number): SessionState {
+    return { ...state, plan: state.plan.filter((p: PlanEntry) => !(p.kind === kind && p.num === num)) };
+}

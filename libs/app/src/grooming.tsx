@@ -1,22 +1,50 @@
 import type { VNode } from "preact";
+import { useRef, useState } from "preact/hooks";
 import { ChevronIcon } from "./icons.tsx";
 import {
+    canPlanIn,
     effectiveGoal,
     goalEpicCount,
     goalItems,
     goalRank,
     initiativeEpicsPlanned,
     ownGoal,
+    planItem,
     plannedEpicCount,
     toggleCollapsed,
+    unplanItem,
     totalEpics,
     type Goal,
     type Initiative,
+    type ItemKind,
     type PlanEntry,
     type SessionState,
 } from "./plan.ts";
 import { GROOMING_SPRINT, INITIATIVES } from "./sample.ts";
 import type { SessionStore } from "./session.ts";
+
+// What is being dragged. It is tracked here, never in the drag data, so only drags that started
+// inside the Raiden page are accepted. `from` is the goal the item is planned in, or null when
+// the drag started in the backlog.
+export interface Drag {
+    kind: ItemKind;
+    num: number;
+    from: string | null;
+}
+
+export type DropTarget = "backlog" | string;
+
+interface DragApi {
+    drag: Drag | null;
+    over: DropTarget | null;
+    start(e: DragEvent, drag: Drag): void;
+    end(): void;
+    zone(target: DropTarget, accepts: boolean, onDrop: () => void): Record<string, unknown>;
+}
+
+function isDragged(d: Drag | null, kind: ItemKind, num: number, from: string | null): boolean {
+    return d !== null && d.kind === kind && d.num === num && d.from === from;
+}
 
 function plural(n: number, one: string, many: string = `${one}s`): string {
     return `${n} ${n === 1 ? one : many}`;
@@ -29,12 +57,24 @@ function goalLabel(state: SessionState, goalId: string | null): string {
 interface BacklogProps {
     state: SessionState;
     session: SessionStore;
+    dnd: DragApi;
 }
 
-function Backlog({ state, session }: BacklogProps): VNode {
+function Backlog({ state, session, dnd }: BacklogProps): VNode {
     const total: number = totalEpics(INITIATIVES);
+    const d: Drag | null = dnd.drag;
+    // Only an item dragged out of a goal, with a plan of its own, can be dropped here.
+    const accepts: boolean = d !== null && d.from !== null && ownGoal(state, d.kind, d.num) !== null;
     return (
-        <section class="rd-panel rd-backlog" aria-labelledby="rd-backlog-title">
+        <section
+            class={`rd-panel rd-backlog${dnd.over === "backlog" ? " is-over" : ""}`}
+            aria-labelledby="rd-backlog-title"
+            {...dnd.zone("backlog", accepts, () => {
+                if (d) {
+                    session.update((s) => unplanItem(s, d.kind, d.num));
+                }
+            })}
+        >
             <div class="rd-panel__head">
                 <h2 class="rd-text-axis" id="rd-backlog-title">
                     Backlog
@@ -54,7 +94,12 @@ function Backlog({ state, session }: BacklogProps): VNode {
                               : "";
                     return (
                         <div class="rd-bl-init" data-num={init.num} key={init.num}>
-                            <div class={`rd-bl-row rd-bl-row--init${own !== null ? " is-planned" : ""}`}>
+                            <div
+                                class={`rd-bl-row rd-bl-row--init${own !== null ? " is-planned" : ""}${isDragged(d, "init", init.num, null) ? " is-dragged" : ""}`}
+                                draggable={true}
+                                onDragStart={(e: DragEvent) => dnd.start(e, { kind: "init", num: init.num, from: null })}
+                                onDragEnd={dnd.end}
+                            >
                                 <button
                                     type="button"
                                     class="rd-icon-btn rd-bl-chev"
@@ -75,8 +120,11 @@ function Backlog({ state, session }: BacklogProps): VNode {
                                     const eff: string | null = effectiveGoal(INITIATIVES, state, epic.num);
                                     return (
                                         <div
-                                            class={`rd-bl-row rd-bl-row--epic rd-bl-epic${eff !== null ? " is-planned" : ""}`}
+                                            class={`rd-bl-row rd-bl-row--epic rd-bl-epic${eff !== null ? " is-planned" : ""}${isDragged(d, "epic", epic.num, null) ? " is-dragged" : ""}`}
                                             data-num={epic.num}
+                                            draggable={true}
+                                            onDragStart={(e: DragEvent) => dnd.start(e, { kind: "epic", num: epic.num, from: null })}
+                                            onDragEnd={dnd.end}
                                             key={epic.num}
                                         >
                                             <span class="rd-glyph rd-glyph--epic" aria-hidden="true" />
@@ -98,8 +146,10 @@ function Backlog({ state, session }: BacklogProps): VNode {
 
 interface GoalCardProps {
     state: SessionState;
+    session: SessionStore;
     goal: Goal;
     showIssues: boolean;
+    dnd: DragApi;
 }
 
 function itemTitle(entry: PlanEntry): { num: number; title: string } {
@@ -115,13 +165,23 @@ function itemTitle(entry: PlanEntry): { num: number; title: string } {
     return { num: entry.num, title: "" };
 }
 
-function GoalCard({ state, goal, showIssues }: GoalCardProps): VNode {
+function GoalCard({ state, session, goal, showIssues, dnd }: GoalCardProps): VNode {
+    const d: Drag | null = dnd.drag;
+    const accepts: boolean = d !== null && canPlanIn(INITIATIVES, state, d.kind, d.num, goal.id);
     const items: PlanEntry[] = goalItems(state, goal.id);
     const epics: number = goalEpicCount(INITIATIVES, state, goal.id);
     const inits: number = items.filter((i) => i.kind === "init").length;
     const own: number = items.filter((i) => i.kind === "epic").length;
     return (
-        <article class="rd-goal-card" data-goal={goal.id}>
+        <article
+            class={`rd-goal-card${dnd.over === goal.id ? " is-over" : ""}`}
+            data-goal={goal.id}
+            {...dnd.zone(goal.id, accepts, () => {
+                if (d) {
+                    session.update((s) => planItem(INITIATIVES, s, d.kind, d.num, goal.id));
+                }
+            })}
+        >
             <div class="rd-goal-card__rail">
                 <span class="rd-goal-card__rank rd-text-body-strong">{goalRank(state, goal.id)}</span>
             </div>
@@ -149,7 +209,15 @@ function GoalCard({ state, goal, showIssues }: GoalCardProps): VNode {
                             {items.map((entry: PlanEntry) => {
                                 const { num, title } = itemTitle(entry);
                                 return (
-                                    <li class="rd-plan-item" data-kind={entry.kind} data-num={entry.num} key={`${entry.kind}${entry.num}`}>
+                                    <li
+                                        class={`rd-plan-item${isDragged(d, entry.kind, entry.num, goal.id) ? " is-dragged" : ""}`}
+                                        data-kind={entry.kind}
+                                        data-num={entry.num}
+                                        key={`${entry.kind}${entry.num}`}
+                                        draggable={true}
+                                        onDragStart={(e: DragEvent) => dnd.start(e, { kind: entry.kind, num: entry.num, from: goal.id })}
+                                        onDragEnd={dnd.end}
+                                    >
                                         {entry.kind === "epic" && <span class="rd-glyph rd-glyph--epic" aria-hidden="true" />}
                                         <span class="rd-ref">
                                             <span class="rd-ref__num">#{num}</span>
@@ -181,6 +249,7 @@ interface GroomingProps {
 
 export function GroomingPage({ session, state, showIssues, onShowIssues }: GroomingProps): VNode {
     const planned: number = plannedEpicCount(INITIATIVES, state);
+    const dnd: DragApi = useDnd();
     return (
         <section class="rd-groom" aria-labelledby="rd-groom-title">
             <header class="rd-groom__header">
@@ -206,7 +275,7 @@ export function GroomingPage({ session, state, showIssues, onShowIssues }: Groom
                 </div>
             </header>
             <div class="rd-groom__panels">
-                <Backlog state={state} session={session} />
+                <Backlog state={state} session={session} dnd={dnd} />
                 <section class="rd-panel rd-goals" aria-labelledby="rd-goals-title">
                     <div class="rd-panel__head">
                         <h2 class="rd-text-axis" id="rd-goals-title">
@@ -228,11 +297,68 @@ export function GroomingPage({ session, state, showIssues, onShowIssues }: Groom
                     </div>
                     <div class="rd-goals__list">
                         {state.goals.map((goal: Goal) => (
-                            <GoalCard state={state} goal={goal} showIssues={showIssues} key={goal.id} />
+                            <GoalCard state={state} session={session} goal={goal} showIssues={showIssues} dnd={dnd} key={goal.id} />
                         ))}
                     </div>
                 </section>
             </div>
         </section>
     );
+}
+
+const DRAG_TYPE: string = "application/x-raiden";
+
+// The browser's own drag events. A target accepts a drag only while it can use it: it calls
+// preventDefault on dragover only then, and is highlighted only then.
+function useDnd(): DragApi {
+    const ref = useRef<Drag | null>(null);
+    const [drag, setDrag] = useState<Drag | null>(null);
+    const [over, setOver] = useState<DropTarget | null>(null);
+    const clear = (): void => {
+        ref.current = null;
+        setDrag(null);
+        setOver(null);
+    };
+    return {
+        drag,
+        over,
+        start(e: DragEvent, next: Drag): void {
+            e.stopPropagation();
+            ref.current = next;
+            setDrag(next);
+            if (e.dataTransfer) {
+                e.dataTransfer.effectAllowed = "move";
+                e.dataTransfer.setData(DRAG_TYPE, "item");
+            }
+        },
+        end: clear,
+        zone(target: DropTarget, accepts: boolean, onDrop: () => void): Record<string, unknown> {
+            return {
+                onDragOver(e: DragEvent): void {
+                    if (!ref.current || !accepts) {
+                        return;
+                    }
+                    e.preventDefault();
+                    if (e.dataTransfer) {
+                        e.dataTransfer.dropEffect = "move";
+                    }
+                    setOver(target);
+                },
+                onDragLeave(e: DragEvent): void {
+                    const into: Node | null = e.relatedTarget as Node | null;
+                    if (!into || !(e.currentTarget as Node).contains(into)) {
+                        setOver((current) => (current === target ? null : current));
+                    }
+                },
+                onDrop(e: DragEvent): void {
+                    if (!ref.current || !accepts) {
+                        return;
+                    }
+                    e.preventDefault();
+                    onDrop();
+                    clear();
+                },
+            };
+        },
+    };
 }

@@ -6,18 +6,17 @@ last_updated: 2026-11-13
 
 # Technology Stack
 
-Greenfield. Entries below are decided; anything not listed is still open .
+Greenfield. Entries below are decided; anything not listed is still open.
 
 ## Frontend
 
 - **Form factor**: Chrome extension (Manifest V3) that injects views into github.com Projects pages
 - **Language**: TypeScript
-- **UI framework**: Preact, with its React compatibility layer on. The app bundle loads only when the Raiden address opens
+- **UI framework**: Preact
 
 ## Backend
 
 Self-hosted per team; no multi-tenant SaaS.
-
 
 - **Language**: Go
 - **Runtime**: AWS Lambda (`provided.al2023`), source in `backend/`

@@ -7,7 +7,7 @@ const BASE_ATTR: string = "data-raiden-base";
 const CONTENT_SELECTORS: string[] = ["#repo-content-turbo-frame", "#js-repo-pjax-container", "main"];
 
 export interface RaidenRuntime {
-    mount(root: ShadowRoot): void;
+    mount(root: ShadowRoot, repoUrl: string): void;
     unmount(root: ShadowRoot): void;
 }
 
@@ -154,7 +154,7 @@ export function syncRaiden(doc: Document, env: PageEnv, runtime: RaidenRuntime):
     page.setAttribute(BASE_ATTR, repo.base);
     const root: ShadowRoot = page.attachShadow({ mode: "open" });
     content.after(page);
-    runtime.mount(root);
+    runtime.mount(root, repo.url);
     setAttr(page, "data-theme", resolveTheme(doc, env.prefersDark));
     markCurrent(doc, repo);
 }

@@ -43,6 +43,9 @@ export const space = {
     space4: "var(--rd-space-4)",
     space6: "var(--rd-space-6)",
     space8: "var(--rd-space-8)",
+    headerHeight: "var(--rd-header-height)",
+    headerPadding: "var(--rd-header-padding)",
+    headerIcon: "var(--rd-header-icon)",
 } as const;
 
 export const radius = {
@@ -67,6 +70,7 @@ export const font = {
 export const textStyle = {
     goalLg: "rd-text-goal-lg",
     viewTitle: "rd-text-view-title",
+    wordmark: "rd-text-wordmark",
     title: "rd-text-title",
     body: "rd-text-body",
     bodyStrong: "rd-text-body-strong",

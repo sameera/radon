@@ -77,3 +77,10 @@
 .rd-menu-wrap { position: relative; flex: none; }
 .rd-menu__note { margin: var(--rd-space-1) 0 0; padding: var(--rd-space-1) var(--rd-space-2); color: var(--rd-fg-muted); max-width: 240px; }
 .rd-plan-item .rd-ref { flex: 1; min-width: 0; }
+.rd-backlog__foot { padding: var(--rd-space-2) var(--rd-space-3); border-top: 1px solid var(--rd-border-muted); }
+.rd-backlog__new { color: var(--rd-accent); text-decoration: none; }
+.rd-backlog__new:hover { text-decoration: underline; }
+.rd-backlog__new:focus-visible { outline: 2px solid var(--rd-accent); outline-offset: 2px; }
+
+/* With the banner on, the frame fills the window below it. The document stays the scroller. */
+.rd-app--framed { min-height: calc(100vh - var(--rd-header-height)); border-top: 0; }

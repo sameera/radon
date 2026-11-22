@@ -1,0 +1,15 @@
+{
+    "name": "raiden",
+    "projectType": "application",
+    "targets": {
+        "dev": {
+            "executor": "nx:run-commands",
+            "dependsOn": [{ "target": "build", "projects": ["web"] }],
+            "cache": false,
+            "options": {
+                "command": "python3 -m http.server 4210 --bind 127.0.0.1 --directory dist/apps/web",
+                "cwd": "{workspaceRoot}"
+            }
+        }
+    }
+}

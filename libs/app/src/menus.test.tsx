@@ -128,7 +128,7 @@ describe("item menu", () => {
         expect(planned()).toBe(dropped);
         unmount();
         await open();
-        await click($('.rd-plan-item[data-num="31"] button[aria-label^="Take out of plan"]'));
+        await click($('.rd-plan-item[data-num="31"] button[aria-label^="Take epic #31 out of"]'));
         expect(planned()).toBe(dropped);
     });
 
@@ -177,7 +177,7 @@ describe("item menu", () => {
 
     it("leaves focus on a control that still exists after Take out of plan from a goal card", async () => {
         await open();
-        await click($('.rd-plan-item[data-num="31"] button[aria-label^="Take out of plan"]'));
+        await click($('.rd-plan-item[data-num="31"] button[aria-label^="Take epic #31 out of"]'));
         expect(active()).not.toBe(document.body);
         expect(root.contains(active())).toBe(true);
     });

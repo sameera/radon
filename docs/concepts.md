@@ -4,7 +4,7 @@
 
 # Concept Atlas
 
-Orientation map of the concept store — 5 active concepts. Each links to its full page
+Orientation map of the concept store — 6 active concepts. Each links to its full page
 (behavior, invariants, decision history); code locations live in the matching
 `.nexus/anchors/<slug>.md` sidecar.
 
@@ -15,3 +15,4 @@ Orientation map of the concept store — 5 active concepts. Each links to its fu
 - [Grooming Backlog View](../.nexus/concepts/grooming-backlog-view.md) — A lead can filter the Grooming backlog by title or issue number and change its width with a divider.
 - [Raiden Page Host](../.nexus/concepts/raiden-page-host.md) — The Raiden tab on a repository page opens the Raiden page in place of GitHub's content.
 - [Grooming Undo and Save State](../.nexus/concepts/grooming-undo-save.md) — The Grooming page shows whether the plan has unsaved changes, and a lead can undo plan changes one at a time.
+- [Raiden Web View](../.nexus/concepts/raiden-web-view.md) — The web view is the Raiden pages on a web page of their own, with no GitHub page around them.

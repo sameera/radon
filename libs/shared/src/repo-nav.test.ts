@@ -110,3 +110,16 @@ describe("repo tab bar", () => {
         expect(injectMenuItem(document, repo)).toBe(false);
     });
 });
+
+describe("repository web address", () => {
+    it("is the origin and path of the Code tab link", () => {
+        document.body.innerHTML =
+            `<nav aria-label="Repository"><ul><li><a data-tab-item="code" href="https://github.com/acme/app">Code</a></li></ul></nav>`;
+        expect(findRepoNav(document)!.url).toBe("https://github.com/acme/app");
+    });
+    it("has no trailing slash", () => {
+        document.body.innerHTML =
+            `<nav aria-label="Repository"><ul><li><a data-tab-item="code" href="/acme/app/">Code</a></li></ul></nav>`;
+        expect(findRepoNav(document)!.url).toBe(`${location.origin}/acme/app`);
+    });
+});

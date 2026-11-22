@@ -17,13 +17,18 @@ export interface AppOptions {
 }
 
 const SHOW_ISSUES: string = "showIssues";
+const SIDEBAR_COLLAPSED: string = "sidebarCollapsed";
 
 // Mounts the Raiden app into a shadow root (or any element). The stored preferences are read
 // before the first render, so the page never flashes the wrong state. Returns a function that
 // removes the app.
 export async function mountApp(root: ShadowRoot | HTMLElement, options: AppOptions = {}): Promise<() => void> {
-    const stored: unknown = await options.prefs?.get(SHOW_ISSUES);
-    const showIssues: boolean = typeof stored === "boolean" ? stored : true;
+    const [storedIssues, storedCollapsed]: unknown[] = await Promise.all([
+        options.prefs?.get(SHOW_ISSUES),
+        options.prefs?.get(SIDEBAR_COLLAPSED),
+    ]);
+    const showIssues: boolean = typeof storedIssues === "boolean" ? storedIssues : true;
+    const collapsed: boolean = typeof storedCollapsed === "boolean" ? storedCollapsed : false;
     const doc: Document = root.ownerDocument;
     const style: HTMLStyleElement = doc.createElement("style");
     style.textContent = options.css ?? "";
@@ -35,6 +40,8 @@ export async function mountApp(root: ShadowRoot | HTMLElement, options: AppOptio
             session={options.session ?? sharedSession()}
             showIssues={showIssues}
             onShowIssues={(value: boolean) => void options.prefs?.set(SHOW_ISSUES, value)}
+            sidebarCollapsed={collapsed}
+            onSidebarCollapsed={(value: boolean) => void options.prefs?.set(SIDEBAR_COLLAPSED, value)}
         />,
         container,
     );

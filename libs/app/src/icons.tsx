@@ -70,3 +70,11 @@ export function PlusIcon(): VNode {
         </svg>
     );
 }
+export function SidebarIcon(): VNode {
+    return (
+        <svg {...SVG} stroke-linecap="round" stroke-linejoin="round">
+            <rect x="2" y="3" width="12" height="10" rx="1.5" />
+            <path d="M6 3v10" />
+        </svg>
+    );
+}

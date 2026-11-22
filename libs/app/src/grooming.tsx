@@ -1,6 +1,6 @@
 import type { ComponentChildren, VNode } from "preact";
 import { useEffect, useRef, useState } from "preact/hooks";
-import { ChevronIcon, GripIcon, MoreIcon, PlusIcon } from "./icons.tsx";
+import { ChevronIcon, CloseIcon, GripIcon, MoreIcon, PlusIcon } from "./icons.tsx";
 import {
     addGoal,
     canMoveGoal,
@@ -471,7 +471,7 @@ function GoalCard({ state, session, goal, showIssues, dnd, menu, focus, onFocuse
                 {items.length > 0 &&
                     (showIssues ? (
                         <ul class="rd-plan-list">
-                            {items.map((entry: PlanEntry) => {
+                            {items.map((entry: PlanEntry, at: number) => {
                                 const { num, title } = itemTitle(entry);
                                 return (
                                     <li
@@ -490,11 +490,18 @@ function GoalCard({ state, session, goal, showIssues, dnd, menu, focus, onFocuse
                                         </span>
                                         <button
                                             type="button"
-                                            class="rd-btn rd-btn--ghost"
-                                            aria-label={`Take out of plan: #${num} ${title}`}
-                                            onClick={() => pick(() => session.change((s) => unplanItem(s, entry.kind, entry.num)))}
+                                            class="rd-icon-btn"
+                                            data-focus-key={`takeout:${entry.kind}:${entry.num}`}
+                                            aria-label={`Take ${entry.kind === "epic" ? "epic" : "initiative"} #${num} out of ${goalLabel(state, goal.id)}`}
+                                            onClick={() => {
+                                                const next: PlanEntry | undefined = items[at + 1];
+                                                pick(
+                                                    () => session.change((s) => unplanItem(s, entry.kind, entry.num)),
+                                                    next ? `takeout:${next.kind}:${next.num}` : triggerKey,
+                                                );
+                                            }}
                                         >
-                                            Take out of plan
+                                            <CloseIcon />
                                         </button>
                                     </li>
                                 );

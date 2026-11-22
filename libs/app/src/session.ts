@@ -4,6 +4,8 @@ import { initialState, type SessionState } from "./plan.ts";
 export interface SessionStore {
     get(): SessionState;
     update(change: (state: SessionState) => SessionState): void;
+    // The one entry point for plan changes. Drops, menus, buttons and goal fields all use it.
+    change(change: (state: SessionState) => SessionState): void;
     subscribe(listener: () => void): () => void;
 }
 
@@ -15,6 +17,13 @@ export function createSessionStore(initial: SessionState = initialState()): Sess
         update(change) {
             state = change(state);
             listeners.forEach((l) => l());
+        },
+        change(change) {
+            const next: SessionState = change(state);
+            if (next !== state) {
+                state = next;
+                listeners.forEach((l) => l());
+            }
         },
         subscribe(listener) {
             listeners.add(listener);

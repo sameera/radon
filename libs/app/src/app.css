@@ -72,3 +72,8 @@
 .rd-goal-card.insert-before::before { top: calc(-1 * var(--rd-space-2)); }
 .rd-goal-card.insert-after::after { bottom: calc(-1 * var(--rd-space-2)); }
 .rd-goal-card.is-over.insert-before, .rd-goal-card.is-over.insert-after { border-color: var(--rd-border); box-shadow: none; }
+
+/* ---------- Menus ---------- */
+.rd-menu-wrap { position: relative; flex: none; }
+.rd-menu__note { margin: var(--rd-space-1) 0 0; padding: var(--rd-space-1) var(--rd-space-2); color: var(--rd-fg-muted); max-width: 240px; }
+.rd-plan-item .rd-ref { flex: 1; min-width: 0; }

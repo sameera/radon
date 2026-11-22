@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <title>Raiden needs a connection</title>
+        <script>
+            // The theme follows the system setting, as the web view does.
+            document.documentElement.setAttribute(
+                "data-theme",
+                matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light",
+            );
+        </script>
+        <style>
+            /*TOKENS*/
+            @font-face { font-family: "Bricolage Grotesque"; font-weight: 200 800; src: url(fonts/bricolage-grotesque.woff2) format("woff2"); }
+            html, body { margin: 0; height: 100%; }
+            body { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: var(--rd-space-3); background: var(--rd-canvas); color: var(--rd-fg); font-family: var(--font-body, system-ui, sans-serif); text-align: center; }
+            img { width: 64px; height: 64px; }
+            .word { margin: 0; font-family: var(--font-display, "Bricolage Grotesque", sans-serif); font-weight: 800; font-size: 32px; color: var(--rd-brand-fg); }
+            p { margin: 0; color: var(--rd-fg-muted); }
+        </style>
+    </head>
+    <body>
+        <img src="raiden-128x.png" alt="" />
+        <h1 class="word">Raiden</h1>
+        <p>Raiden needs a connection. Check your network and reload.</p>
+    </body>
+</html>

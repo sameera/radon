@@ -4,10 +4,13 @@ const HOST_ATTR: string = "data-raiden-host";
 const HIDDEN_ATTR: string = "data-raiden-hidden";
 const STRIPPED_ATTR: string = "data-raiden-stripped";
 const BASE_ATTR: string = "data-raiden-base";
+const REPO_ATTR: string = "data-raiden-repo";
 const CONTENT_SELECTORS: string[] = ["#repo-content-turbo-frame", "#js-repo-pjax-container", "main"];
 
 export interface RaidenRuntime {
     mount(root: ShadowRoot, repoUrl: string): void;
+    // The page is showing and GitHub's in-page navigation moved to a different repository (D3).
+    update(root: ShadowRoot, repoUrl: string): void;
     unmount(root: ShadowRoot): void;
 }
 
@@ -142,6 +145,10 @@ export function syncRaiden(doc: Document, env: PageEnv, runtime: RaidenRuntime):
     if (host) {
         keepPage(doc, host, env);
         markCurrent(doc, repo);
+        if (host.shadowRoot && host.getAttribute(REPO_ATTR) !== repo.url) {
+            host.setAttribute(REPO_ATTR, repo.url);
+            runtime.update(host.shadowRoot, repo.url);
+        }
         return;
     }
     const content: HTMLElement | null = findContent(doc);
@@ -152,6 +159,7 @@ export function syncRaiden(doc: Document, env: PageEnv, runtime: RaidenRuntime):
     const page: HTMLElement = doc.createElement("div");
     page.setAttribute(HOST_ATTR, "");
     page.setAttribute(BASE_ATTR, repo.base);
+    page.setAttribute(REPO_ATTR, repo.url);
     const root: ShadowRoot = page.attachShadow({ mode: "open" });
     content.after(page);
     runtime.mount(root, repo.url);

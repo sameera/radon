@@ -1,4 +1,5 @@
 import type { ComponentChildren, VNode } from "preact";
+import { useRepo } from "./repo.tsx";
 
 // The address of a page in the current repository, or null when no repository is known.
 export function repoPage(repoUrl: string | undefined, path: string): string | null {
@@ -31,14 +32,14 @@ export function ExternalLink({ href, class: className, children }: ExternalLinkP
 }
 
 interface IssueRefProps {
-    repoUrl?: string;
     num: number;
     title: string;
 }
 
 // The number and title of one issue. The whole reference is a link to the issue in the current
 // repository. With no repository address it is plain text.
-export function IssueRef({ repoUrl, num, title }: IssueRefProps): VNode {
+export function IssueRef({ num, title }: IssueRefProps): VNode {
+    const repoUrl: string | undefined = useRepo()?.url;
     const body: VNode = (
         <>
             <span class="rd-ref__num">#{num}</span>

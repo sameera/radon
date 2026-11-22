@@ -23,7 +23,7 @@ afterEach(() => {
 async function open(port?: SignInPort, initial?: { notice?: boolean }): Promise<void> {
     await act(async () => {
         const signIn = port ? createSignInController(port, initial) : undefined;
-        unmount = await mountApp(root, { css: "", signIn });
+        unmount = await mountApp(root, { css: "", signIn, repoUrl: "https://github.com/acme/widgets" });
     });
 }
 // Clicks, then lets the sign-in promise chain finish before the next check.

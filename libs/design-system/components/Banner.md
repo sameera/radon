@@ -5,13 +5,13 @@ The bar across the top of a Raiden host that has no page of its own around Raide
 ## Structure
 
 - `div.rd-frame` holds the banner and the app below it.
-- `header.rd-banner` holds `img.rd-banner__mark` and `span.rd-banner__word.rd-text-wordmark`.
+- `header.rd-banner` holds `img.rd-banner__mark`, `span.rd-banner__word.rd-text-wordmark`, and, only while someone is signed in, the repository drop-down `select.rd-select.rd-banner__repo` (see [Select](Select.md)).
 - Put the app in `div.rd-app.rd-app--framed`, so it fills the window below the banner.
 
 ## Behaviour
 
 - The banner spans the full width and stays pinned to the top of the window. The document scrolls, not the frame.
-- It has no search, notifications or account menu, and no control of any kind.
+- It has no search, notifications or account menu. The one control it allows is the repository drop-down, beside the mark and word, as GitHub's own banner shows its repository selector in the same place. It is absent while signed out.
 
 ## Consumer provides
 
@@ -28,3 +28,4 @@ The bar across the top of a Raiden host that has no page of its own around Raide
 
 - Don't fill the banner with brand color. Neutral frame, brand on the mark: "Blend, then mark".
 - Don't show it inside github.com.
+- Don't add any other control to it.

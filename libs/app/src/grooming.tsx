@@ -1,6 +1,6 @@
 import type { ComponentChildren, VNode } from "preact";
 import { useEffect, useRef, useState } from "preact/hooks";
-import { ChevronIcon, GripIcon, MoreIcon, PlusIcon } from "./icons.tsx";
+import { ChevronIcon, CloseIcon, GripIcon, MoreIcon, PlusIcon } from "./icons.tsx";
 import {
     addGoal,
     canMoveGoal,
@@ -29,6 +29,7 @@ import {
     type PlanEntry,
     type SessionState,
 } from "./plan.ts";
+import { ExternalLink, IssueRef, repoPage } from "./links.tsx";
 import { GROOMING_SPRINT, INITIATIVES } from "./sample.ts";
 import type { SessionStore } from "./session.ts";
 
@@ -108,6 +109,7 @@ function goalLabel(state: SessionState, goalId: string | null): string {
 }
 
 interface BacklogProps {
+    repoUrl?: string;
     state: SessionState;
     session: SessionStore;
     dnd: DragApi;
@@ -188,10 +190,11 @@ function ItemMenu({ state, session, menu, kind, num }: ItemMenuProps): VNode {
     );
 }
 
-function Backlog({ state, session, dnd, filter, onFilter, width, menu }: BacklogProps): VNode {
+function Backlog({ repoUrl, state, session, dnd, filter, onFilter, width, menu }: BacklogProps): VNode {
     const shown: Initiative[] = filterBacklog(INITIATIVES, filter);
     const filtering: boolean = filter.trim() !== "";
     const total: number = totalEpics(INITIATIVES);
+    const newInitiative: string | null = repoPage(repoUrl, "issues/new");
     const d: Drag | null = dnd.drag;
     // Only an item dragged out of a goal, with a plan of its own, can be dropped here.
     const accepts: boolean =
@@ -257,10 +260,7 @@ function Backlog({ state, session, dnd, filter, onFilter, width, menu }: Backlog
                                 >
                                     <ChevronIcon open={open} />
                                 </button>
-                                <span class="rd-ref">
-                                    <span class="rd-ref__num">#{init.num}</span>
-                                    <span class="rd-ref__title">{init.title}</span>
-                                </span>
+                                <IssueRef repoUrl={repoUrl} num={init.num} title={init.title} />
                                 <span class="rd-bl-meta">{meta}</span>
                                 <ItemMenu state={state} session={session} menu={menu} kind="init" num={init.num} />
                             </div>
@@ -277,10 +277,7 @@ function Backlog({ state, session, dnd, filter, onFilter, width, menu }: Backlog
                                             key={epic.num}
                                         >
                                             <span class="rd-glyph rd-glyph--epic" aria-hidden="true" />
-                                            <span class="rd-ref">
-                                                <span class="rd-ref__num">#{epic.num}</span>
-                                                <span class="rd-ref__title">{epic.title}</span>
-                                            </span>
+                                            <IssueRef repoUrl={repoUrl} num={epic.num} title={epic.title} />
                                             <span class="rd-bl-meta">{goalLabel(state, eff)}</span>
                                             <ItemMenu state={state} session={session} menu={menu} kind="epic" num={epic.num} />
                                         </div>
@@ -290,11 +287,19 @@ function Backlog({ state, session, dnd, filter, onFilter, width, menu }: Backlog
                     );
                 })}
             </div>
+            {newInitiative !== null && (
+                <div class="rd-backlog__foot">
+                    <ExternalLink class="rd-backlog__new rd-text-small" href={newInitiative}>
+                        New initiative in GitHub
+                    </ExternalLink>
+                </div>
+            )}
         </section>
     );
 }
 
 interface GoalCardProps {
+    repoUrl?: string;
     state: SessionState;
     session: SessionStore;
     goal: Goal;
@@ -318,7 +323,7 @@ function itemTitle(entry: PlanEntry): { num: number; title: string } {
     return { num: entry.num, title: "" };
 }
 
-function GoalCard({ state, session, goal, showIssues, dnd, menu, focus, onFocused }: GoalCardProps): VNode {
+function GoalCard({ repoUrl, state, session, goal, showIssues, dnd, menu, focus, onFocused }: GoalCardProps): VNode {
     const menuOpen: boolean = menu.open === `goal:${goal.id}`;
     const d: Drag | null = dnd.drag;
     const accepts: boolean =
@@ -471,7 +476,7 @@ function GoalCard({ state, session, goal, showIssues, dnd, menu, focus, onFocuse
                 {items.length > 0 &&
                     (showIssues ? (
                         <ul class="rd-plan-list">
-                            {items.map((entry: PlanEntry) => {
+                            {items.map((entry: PlanEntry, at: number) => {
                                 const { num, title } = itemTitle(entry);
                                 return (
                                     <li
@@ -484,17 +489,21 @@ function GoalCard({ state, session, goal, showIssues, dnd, menu, focus, onFocuse
                                         onDragEnd={dnd.end}
                                     >
                                         {entry.kind === "epic" && <span class="rd-glyph rd-glyph--epic" aria-hidden="true" />}
-                                        <span class="rd-ref">
-                                            <span class="rd-ref__num">#{num}</span>
-                                            <span class="rd-ref__title">{title}</span>
-                                        </span>
+                                        <IssueRef repoUrl={repoUrl} num={num} title={title} />
                                         <button
                                             type="button"
-                                            class="rd-btn rd-btn--ghost"
-                                            aria-label={`Take out of plan: #${num} ${title}`}
-                                            onClick={() => pick(() => session.change((s) => unplanItem(s, entry.kind, entry.num)))}
+                                            class="rd-icon-btn"
+                                            data-focus-key={`takeout:${entry.kind}:${entry.num}`}
+                                            aria-label={`Take ${entry.kind === "epic" ? "epic" : "initiative"} #${num} out of ${goalLabel(state, goal.id)}`}
+                                            onClick={() => {
+                                                const next: PlanEntry | undefined = items[at + 1];
+                                                pick(
+                                                    () => session.change((s) => unplanItem(s, entry.kind, entry.num)),
+                                                    next ? `takeout:${next.kind}:${next.num}` : triggerKey,
+                                                );
+                                            }}
                                         >
-                                            Take out of plan
+                                            <CloseIcon />
                                         </button>
                                     </li>
                                 );
@@ -514,6 +523,7 @@ function GoalCard({ state, session, goal, showIssues, dnd, menu, focus, onFocuse
 }
 
 interface GroomingProps {
+    repoUrl?: string;
     session: SessionStore;
     state: SessionState;
     showIssues: boolean;
@@ -601,6 +611,7 @@ function Divider({ width, min, max, onChange }: DividerProps): VNode {
 }
 
 export function GroomingPage({
+    repoUrl,
     session,
     state,
     showIssues,
@@ -669,10 +680,10 @@ export function GroomingPage({
             }
         };
         document.addEventListener("keydown", onKey);
-        document.addEventListener("click", onClick);
+        document.addEventListener("click", onClick, true);
         return () => {
             document.removeEventListener("keydown", onKey);
-            document.removeEventListener("click", onClick);
+            document.removeEventListener("click", onClick, true);
         };
     }, [menuKey]);
     return (
@@ -717,6 +728,7 @@ export function GroomingPage({
             </header>
             <div class="rd-groom__panels" ref={panelsRef}>
                 <Backlog
+                    repoUrl={repoUrl}
                     state={state}
                     session={session}
                     dnd={dnd}
@@ -753,6 +765,7 @@ export function GroomingPage({
                     <div class="rd-goals__list">
                         {state.goals.map((goal: Goal) => (
                             <GoalCard
+                                repoUrl={repoUrl}
                                 state={state}
                                 session={session}
                                 goal={goal}

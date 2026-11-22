@@ -4,6 +4,6 @@ import appCss from "@raiden/app/app.css";
 import componentsCss from "@raiden/design-system/components.css";
 import tokensCss from "@raiden/design-system/tokens.css";
 
-export function mountRaiden(root: ShadowRoot, prefs: PreferenceStore): Promise<() => void> {
-    return mountApp(root, { css: `${tokensCss}\n${componentsCss}\n${appCss}`, prefs });
+export function mountRaiden(root: ShadowRoot, prefs: PreferenceStore, repoUrl: string): Promise<() => void> {
+    return mountApp(root, { css: `${tokensCss}\n${componentsCss}\n${appCss}`, prefs, repoUrl });
 }

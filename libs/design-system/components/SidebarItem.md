@@ -13,6 +13,11 @@ One entry in the Raiden sidebar (`rd-nav`). Use it to switch between Raiden page
 - Give each `button.rd-nav-item` an `aria-label` and a `data-label` with its name. The rail shows `data-label` on hover and keyboard focus.
 - Put a `button.rd-icon-btn.rd-nav__toggle` first in the nav. Set `aria-expanded` on it, and make its name say what pressing it does.
 
+## Count
+
+- Add `span.rd-nav-item__count` after the label to show a count. Give it `aria-hidden="true"` and put the count in words in the item's `aria-label`, for example "Grooming, 3 epics not planned".
+- Show it only above zero. In the collapsed rail it moves to the item's corner.
+
 ## States
 
 - Current page: set `aria-current="page"` on exactly one item. It gets the brand ground and brand text.

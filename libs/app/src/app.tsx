@@ -2,11 +2,14 @@ import type { VNode } from "preact";
 import { useState } from "preact/hooks";
 import { GroomingPage } from "./grooming.tsx";
 import { PlaceholderPage } from "./pages.tsx";
+import { INITIATIVES } from "./sample.ts";
+import { unplannedEpicCount } from "./plan.ts";
 import { useSession, type SessionStore } from "./session.ts";
 import { Sidebar, type PageId } from "./sidebar.tsx";
 
 export interface AppProps {
     session: SessionStore;
+    repoUrl?: string;
     showIssues: boolean;
     onShowIssues: (value: boolean) => void;
     sidebarCollapsed?: boolean;
@@ -19,6 +22,7 @@ export interface AppProps {
 // always opens Grooming. The session state lives in the store, so it survives page switches.
 export function App({
     session,
+    repoUrl,
     showIssues: initialShowIssues,
     onShowIssues,
     sidebarCollapsed = false,
@@ -35,6 +39,7 @@ export function App({
         <div class="rd-app">
             <Sidebar
                 current={page}
+                unplanned={unplannedEpicCount(INITIATIVES, state)}
                 onSelect={setPage}
                 collapsed={collapsed}
                 onToggle={() => {
@@ -46,6 +51,7 @@ export function App({
                 {page === "grooming" ? (
                     <GroomingPage
                         session={session}
+                        repoUrl={repoUrl}
                         state={state}
                         showIssues={showIssues}
                         backlogWidth={backlogWidth}

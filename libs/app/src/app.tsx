@@ -11,6 +11,8 @@ export interface AppProps {
     onShowIssues: (value: boolean) => void;
     sidebarCollapsed?: boolean;
     onSidebarCollapsed?: (value: boolean) => void;
+    backlogWidth?: number;
+    onBacklogWidth?: (value: number) => void;
 }
 
 // The current page is in-memory state: switching never touches the address, and a reload
@@ -21,7 +23,10 @@ export function App({
     onShowIssues,
     sidebarCollapsed = false,
     onSidebarCollapsed,
+    backlogWidth: initialWidth,
+    onBacklogWidth,
 }: AppProps): VNode {
+    const [backlogWidth, setBacklogWidth] = useState<number | undefined>(initialWidth);
     const [collapsed, setCollapsed] = useState<boolean>(sidebarCollapsed);
     const [page, setPage] = useState<PageId>("grooming");
     const [showIssues, setShowIssues] = useState<boolean>(initialShowIssues);
@@ -43,6 +48,13 @@ export function App({
                         session={session}
                         state={state}
                         showIssues={showIssues}
+                        backlogWidth={backlogWidth}
+                        onBacklogWidth={(value: number, final: boolean) => {
+                            setBacklogWidth(value);
+                            if (final) {
+                                onBacklogWidth?.(value);
+                            }
+                        }}
                         onShowIssues={(value: boolean) => {
                             setShowIssues(value);
                             onShowIssues(value);

@@ -6,6 +6,7 @@ import {
     canMoveGoal,
     canPlanIn,
     deleteGoal,
+    filterBacklog,
     effectiveGoal,
     goalEpicCount,
     goalItems,
@@ -61,9 +62,14 @@ interface BacklogProps {
     state: SessionState;
     session: SessionStore;
     dnd: DragApi;
+    filter: string;
+    onFilter: (text: string) => void;
+    width: number;
 }
 
-function Backlog({ state, session, dnd }: BacklogProps): VNode {
+function Backlog({ state, session, dnd, filter, onFilter, width }: BacklogProps): VNode {
+    const shown: Initiative[] = filterBacklog(INITIATIVES, filter);
+    const filtering: boolean = filter.trim() !== "";
     const total: number = totalEpics(INITIATIVES);
     const d: Drag | null = dnd.drag;
     // Only an item dragged out of a goal, with a plan of its own, can be dropped here.
@@ -72,6 +78,7 @@ function Backlog({ state, session, dnd }: BacklogProps): VNode {
     return (
         <section
             class={`rd-panel rd-backlog${dnd.over?.target === "backlog" ? " is-over" : ""}`}
+            style={{ flexBasis: `${width}px` }}
             aria-labelledby="rd-backlog-title"
             {...dnd.zone("backlog", accepts, () => {
                 if (d?.type === "item") {
@@ -85,9 +92,25 @@ function Backlog({ state, session, dnd }: BacklogProps): VNode {
                 </h2>
                 <span class="rd-panel__sub">{plural(total, "epic")}</span>
             </div>
+            <div class="rd-backlog__filter">
+                <input
+                    class="rd-input"
+                    type="search"
+                    aria-label="Filter backlog"
+                    placeholder="Filter by title or number"
+                    value={filter}
+                    onInput={(e) => onFilter((e.currentTarget as HTMLInputElement).value)}
+                />
+            </div>
             <div class="rd-backlog__list">
-                {INITIATIVES.map((init: Initiative) => {
-                    const open: boolean = !state.collapsed.includes(init.num);
+                {shown.length === 0 && (
+                    <p class="rd-backlog__empty rd-text-small">
+                        No initiatives or epics match. Clear the filter to show them all.
+                    </p>
+                )}
+                {shown.map((init: Initiative) => {
+                    // While filtering, matches show open. Each initiative's own setting stays.
+                    const open: boolean = filtering || !state.collapsed.includes(init.num);
                     const own: string | null = ownGoal(state, "init", init.num);
                     const planned: number = initiativeEpicsPlanned(INITIATIVES, state, init);
                     const meta: string =
@@ -353,9 +376,115 @@ interface GroomingProps {
     state: SessionState;
     showIssues: boolean;
     onShowIssues: (value: boolean) => void;
+    backlogWidth?: number;
+    onBacklogWidth?: (value: number, final: boolean) => void;
 }
 
-export function GroomingPage({ session, state, showIssues, onShowIssues }: GroomingProps): VNode {
+export const DEFAULT_BACKLOG_WIDTH: number = 360;
+const MIN_BACKLOG: number = 240;
+const MIN_GOALS: number = 360;
+const DIVIDER_WIDTH: number = 16;
+const FALLBACK_MAX: number = 720;
+const STEP: number = 16;
+const BIG_STEP: number = 64;
+
+// The preferred width is the lead's choice. The shown width is that choice fitted between the
+// two panels' minimum widths at the current size.
+function limits(space: number): { min: number; max: number } {
+    return { min: MIN_BACKLOG, max: space > 0 ? Math.max(MIN_BACKLOG, space - MIN_GOALS - DIVIDER_WIDTH) : FALLBACK_MAX };
+}
+function fit(preferred: number, space: number): number {
+    const { min, max } = limits(space);
+    return Math.min(max, Math.max(min, preferred));
+}
+
+interface DividerProps {
+    width: number;
+    min: number;
+    max: number;
+    onChange: (value: number, final: boolean) => void;
+}
+
+function Divider({ width, min, max, onChange }: DividerProps): VNode {
+    const drag = useRef<{ x: number; width: number } | null>(null);
+    const clamp = (v: number): number => Math.min(max, Math.max(min, v));
+    return (
+        <div
+            class="rd-divider"
+            role="separator"
+            aria-orientation="vertical"
+            aria-label="Resize backlog"
+            aria-valuenow={width}
+            aria-valuemin={min}
+            aria-valuemax={max}
+            tabIndex={0}
+            onPointerDown={(e: PointerEvent) => {
+                drag.current = { x: e.clientX, width };
+                (e.currentTarget as HTMLElement).setPointerCapture?.(e.pointerId);
+            }}
+            onPointerMove={(e: PointerEvent) => {
+                if (drag.current) {
+                    onChange(clamp(drag.current.width + e.clientX - drag.current.x), false);
+                }
+            }}
+            onPointerUp={(e: PointerEvent) => {
+                if (drag.current) {
+                    onChange(clamp(drag.current.width + e.clientX - drag.current.x), true);
+                    drag.current = null;
+                    (e.currentTarget as HTMLElement).releasePointerCapture?.(e.pointerId);
+                }
+            }}
+            onDblClick={() => onChange(clamp(DEFAULT_BACKLOG_WIDTH), true)}
+            onKeyDown={(e: KeyboardEvent) => {
+                const step: number = e.shiftKey ? BIG_STEP : STEP;
+                const next: number | null =
+                    e.key === "ArrowLeft"
+                        ? width - step
+                        : e.key === "ArrowRight"
+                          ? width + step
+                          : e.key === "Home"
+                            ? min
+                            : e.key === "End"
+                              ? max
+                              : e.key === "Enter"
+                                ? DEFAULT_BACKLOG_WIDTH
+                                : null;
+                if (next !== null) {
+                    e.preventDefault();
+                    onChange(clamp(next), true);
+                }
+            }}
+        />
+    );
+}
+
+export function GroomingPage({
+    session,
+    state,
+    showIssues,
+    onShowIssues,
+    backlogWidth = DEFAULT_BACKLOG_WIDTH,
+    onBacklogWidth,
+}: GroomingProps): VNode {
+    const [filter, setFilter] = useState<string>("");
+    const panelsRef = useRef<HTMLDivElement>(null);
+    const [space, setSpace] = useState<number>(0);
+    useEffect(() => {
+        const measure = (): void => setSpace(panelsRef.current?.getBoundingClientRect().width ?? 0);
+        measure();
+        window.addEventListener("resize", measure);
+        const observer: ResizeObserver | null =
+            typeof ResizeObserver === "function" && panelsRef.current ? new ResizeObserver(measure) : null;
+        if (observer && panelsRef.current) {
+            observer.observe(panelsRef.current);
+        }
+        return () => {
+            window.removeEventListener("resize", measure);
+            observer?.disconnect();
+        };
+    }, []);
+    const shownWidth: number = fit(backlogWidth, space);
+    const { min: minWidth, max: maxWidth } = limits(space);
     const planned: number = plannedEpicCount(INITIATIVES, state);
     const dnd: DragApi = useDnd();
     const [menu, setMenu] = useState<string | null>(null);
@@ -408,8 +537,21 @@ export function GroomingPage({ session, state, showIssues, onShowIssues }: Groom
                     </button>
                 </div>
             </header>
-            <div class="rd-groom__panels">
-                <Backlog state={state} session={session} dnd={dnd} />
+            <div class="rd-groom__panels" ref={panelsRef}>
+                <Backlog
+                    state={state}
+                    session={session}
+                    dnd={dnd}
+                    filter={filter}
+                    onFilter={setFilter}
+                    width={shownWidth}
+                />
+                <Divider
+                    width={shownWidth}
+                    min={minWidth}
+                    max={maxWidth}
+                    onChange={(value: number, final: boolean) => onBacklogWidth?.(value, final)}
+                />
                 <section class="rd-panel rd-goals" aria-labelledby="rd-goals-title">
                     <div class="rd-panel__head">
                         <h2 class="rd-text-axis" id="rd-goals-title">

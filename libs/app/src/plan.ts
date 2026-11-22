@@ -167,3 +167,22 @@ export function deleteGoal(state: SessionState, id: string): SessionState {
         plan: state.plan.filter((p: PlanEntry) => p.goal !== id),
     };
 }
+
+// The filter matches part of a title or of an issue number, ignoring letter case and a leading
+// "#". A matching initiative keeps all its epics. Otherwise only its matching epics stay, so a
+// matching epic still shows under its initiative.
+export function filterBacklog(initiatives: Initiative[], text: string): Initiative[] {
+    const needle: string = text.trim().replace(/^#/, "").toLowerCase();
+    if (needle === "") {
+        return initiatives;
+    }
+    const hit = (item: { num: number; title: string }): boolean =>
+        item.title.toLowerCase().includes(needle) || String(item.num).includes(needle);
+    return initiatives.flatMap((init: Initiative) => {
+        if (hit(init)) {
+            return [init];
+        }
+        const epics = init.epics.filter(hit);
+        return epics.length > 0 ? [{ ...init, epics }] : [];
+    });
+}

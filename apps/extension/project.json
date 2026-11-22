@@ -8,6 +8,7 @@
         "build": {
             "executor": "nx:run-commands",
             "options": { "command": "node apps/extension/build.ts", "cwd": "{workspaceRoot}" },
+            "inputs": ["default", "^default", { "runtime": "git rev-parse HEAD" }],
             "outputs": ["{workspaceRoot}/dist/apps/extension"]
         },
         "typecheck": {

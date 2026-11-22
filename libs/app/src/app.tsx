@@ -3,10 +3,11 @@ import { useMemo, useState } from "preact/hooks";
 import { GatewayContext, type GitHubGateway } from "./gateway.ts";
 import { Account } from "./account.tsx";
 import { useSignIn, type SignInController } from "./signin.ts";
-import { Banner } from "./banner.tsx";
+import { Banner, RepoPicker } from "./banner.tsx";
 import { GroomingPage } from "./grooming.tsx";
 import { PlaceholderPage } from "./pages.tsx";
-import { RepoContext, useRepo, type RepoStore } from "./repo.tsx";
+import { RepoContext, useRepo, useRepoStore, type RepoStore } from "./repo.tsx";
+import { useRepoList } from "./repolist.ts";
 import { INITIATIVES } from "./sample.ts";
 import { unplannedEpicCount } from "./plan.ts";
 import { useSession, type SessionStore } from "./session.ts";
@@ -48,6 +49,7 @@ function Shell({
     const [showIssues, setShowIssues] = useState<boolean>(initialShowIssues);
     const state = useSession(session);
     const current = useRepo();
+    const repoStore = useRepoStore();
     const auth = useSignIn(signIn);
     const protectedGateway = useMemo<GitHubGateway | undefined>(() => {
         if (!gateway || !signIn) {
@@ -66,6 +68,8 @@ function Shell({
             },
         };
     }, [gateway, signIn]);
+    // Only a host with a banner lets the person pick a repository, and only while signed in (G5, G6).
+    const repos = useRepoList(banner ? protectedGateway : undefined, auth?.login);
     const account = signIn && auth ? <Account signIn={signIn} state={auth} /> : undefined;
     const layout: VNode = signIn && !auth?.login ? (
         <main class="rd-sign-in">
@@ -113,7 +117,14 @@ function Shell({
     );
     const framed: VNode = banner ? (
         <div class="rd-frame">
-            <Banner icon={banner.icon} />
+            <Banner
+                icon={banner.icon}
+                picker={
+                    auth?.login ? (
+                        <RepoPicker repos={repos} current={current} onPick={(repo) => repoStore?.set(repo)} />
+                    ) : undefined
+                }
+            />
             {layout}
         </div>
     ) : (

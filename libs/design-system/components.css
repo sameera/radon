@@ -440,3 +440,17 @@ a.rd-ref:hover .rd-ref__title { color: var(--rd-accent); text-decoration: underl
 }
 .rd-banner__mark { width: var(--rd-header-icon); height: var(--rd-header-icon); }
 .rd-banner__word { color: var(--rd-brand-fg); }
+.rd-banner__repo { margin-left: var(--rd-space-3); max-width: 280px; }
+
+/* ---------- Select ---------- */
+.rd-select {
+    min-height: 28px;
+    padding: 3px var(--rd-space-2);
+    border: 1px solid var(--rd-border-control);
+    border-radius: var(--rd-radius-md);
+    background: var(--rd-canvas);
+    color: var(--rd-fg);
+    font: 400 14px/20px var(--font-sans);
+}
+.rd-select:hover { border-color: var(--rd-border); }
+.rd-select:focus-visible { outline: 2px solid var(--rd-accent); outline-offset: -1px; border-color: var(--rd-accent); }

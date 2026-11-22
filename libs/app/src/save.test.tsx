@@ -13,7 +13,7 @@ let session: SessionStore;
 
 async function open(): Promise<void> {
     await act(async () => {
-        unmount = await mountApp(root, { session });
+        unmount = await mountApp(root, { session, repoUrl: "https://github.com/acme/widgets" });
     });
 }
 const $ = <T extends Element>(sel: string): T => root.querySelector<T>(sel)!;
@@ -229,6 +229,6 @@ describe("session", () => {
         await planEpic(34, 2);
         await click(button("Save plan"));
         expect(fetchSpy).not.toHaveBeenCalled();
-        expect($$("a[href]").length).toBe(0);
+        expect(Array.from($$("a[href]")).every((a) => (a as HTMLAnchorElement).href.startsWith("https://github.com/acme/widgets/"))).toBe(true);
     });
 });

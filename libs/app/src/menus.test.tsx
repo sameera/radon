@@ -10,7 +10,7 @@ let fetchSpy: ReturnType<typeof vi.fn>;
 
 async function open(): Promise<void> {
     await act(async () => {
-        unmount = await mountApp(root, { session: createSessionStore() });
+        unmount = await mountApp(root, { session: createSessionStore(), repoUrl: "https://github.com/acme/widgets" });
     });
 }
 const $ = <T extends Element>(sel: string): T => root.querySelector<T>(sel)!;
@@ -225,6 +225,6 @@ describe("no network and no links", () => {
         await click(trigger("epic", 31));
         await click(entry("Take out of plan"));
         expect(fetchSpy).not.toHaveBeenCalled();
-        expect($$("a[href]").length).toBe(0);
+        expect(Array.from($$("a[href]")).every((a) => (a as HTMLAnchorElement).href.startsWith("https://github.com/acme/widgets/"))).toBe(true);
     });
 });

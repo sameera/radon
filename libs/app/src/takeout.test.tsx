@@ -9,7 +9,7 @@ let unmount: () => void;
 
 async function open(): Promise<void> {
     await act(async () => {
-        unmount = await mountApp(root, { session: createSessionStore() });
+        unmount = await mountApp(root, { session: createSessionStore(), repoUrl: "https://github.com/acme/widgets" });
     });
 }
 const $ = <T extends Element>(sel: string): T => root.querySelector<T>(sel)!;

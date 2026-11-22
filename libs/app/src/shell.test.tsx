@@ -11,7 +11,7 @@ let fetchSpy: ReturnType<typeof vi.fn>;
 
 async function open(): Promise<void> {
     await act(async () => {
-        unmount = await mountApp(root, { css: ".x{}" });
+        unmount = await mountApp(root, { css: ".x{}", repoUrl: "https://github.com/acme/widgets" });
     });
 }
 const text = (): string => root.textContent ?? "";

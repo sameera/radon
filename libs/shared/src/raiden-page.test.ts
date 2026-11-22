@@ -22,7 +22,11 @@ function page(): void {
 }
 
 function runtime(): RaidenRuntime {
-    return { mount: vi.fn<(root: ShadowRoot) => void>(), unmount: vi.fn<(root: ShadowRoot) => void>() };
+    return {
+        mount: vi.fn<(root: ShadowRoot) => void>(),
+        update: vi.fn<(root: ShadowRoot, repoUrl: string) => void>(),
+        unmount: vi.fn<(root: ShadowRoot) => void>(),
+    };
 }
 
 const AT_RAIDEN = { pathname: "/acme/app", search: "?raiden=1" };
@@ -165,5 +169,22 @@ describe("repository address given to the page", () => {
         const rt: RaidenRuntime = runtime();
         syncRaiden(document, { location: AT_RAIDEN, prefersDark: false }, rt);
         expect((vi.mocked(rt.mount).mock.calls[0] as unknown[])[1]).toBe("https://github.example.com/acme/app");
+    });
+
+    it("tells the runtime when in-page navigation moves to another repository while the page shows (D3, G4)", () => {
+        const rt: RaidenRuntime = runtime();
+        syncRaiden(document, { location: AT_RAIDEN, prefersDark: false }, rt);
+        expect(rt.update).not.toHaveBeenCalled();
+        syncRaiden(document, { location: AT_RAIDEN, prefersDark: false }, rt);
+        expect(rt.update).not.toHaveBeenCalled();
+        document.querySelectorAll<HTMLAnchorElement>("nav a").forEach((a) => {
+            a.setAttribute("href", a.getAttribute("href")!.replace("/acme/app", "/acme/other"));
+        });
+        sync(document);
+        syncRaiden(document, { location: { pathname: "/acme/other", search: "?raiden=1" }, prefersDark: false }, rt);
+        expect(rt.mount).toHaveBeenCalledTimes(1);
+        expect(rt.update).toHaveBeenCalledTimes(1);
+        expect(vi.mocked(rt.update).mock.calls[0]![1]).toBe(`${location.origin}/acme/other`);
+        expect(vi.mocked(rt.update).mock.calls[0]![0]).toBe(document.querySelector<HTMLElement>("[data-raiden-host]")!.shadowRoot);
     });
 });

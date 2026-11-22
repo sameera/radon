@@ -6,6 +6,7 @@ import { useSignIn, type SignInController } from "./signin.ts";
 import { Banner } from "./banner.tsx";
 import { GroomingPage } from "./grooming.tsx";
 import { PlaceholderPage } from "./pages.tsx";
+import { RepoContext, useRepo, type RepoStore } from "./repo.tsx";
 import { INITIATIVES } from "./sample.ts";
 import { unplannedEpicCount } from "./plan.ts";
 import { useSession, type SessionStore } from "./session.ts";
@@ -13,7 +14,8 @@ import { Sidebar, type PageId } from "./sidebar.tsx";
 
 export interface AppProps {
     session: SessionStore;
-    repoUrl?: string;
+    // The repository context. The host writes it; every page reads it (D1).
+    repo: RepoStore;
     showIssues: boolean;
     onShowIssues: (value: boolean) => void;
     sidebarCollapsed?: boolean;
@@ -28,9 +30,8 @@ export interface AppProps {
 
 // The current page is in-memory state: switching never touches the address, and a reload
 // always opens Grooming. The session state lives in the store, so it survives page switches.
-export function App({
+function Shell({
     session,
-    repoUrl,
     showIssues: initialShowIssues,
     onShowIssues,
     sidebarCollapsed = false,
@@ -40,12 +41,13 @@ export function App({
     banner,
     signIn,
     gateway,
-}: AppProps): VNode {
+}: Omit<AppProps, "repo">): VNode {
     const [backlogWidth, setBacklogWidth] = useState<number | undefined>(initialWidth);
     const [collapsed, setCollapsed] = useState<boolean>(sidebarCollapsed);
     const [page, setPage] = useState<PageId>("grooming");
     const [showIssues, setShowIssues] = useState<boolean>(initialShowIssues);
     const state = useSession(session);
+    const current = useRepo();
     const auth = useSignIn(signIn);
     const protectedGateway = useMemo<GitHubGateway | undefined>(() => {
         if (!gateway || !signIn) {
@@ -67,6 +69,7 @@ export function App({
     const account = signIn && auth ? <Account signIn={signIn} state={auth} /> : undefined;
     const layout: VNode = signIn && !auth?.login ? (
         <main class="rd-sign-in">
+            {!current && <PickPrompt signedIn={false} />}
             {account}
         </main>
     ) : (
@@ -83,10 +86,11 @@ export function App({
                 }}
             />
             <main class="rd-main">
-                {page === "grooming" ? (
+                {!current ? (
+                    <PickPrompt signedIn={true} />
+                ) : page === "grooming" ? (
                     <GroomingPage
                         session={session}
-                        repoUrl={repoUrl}
                         state={state}
                         showIssues={showIssues}
                         backlogWidth={backlogWidth}
@@ -116,4 +120,22 @@ export function App({
         layout
     );
     return <GatewayContext.Provider value={protectedGateway}>{framed}</GatewayContext.Provider>;
+}
+
+// What the main area shows while the current repository is "none" (D2). No page renders then.
+function PickPrompt({ signedIn }: { signedIn: boolean }): VNode {
+    return (
+        <p class="rd-pick-prompt" role="status">
+            {signedIn ? "Pick a repository to see its work." : "Sign in, then pick a repository."}
+        </p>
+    );
+}
+
+export function App(props: AppProps): VNode {
+    const { repo, ...rest } = props;
+    return (
+        <RepoContext.Provider value={repo}>
+            <Shell {...rest} />
+        </RepoContext.Provider>
+    );
 }

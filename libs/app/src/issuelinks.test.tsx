@@ -150,14 +150,14 @@ describe("issue numbers open the issue on GitHub", () => {
         expect(Object.keys(data)).toEqual(["application/x-raiden"]);
     });
 
-    it("shows plain text, not links, when no repository address is known", async () => {
+    it("shows no issue rows and no links, only the pick prompt, when no repository is known (G3)", async () => {
         session = createSessionStore();
         await act(async () => {
             unmount = await mountApp(root, { session });
         });
         expect($$("a[href]").length).toBe(0);
-        expect($('.rd-bl-epic[data-num="31"] .rd-ref__num').textContent).toBe("#31");
-        expect($$(".rd-ref").length).toBe(4 + 9 + 5);
+        expect($$(".rd-ref").length).toBe(0);
+        expect($(".rd-pick-prompt").textContent).toContain("Pick a repository");
     });
 
     it("shows no goal rows and so no goal links while Show issues is off", async () => {

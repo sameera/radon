@@ -12,7 +12,7 @@ let unmount: () => void;
 
 async function open(banner?: { icon: string }): Promise<void> {
     await act(async () => {
-        unmount = await mountApp(root, { css: ".x{}", banner });
+        unmount = await mountApp(root, { css: ".x{}", banner, repoUrl: "https://github.com/acme/widgets" });
     });
 }
 

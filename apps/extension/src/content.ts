@@ -3,6 +3,7 @@ import { sync, syncRaiden, type PageEnv, type RaidenRuntime } from "@raiden/shar
 
 interface AppModule {
     mountRaiden(root: ShadowRoot, prefs: PreferenceStore, repoUrl: string): Promise<() => void>;
+    setRepository(root: ShadowRoot, repoUrl: string): void;
 }
 
 const FONT_STYLE_ID: string = "raiden-font";
@@ -48,6 +49,9 @@ const runtime: RaidenRuntime = {
                 unmount();
             }
         });
+    },
+    update(root: ShadowRoot, repoUrl: string): void {
+        void appModule?.then((app: AppModule) => app.setRepository(root, repoUrl));
     },
     unmount(root: ShadowRoot): void {
         unmounts.get(root)?.();

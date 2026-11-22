@@ -44,7 +44,7 @@ describe("GitHub gateway in the shell", () => {
         const gateway: GitHubGateway = { request: vi.fn() };
         let unmount: () => void = () => undefined;
         await act(async () => {
-            unmount = await mountApp(root, { css: "", gateway });
+            unmount = await mountApp(root, { css: "", gateway, repoUrl: "https://github.com/acme/widgets" });
         });
         expect(root.querySelector(".rd-main")!.textContent).toContain("Grooming");
         expect(fetchSpy).not.toHaveBeenCalled();

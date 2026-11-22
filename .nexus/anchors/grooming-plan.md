@@ -1,6 +1,6 @@
 ---
 concept: grooming-plan
-source_sha: b54146a1e77e582146cc9d48f7bdb891844eee93
+source_sha: 2a0cb091f456e0fd34e0ffbf61b44b7e8a7407b8
 generated: 2026-11-22
 ---
 
@@ -9,9 +9,7 @@ generated: 2026-11-22
 
 # Code Anchors: Grooming Plan
 
-- `libs/app/src/plan.ts` — plan rules, effective goal, counts, goal moves, shared take-out rule (#26)
+- `libs/app/src/plan.ts` — plan rules, effective goal, counts, goal moves, shared take-out rule, not-planned count (#26, #28)
 - `libs/app/src/session.ts` — shared in-memory session store and its single change path (#26)
-- `libs/app/src/grooming.tsx` — two-panel Grooming page, drag and drop, item and goal menus (#26)
+- `libs/app/src/grooming.tsx` — two-panel Grooming page, header counts, goal cards (#26, #28)
 - `libs/app/src/sample.ts` — sample data source (#13)
-- `libs/app/src/menus.test.tsx` — menu actions match the matching drops (#26)
-- `libs/design-system/components/PopupMenu.md` — popup menu keyboard rules (#26)

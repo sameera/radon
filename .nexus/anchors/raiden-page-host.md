@@ -1,6 +1,6 @@
 ---
 concept: raiden-page-host
-source_sha: fe61b8343a65d6ad98cecdfddcbee22fe7ac6f74
+source_sha: 2a0cb091f456e0fd34e0ffbf61b44b7e8a7407b8
 generated: 2026-11-22
 ---
 
@@ -9,7 +9,7 @@ generated: 2026-11-22
 
 # Code Anchors: Raiden Page Host
 
-- `libs/shared/src/raiden-page.ts` — address check, host placement, content hiding, theme resolution (#13)
-- `libs/shared/src/repo-nav.ts` — finds the repository tab bar and adds the Raiden tab (#13)
-- `apps/extension/src/content.ts` — extension loader, font declaration and preference store (#13)
+- `libs/shared/src/raiden-page.ts` — address check, host placement, content hiding, theme resolution, passes the repository address at mount (#13, #28)
+- `libs/shared/src/repo-nav.ts` — finds the repository tab bar, adds the Raiden tab, reads the repository address from the Code tab (#13, #28)
+- `apps/extension/src/content.ts` — extension loader, font declaration, preference store, repository address hand-off (#13, #28)
 - `apps/extension/manifest.json` — storage permission and the on-demand app resource (#13)

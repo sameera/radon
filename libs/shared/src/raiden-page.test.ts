@@ -140,3 +140,30 @@ describe("pages that are not repository pages", () => {
         expect(rt.mount).not.toHaveBeenCalled();
     });
 });
+
+describe("repository address given to the page", () => {
+    beforeEach(page);
+
+    it("passes the repository's web address, read from the Code tab with no network request", () => {
+        const fetchSpy = vi.fn();
+        vi.stubGlobal("fetch", fetchSpy);
+        const rt: RaidenRuntime = runtime();
+        syncRaiden(document, { location: AT_RAIDEN, prefersDark: false }, rt);
+        expect(rt.mount).toHaveBeenCalledTimes(1);
+        const repoUrl: unknown = (vi.mocked(rt.mount).mock.calls[0] as unknown[])[1];
+        expect(repoUrl).toBe(`${location.origin}/acme/app`);
+        expect(fetchSpy).not.toHaveBeenCalled();
+        vi.unstubAllGlobals();
+    });
+
+    it("takes the origin from the page's own link, so another GitHub server works", () => {
+        document.querySelector<HTMLAnchorElement>('a[data-tab-item="code"]')!.setAttribute(
+            "href",
+            "https://github.example.com/acme/app",
+        );
+        sync(document);
+        const rt: RaidenRuntime = runtime();
+        syncRaiden(document, { location: AT_RAIDEN, prefersDark: false }, rt);
+        expect((vi.mocked(rt.mount).mock.calls[0] as unknown[])[1]).toBe("https://github.example.com/acme/app");
+    });
+});

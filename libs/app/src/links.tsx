@@ -29,3 +29,22 @@ export function ExternalLink({ href, class: className, children }: ExternalLinkP
         </a>
     );
 }
+
+interface IssueRefProps {
+    repoUrl?: string;
+    num: number;
+    title: string;
+}
+
+// The number and title of one issue. The whole reference is a link to the issue in the current
+// repository. With no repository address it is plain text.
+export function IssueRef({ repoUrl, num, title }: IssueRefProps): VNode {
+    const body: VNode = (
+        <>
+            <span class="rd-ref__num">#{num}</span>
+            <span class="rd-ref__title">{title}</span>
+        </>
+    );
+    const href: string | null = repoPage(repoUrl, `issues/${num}`);
+    return href === null ? <span class="rd-ref">{body}</span> : <ExternalLink class="rd-ref" href={href}>{body}</ExternalLink>;
+}

@@ -2,7 +2,7 @@ import type { PreferenceStore } from "@raiden/app";
 import { sync, syncRaiden, type PageEnv, type RaidenRuntime } from "@raiden/shared";
 
 interface AppModule {
-    mountRaiden(root: ShadowRoot, prefs: PreferenceStore): Promise<() => void>;
+    mountRaiden(root: ShadowRoot, prefs: PreferenceStore, repoUrl: string): Promise<() => void>;
 }
 
 const FONT_STYLE_ID: string = "raiden-font";
@@ -34,14 +34,14 @@ const prefs: PreferenceStore = {
 };
 
 const runtime: RaidenRuntime = {
-    mount(root: ShadowRoot): void {
+    mount(root: ShadowRoot, repoUrl: string): void {
         declareFont();
         appModule ??= import(/* @vite-ignore */ chrome.runtime.getURL("app.js")) as Promise<AppModule>;
         void appModule.then(async (app: AppModule) => {
             if (!root.host.isConnected) {
                 return;
             }
-            const unmount: () => void = await app.mountRaiden(root, prefs);
+            const unmount: () => void = await app.mountRaiden(root, prefs, repoUrl);
             if (root.host.isConnected) {
                 unmounts.set(root, unmount);
             } else {

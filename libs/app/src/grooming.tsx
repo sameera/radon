@@ -29,7 +29,7 @@ import {
     type PlanEntry,
     type SessionState,
 } from "./plan.ts";
-import { ExternalLink, repoPage } from "./links.tsx";
+import { ExternalLink, IssueRef, repoPage } from "./links.tsx";
 import { GROOMING_SPRINT, INITIATIVES } from "./sample.ts";
 import type { SessionStore } from "./session.ts";
 
@@ -260,10 +260,7 @@ function Backlog({ repoUrl, state, session, dnd, filter, onFilter, width, menu }
                                 >
                                     <ChevronIcon open={open} />
                                 </button>
-                                <span class="rd-ref">
-                                    <span class="rd-ref__num">#{init.num}</span>
-                                    <span class="rd-ref__title">{init.title}</span>
-                                </span>
+                                <IssueRef repoUrl={repoUrl} num={init.num} title={init.title} />
                                 <span class="rd-bl-meta">{meta}</span>
                                 <ItemMenu state={state} session={session} menu={menu} kind="init" num={init.num} />
                             </div>
@@ -280,10 +277,7 @@ function Backlog({ repoUrl, state, session, dnd, filter, onFilter, width, menu }
                                             key={epic.num}
                                         >
                                             <span class="rd-glyph rd-glyph--epic" aria-hidden="true" />
-                                            <span class="rd-ref">
-                                                <span class="rd-ref__num">#{epic.num}</span>
-                                                <span class="rd-ref__title">{epic.title}</span>
-                                            </span>
+                                            <IssueRef repoUrl={repoUrl} num={epic.num} title={epic.title} />
                                             <span class="rd-bl-meta">{goalLabel(state, eff)}</span>
                                             <ItemMenu state={state} session={session} menu={menu} kind="epic" num={epic.num} />
                                         </div>
@@ -305,6 +299,7 @@ function Backlog({ repoUrl, state, session, dnd, filter, onFilter, width, menu }
 }
 
 interface GoalCardProps {
+    repoUrl?: string;
     state: SessionState;
     session: SessionStore;
     goal: Goal;
@@ -328,7 +323,7 @@ function itemTitle(entry: PlanEntry): { num: number; title: string } {
     return { num: entry.num, title: "" };
 }
 
-function GoalCard({ state, session, goal, showIssues, dnd, menu, focus, onFocused }: GoalCardProps): VNode {
+function GoalCard({ repoUrl, state, session, goal, showIssues, dnd, menu, focus, onFocused }: GoalCardProps): VNode {
     const menuOpen: boolean = menu.open === `goal:${goal.id}`;
     const d: Drag | null = dnd.drag;
     const accepts: boolean =
@@ -494,10 +489,7 @@ function GoalCard({ state, session, goal, showIssues, dnd, menu, focus, onFocuse
                                         onDragEnd={dnd.end}
                                     >
                                         {entry.kind === "epic" && <span class="rd-glyph rd-glyph--epic" aria-hidden="true" />}
-                                        <span class="rd-ref">
-                                            <span class="rd-ref__num">#{num}</span>
-                                            <span class="rd-ref__title">{title}</span>
-                                        </span>
+                                        <IssueRef repoUrl={repoUrl} num={num} title={title} />
                                         <button
                                             type="button"
                                             class="rd-icon-btn"
@@ -773,6 +765,7 @@ export function GroomingPage({
                     <div class="rd-goals__list">
                         {state.goals.map((goal: Goal) => (
                             <GoalCard
+                                repoUrl={repoUrl}
                                 state={state}
                                 session={session}
                                 goal={goal}

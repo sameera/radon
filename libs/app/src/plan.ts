@@ -4,20 +4,69 @@ export type { Goal, Initiative, ItemKind, PlanEntry };
 
 // All Grooming data for one visit. Every label, count and rank on the page is derived from it.
 // An item has at most one own plan: an entry in `plan`.
+export interface Snapshot {
+    goals: Goal[];
+    plan: PlanEntry[];
+}
+
 export interface SessionState {
     goals: Goal[];
     plan: PlanEntry[];
     collapsed: number[];
     nextId: number;
+    // The earlier plans, newest last. One entry per plan change that really changed the plan.
+    undo: Snapshot[];
+    // The plan at page load, or at the last Save plan.
+    saved: Snapshot;
+    // The goal field being typed in. Typing in it keeps updating one undo entry.
+    editing: string | null;
 }
 
 export function initialState(): SessionState {
+    const goals: Goal[] = GOALS.map((g: Goal) => ({ ...g }));
+    const plan: PlanEntry[] = STARTING_PLAN.map((p: PlanEntry) => ({ ...p }));
+    return { goals, plan, collapsed: [], nextId: GOALS.length + 1, undo: [], saved: { goals, plan }, editing: null };
+}
+
+export function snapshotOf(state: SessionState): Snapshot {
+    return { goals: state.goals, plan: state.plan };
+}
+
+// The order of plan entries carries no meaning. The order of goals is their rank.
+function samePlan(a: Snapshot, b: Snapshot): boolean {
+    const key = (p: PlanEntry): string => `${p.kind}${p.num}:${p.goal}`;
+    const entries = (x: Snapshot): string => x.plan.map(key).sort().join(",");
+    return JSON.stringify(a.goals) === JSON.stringify(b.goals) && entries(a) === entries(b);
+}
+
+// Unsaved means the plan differs from the saved plan.
+export function hasUnsaved(state: SessionState): boolean {
+    return !samePlan(snapshotOf(state), state.saved);
+}
+
+// Applies one plan edit. An edit that changes nothing returns the same state: no undo entry and
+// no change to the save state. `field` names a text field: typing in it is one undo entry.
+export function applyChange(state: SessionState, next: SessionState, field: string | null = null): SessionState {
+    if (next.goals === state.goals && next.plan === state.plan) {
+        return next === state ? state : { ...next, undo: state.undo, saved: state.saved, editing: state.editing };
+    }
+    const keep: boolean = field !== null && state.editing === field;
     return {
-        goals: GOALS.map((g: Goal) => ({ ...g })),
-        plan: STARTING_PLAN.map((p: PlanEntry) => ({ ...p })),
-        collapsed: [],
-        nextId: GOALS.length + 1,
+        ...next,
+        undo: keep ? state.undo : [...state.undo, snapshotOf(state)],
+        saved: state.saved,
+        editing: field,
     };
+}
+
+// Puts back the newest earlier plan. The saved plan, the view state and the goal counter stay.
+export function undoLast(state: SessionState): SessionState {
+    const previous: Snapshot | undefined = state.undo.at(-1);
+    return previous ? { ...state, ...previous, undo: state.undo.slice(0, -1), editing: null } : state;
+}
+
+export function savePlan(state: SessionState): SessionState {
+    return { ...state, saved: snapshotOf(state) };
 }
 
 export function ownGoal(state: SessionState, kind: ItemKind, num: number): string | null {

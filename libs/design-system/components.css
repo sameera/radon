@@ -44,6 +44,7 @@
 .rd-btn--danger:hover { background: var(--rd-danger-muted); border-color: var(--rd-danger); }
 .rd-btn--sm { height: 28px; padding: 0 var(--rd-space-2); font-size: 12px; }
 .rd-btn[disabled] { color: var(--rd-fg-subtle); cursor: not-allowed; box-shadow: none; }
+.rd-btn[aria-disabled="true"] { color: var(--rd-fg-subtle); cursor: not-allowed; box-shadow: none; }
 .rd-btn--primary[disabled] { background: var(--rd-canvas-inset); border-color: var(--rd-border); }
 
 /* ---------- Pill ---------- */

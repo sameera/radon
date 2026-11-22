@@ -11,6 +11,7 @@ import {
     goalEpicCount,
     goalItems,
     goalRank,
+    hasUnsaved,
     initiativeEpicsPlanned,
     moveGoalBy,
     moveGoalNextTo,
@@ -393,10 +394,11 @@ function GoalCard({ state, session, goal, showIssues, dnd, menu, focus, onFocuse
                         type="text"
                         aria-label="Goal name"
                         placeholder="Name this goal"
+                        onBlur={() => session.endEdit()}
                         value={goal.title}
                         onInput={(e) => {
                             const title: string = (e.currentTarget as HTMLInputElement).value;
-                            session.change((s) => setGoalText(s, goal.id, { title }));
+                            session.change((s) => setGoalText(s, goal.id, { title }), `${goal.id}:title`);
                         }}
                     />
                     <span class="rd-goal-card__count rd-text-small">{plural(epics, "epic")}</span>
@@ -457,11 +459,12 @@ function GoalCard({ state, session, goal, showIssues, dnd, menu, focus, onFocuse
                     class="rd-input rd-input--inline rd-goal-card__desc"
                     aria-label="Goal description"
                     placeholder="Describe the outcome"
+                    onBlur={() => session.endEdit()}
                     rows={1}
                     value={goal.desc}
                     onInput={(e) => {
                         const desc: string = (e.currentTarget as HTMLTextAreaElement).value;
-                        session.change((s) => setGoalText(s, goal.id, { desc }));
+                        session.change((s) => setGoalText(s, goal.id, { desc }), `${goal.id}:desc`);
                     }}
                 />
                 {items.length > 0 &&
@@ -624,6 +627,7 @@ export function GroomingPage({
     const shownWidth: number = fit(backlogWidth, space);
     const { min: minWidth, max: maxWidth } = limits(space);
     const planned: number = plannedEpicCount(INITIATIVES, state);
+    const unsaved: boolean = hasUnsaved(state);
     const dnd: DragApi = useDnd();
     const [menuKey, setMenu] = useState<string | null>(null);
     const [focusId, setFocusId] = useState<string | null>(null);
@@ -687,9 +691,25 @@ export function GroomingPage({
                 <div class="rd-groom__actions">
                     <div class="rd-groom__sum">
                         <b class="rd-groom__summary">{`${planned} of ${totalEpics(INITIATIVES)} epics planned`}</b>
-                        <span class="rd-groom__save-state">All changes saved</span>
+                        <span class="rd-groom__save-state" role="status">
+                            {unsaved ? "Unsaved changes" : "All changes saved"}
+                        </span>
                     </div>
-                    <button type="button" class="rd-btn rd-btn--primary">
+                    {/* aria-disabled, not disabled: a disabled button would drop keyboard focus. */}
+                    <button
+                        type="button"
+                        class="rd-btn"
+                        aria-disabled={state.undo.length === 0}
+                        onClick={() => state.undo.length > 0 && session.undo()}
+                    >
+                        Undo
+                    </button>
+                    <button
+                        type="button"
+                        class="rd-btn rd-btn--primary"
+                        aria-disabled={!unsaved}
+                        onClick={() => unsaved && session.save()}
+                    >
                         Save plan
                     </button>
                 </div>

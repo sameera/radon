@@ -1,6 +1,6 @@
 ---
 concept: raiden-web-view
-source_sha: fe61b8343a65d6ad98cecdfddcbee22fe7ac6f74
+source_sha: d3aa3e23642bda7a2b5efc2274c05777cd6d7cca
 generated: 2026-11-22
 ---
 
@@ -17,3 +17,5 @@ generated: 2026-11-22
 - `apps/web/manifest.webmanifest` — app manifest for install (#36)
 - `apps/web/build.ts` — static build with relative addresses (#36)
 - `apps/web/src/main.ts` — web entry point (#36)
+- `apps/web/src/signin.ts` — redirect sign-in (#45)
+- `apps/web/src/gateway.ts` — in-page gateway (#45)

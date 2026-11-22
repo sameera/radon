@@ -1,8 +1,8 @@
 ---
 title: Raiden Web View
 aliases: [web view, standalone web view, web host, raiden banner]
-touches: [raiden-app-shell, raiden-page-host]
-last_updated_by: "#30"
+touches: [raiden-app-shell, raiden-page-host, github-sign-in, github-client]
+last_updated_by: "#39"
 status: active
 verification: verified
 ---
@@ -35,8 +35,13 @@ An app manifest names the app Raiden, opens it in a standalone window and gives 
 
 - [raiden-app-shell](raiden-app-shell.md) — the web view mounts the shell and sets its banner option.
 - [raiden-page-host](raiden-page-host.md) — the page host is the extension's host. The web view is the second host beside it.
+- [github-sign-in](github-sign-in.md) — the web view signs in by full-page redirect and keeps its record in its own local storage.
+- [github-client](github-client.md) — the web view runs the client in the page.
 
 ## Decision Log
 
 ### 2026-11-22 — #30 — A thin web host with its own theme, storage and offline page
 The web view mounts the same shell in a shadow root, so what renders in the tab renders the same here. The theme follows the system preference, because there is no GitHub color mode to read. Preferences use the web view's own local storage, because GitHub's scripts do not run on that address and the extension's storage cannot be reached without the extension. The offline worker is network-first and caches only the offline page, which fits the "needs a connection" message and avoids stale builds and update prompts. The build is host-independent static files, so Lambda is not needed to serve them. Refuted alternative: mount the shell into the document with ordinary stylesheet links, which is simpler but creates a second styling path that could drift from the tab.
+
+### 2026-11-22 — #39 — Reciprocal link from github-sign-in and github-client
+The web view signs in by redirect and runs the client in the page. Recorded for the two new pages.

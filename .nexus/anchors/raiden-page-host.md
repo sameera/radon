@@ -1,6 +1,6 @@
 ---
 concept: raiden-page-host
-source_sha: 2a0cb091f456e0fd34e0ffbf61b44b7e8a7407b8
+source_sha: d3aa3e23642bda7a2b5efc2274c05777cd6d7cca
 generated: 2026-11-22
 ---
 
@@ -13,3 +13,5 @@ generated: 2026-11-22
 - `libs/shared/src/repo-nav.ts` — finds the repository tab bar, adds the Raiden tab, reads the repository address from the Code tab (#13, #28)
 - `apps/extension/src/content.ts` — extension loader, font declaration, preference store, repository address hand-off (#13, #28)
 - `apps/extension/manifest.json` — storage permission and the on-demand app resource (#13)
+- `apps/extension/src/worker.ts` — worker owning the sign-in record (#45)
+- `apps/extension/src/gateway.ts` — gateway to the worker (#45)

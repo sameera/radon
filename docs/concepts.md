@@ -4,12 +4,13 @@
 
 # Concept Atlas
 
-Orientation map of the concept store — 3 active concepts. Each links to its full page
+Orientation map of the concept store — 4 active concepts. Each links to its full page
 (behavior, invariants, decision history); code locations live in the matching
 `.nexus/anchors/<slug>.md` sidecar.
 
-## Grooming Plan
+## Raiden App Shell
 
-- [Grooming Plan](../.nexus/concepts/grooming-plan.md) — The Grooming page lets a lead plan the next sprint on sample data.
 - [Raiden App Shell](../.nexus/concepts/raiden-app-shell.md) — The shell is the frame shared by every Raiden page.
 - [Raiden Page Host](../.nexus/concepts/raiden-page-host.md) — The Raiden tab on a repository page opens the Raiden page in place of GitHub's content.
+- [Grooming Plan](../.nexus/concepts/grooming-plan.md) — The Grooming page lets a lead plan the next sprint on sample data.
+- [Raiden Web View](../.nexus/concepts/raiden-web-view.md) — The web view is the Raiden pages on a web page of their own, with no GitHub page around them.

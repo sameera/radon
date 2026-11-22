@@ -1,8 +1,8 @@
 ---
 title: Raiden App Shell
 aliases: [raiden app, sidebar, raiden pages frame]
-touches: [raiden-page-host, grooming-plan]
-last_updated_by: "#3"
+touches: [raiden-page-host, grooming-plan, raiden-web-view]
+last_updated_by: "#30"
 status: active
 verification: verified
 ---
@@ -17,7 +17,9 @@ The shell is built with Preact in its own library. The extension host only mount
 
 Switching sidebar pages changes only what the shell shows. Nothing in the address changes.
 
-Reusable controls go into the design system, each with its own guideline page: sidebar item, text input, switch, icon button and popup menu. Page-specific layout uses only the design system's tokens and type classes, with no literal colors or sizes. The few icons are copied from the Octicons set. The display font ships with the extension, because GitHub blocks fonts from other hosts. If it does not load, the system font stack is used.
+When the host sets the banner option, the shell draws a banner above the sidebar and the page. The option carries the icon, so the shell imports nothing from an app. The banner is a design-system component with a neutral ground, the brand color on the wordmark, and the height and padding of GitHub's top header. It stays at the top of the window while the document scrolls, and the frame fills the window below it. The extension never sets the option.
+
+Reusable controls go into the design system, each with its own guideline page: sidebar item, text input, switch, icon button and popup menu. Page-specific layout uses only the design system's tokens and type classes, with no literal colors or sizes. The few icons are copied from the Octicons set. The display font file lives in the design system, and each host ships its own copy, because GitHub blocks fonts from other hosts. If it does not load, the system font stack is used.
 
 ## Key Invariants
 
@@ -26,13 +28,18 @@ Reusable controls go into the design system, each with its own guideline page: s
 3. Page layout uses design-system tokens only.
 4. The shell keeps preferences only through the injected preference store.
 5. The shell makes no network request.
+6. The banner shows only when the host sets the banner option.
 
 ## Integration Points
 
 - [raiden-page-host](raiden-page-host.md) — the host mounts the shell, supplies the stylesheet text and the preference store, and resolves the theme.
 - [grooming-plan](grooming-plan.md) — Grooming is the first page the shell shows, and it is the page that opens on every load.
+- [raiden-web-view](raiden-web-view.md) — the web view mounts the shell with the banner option set.
 
 ## Decision Log
 
 ### 2026-11-21 — #3 — Preact in a host-independent library, shared controls in the design system
 All Raiden pages are built with Preact, with its React compatibility layer on, in a library that does not depend on the extension. Preact is about 4 KB gzipped against about 45 KB for React, and that size loads each time the Raiden tab opens. Controls that Sprint goal, Timeline and Settings also need go into the design system, so no page keeps a copy that drifts. The display font ships in the extension because GitHub blocks web fonts from other hosts. Refuted alternative: React, which matches the project instructions as written, but costs the size.
+
+### 2026-11-22 — #30 — The shell draws a design-system banner only when the host asks
+The banner is a design-system component that the shell draws when the host passes the banner option, with the icon. Its height, ground and type come from design-system tokens, and the shell's tests cover it. The ground is neutral and the wordmark uses the existing brand text color, which measures 5.49:1 in light and 10.48:1 in dark. The document stays the scroller, so native scroll and drag auto-scroll in Grooming behave as before. The display font file moved to the design system so neither host imports from the other. Refuted alternative: the web host draws the banner outside the shell, which puts UI in an app and needs a second style scope or a second copy of the tokens.

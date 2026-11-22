@@ -1,6 +1,6 @@
 ---
 concept: raiden-app-shell
-source_sha: b54146a1e77e582146cc9d48f7bdb891844eee93
+source_sha: 2a0cb091f456e0fd34e0ffbf61b44b7e8a7407b8
 generated: 2026-11-22
 ---
 
@@ -9,14 +9,12 @@ generated: 2026-11-22
 
 # Code Anchors: Raiden App Shell
 
-- `libs/app/src/app.tsx` — shell frame, page selection, layout preferences and banner option (#26, #36)
+- `libs/app/src/app.tsx` — shell frame, page selection, layout preferences and banner option (#26, #28, #36)
 - `libs/app/src/banner.tsx` — banner component (#36)
-- `libs/app/src/sidebar.tsx` — sidebar of Raiden pages, collapse toggle and rail (#26)
-- `libs/app/src/mount.tsx` — mounts the app into the host's shadow root, reads preferences, passes the banner option, keeps typed keys inside Raiden (#26, #36)
-- `libs/app/src/icons.tsx` — Octicons copies, including the sidebar toggle icon (#26)
-- `libs/app/src/shell.test.tsx` — shell, sidebar rail and preference tests (#26)
-- `apps/extension/src/app.ts` — app bundle entry (#13)
-- `libs/design-system/components.css` — shared controls, including the collapsed sidebar variant and banner (#26, #36)
-- `libs/design-system/components/SidebarItem.md` — sidebar item guideline, collapsed rail (#26)
+- `libs/app/src/mount.tsx` — mounts the app into the host's shadow root, reads preferences, passes the banner option and repository address, keeps typed keys inside Raiden (#26, #28, #36)
+- `libs/app/src/icons.tsx` — Octicons copies (#26, #28)
+- `libs/app/src/shell.test.tsx` — shell and preference tests (#26, #28)
+- `apps/extension/src/app.ts` — app bundle entry, passes the repository address (#13, #28)
+- `libs/design-system/components.css` — shared controls, including the banner and tooltip (#26, #28, #36)
 - `libs/design-system/fonts/bricolage-grotesque.woff2` — display font shared by both hosts (#36)
 - `libs/design-system/README.md` — design system usage rules (#13, #36)

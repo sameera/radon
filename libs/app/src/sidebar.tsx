@@ -50,9 +50,11 @@ interface SidebarProps {
     onToggle: () => void;
     // The epics not planned in any goal. It shows on the Grooming item.
     unplanned?: number;
+    // The host's sign-in control, drawn above the sprint footer.
+    account?: VNode;
 }
 
-export function Sidebar({ current, onSelect, collapsed, onToggle, unplanned = 0 }: SidebarProps): VNode {
+export function Sidebar({ current, onSelect, collapsed, onToggle, unplanned = 0, account }: SidebarProps): VNode {
     const item = { current, onSelect };
     return (
         <nav class={`rd-nav${collapsed ? " rd-nav--collapsed" : ""}`} aria-label="Raiden pages">
@@ -91,6 +93,7 @@ export function Sidebar({ current, onSelect, collapsed, onToggle, unplanned = 0 
             <NavItem page="settings" icon={<SettingsIcon />} label="Settings" {...item}>
                 Settings
             </NavItem>
+            {account}
             <div class="rd-nav__foot">
                 <b>{SPRINT.current}</b> ends in {SPRINT.daysLeft} days
                 <br />

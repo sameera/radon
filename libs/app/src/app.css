@@ -84,3 +84,9 @@
 
 /* With the banner on, the frame fills the window below it. The document stays the scroller. */
 .rd-app--framed { min-height: calc(100vh - var(--rd-header-height)); border-top: 0; }
+
+/* Sign-in control: sits above the sprint footer and hides when the sidebar is collapsed. */
+.rd-nav__account { display: flex; flex-direction: column; gap: var(--rd-space-2, 8px); padding: var(--rd-space-3, 12px); }
+.rd-nav__user { font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.rd-nav__notice { margin: 0; color: var(--rd-danger); font-size: 0.875em; }
+.rd-nav--collapsed .rd-nav__account { display: none; }

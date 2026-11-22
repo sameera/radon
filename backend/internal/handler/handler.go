@@ -21,6 +21,8 @@ type DB interface {
 // Handler routes API Gateway HTTP API (v2) events.
 type Handler struct {
 	DB DB
+	// Auth turns on the sign-in endpoints. When nil they answer 404.
+	Auth *AuthConfig
 }
 
 // Handle serves one request.
@@ -31,6 +33,16 @@ func (h *Handler) Handle(ctx context.Context, req events.APIGatewayV2HTTPRequest
 			return respond(http.StatusServiceUnavailable, map[string]string{"status": "db unavailable"}), nil
 		}
 		return respond(http.StatusOK, map[string]string{"status": "ok"}), nil
+	case "POST /auth/exchange", "OPTIONS /auth/exchange":
+		if h.Auth != nil {
+			return h.exchange(ctx, req), nil
+		}
+		return respond(http.StatusNotFound, map[string]string{"error": "not found"}), nil
+	case "POST /auth/refresh", "OPTIONS /auth/refresh":
+		if h.Auth != nil {
+			return h.refresh(ctx, req), nil
+		}
+		return respond(http.StatusNotFound, map[string]string{"error": "not found"}), nil
 	default:
 		return respond(http.StatusNotFound, map[string]string{"error": "not found"}), nil
 	}

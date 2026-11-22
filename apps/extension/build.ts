@@ -1,9 +1,18 @@
 // Run from the repo root: node apps/extension/build.ts
 import { build } from "esbuild";
 import { execSync } from "node:child_process";
+import { teamManifest } from "./src/team.ts";
 import { cp, mkdir, readFile, rm, writeFile } from "node:fs/promises";
 
 const out: string = "dist/apps/extension";
+
+// Team build settings (D10): fixed in the bundle when each team builds the extension.
+const team = {
+    clientId: process.env.RAIDEN_GITHUB_CLIENT_ID ?? "",
+    backendUrl: process.env.RAIDEN_BACKEND_URL ?? "",
+};
+const extensionKey: string = process.env.RAIDEN_EXTENSION_KEY ?? "";
+const define = { __RAIDEN_TEAM__: JSON.stringify(team) };
 
 function git(args: string): string {
     return execSync(`git ${args}`, { encoding: "utf8", stdio: ["ignore", "pipe", "ignore"] }).trim();
@@ -14,7 +23,10 @@ function git(args: string): string {
 // chrome://extensions shows; it carries the commit, the latest merged PR, and a dirty flag.
 // Without git (e.g. a source tarball) the manifest's own version is kept.
 async function stampedManifest(): Promise<Record<string, unknown>> {
-    const manifest = JSON.parse(await readFile("apps/extension/manifest.json", "utf8"));
+    const manifest = teamManifest(JSON.parse(await readFile("apps/extension/manifest.json", "utf8")), {
+        backendUrl: team.backendUrl,
+        extensionKey,
+    });
     let build: string;
     let sha: string;
     let dirty: boolean;
@@ -46,6 +58,16 @@ await build({
     target: "chrome120",
     tsconfig: "apps/extension/tsconfig.json",
     outfile: `${out}/content.js`,
+});
+// The background worker owns the sign-in record and runs in its own context.
+await build({
+    entryPoints: ["apps/extension/src/background.ts"],
+    bundle: true,
+    format: "iife",
+    target: "chrome120",
+    tsconfig: "apps/extension/tsconfig.json",
+    define,
+    outfile: `${out}/background.js`,
 });
 // The app bundle is a web-accessible module. Preact's React compatibility layer is on.
 await build({

@@ -4,6 +4,8 @@
 import type { SignInPort } from "@raiden/app";
 import {
     checkReturn,
+    createGitHubClient,
+    type GitHubClient,
     exchangeCode,
     removeReturnParams,
     startAttempt,
@@ -86,11 +88,14 @@ export async function finishReturn(deps: WebSignInDeps): Promise<{ notice: boole
     }
 }
 
-export function webSignInPort(deps: WebSignInDeps): SignInPort {
+export function webSignInPort(
+    deps: WebSignInDeps,
+    client: Pick<GitHubClient, "status"> = createGitHubClient({
+        settings: deps.settings, records: webRecordStore(deps.local), fetch: deps.fetch,
+    }),
+): SignInPort {
     return {
-        async status(): Promise<string | null> {
-            return (await webRecordStore(deps.local).get())?.login ?? null;
-        },
+        status: () => client.status(),
         async signIn(): Promise<{ login: string } | null> {
             const { url, pending } = await startAttempt(deps.settings, deps.returnUrl);
             deps.session.setItem(PENDING_KEY, JSON.stringify(pending));

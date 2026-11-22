@@ -60,10 +60,6 @@ export function createWorker(deps: WorkerDeps): Worker {
     const client: GitHubClient = createGitHubClient({ settings: deps.settings, records, fetch: deps.fetch });
     let inFlight: Promise<{ login: string | null }> | null = null;
 
-    async function readLogin(): Promise<string | null> {
-        return (await records.get())?.login ?? null;
-    }
-
     async function signIn(): Promise<{ login: string | null }> {
         // The pending attempt lives in this closure only and is dropped when the attempt ends (G8).
         try {
@@ -99,7 +95,10 @@ export function createWorker(deps: WorkerDeps): Worker {
                 return request ? client.request(request) : Promise.resolve(OTHER_FAILURE);
             }
             if (type === "raiden/status") {
-                return readLogin().then((login: string | null) => ({ login }));
+                return client.status().then(
+                    (login) => ({ login }),
+                    () => ({ unavailable: true }),
+                );
             }
             inFlight ??= signIn().finally(() => {
                 inFlight = null;

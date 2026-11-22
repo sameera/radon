@@ -3,6 +3,8 @@ package handler
 import (
 	"context"
 	"encoding/json"
+	"net/http"
+	"net/http/httptest"
 	"strings"
 	"testing"
 )
@@ -75,6 +77,17 @@ func TestRefreshGitHubFailureLeaksNothing(t *testing.T) {
 		if strings.Contains(res.Body, leak) {
 			t.Fatalf("response leaks %q", leak)
 		}
+	}
+}
+
+func TestRefreshUpstreamUnavailable(t *testing.T) {
+	gh := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		http.Error(w, "upstream unavailable", http.StatusServiceUnavailable)
+	}))
+	defer gh.Close()
+	res, _ := authHandler(gh).Handle(context.Background(), post("/auth/refresh", webOrigin, `{"refresh_token":"rt1"}`))
+	if res.StatusCode != http.StatusBadGateway {
+		t.Fatalf("got %d, want %d", res.StatusCode, http.StatusBadGateway)
 	}
 }
 

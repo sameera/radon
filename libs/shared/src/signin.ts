@@ -32,7 +32,11 @@ export interface PendingAttempt {
 export type ReturnResult = { ok: true; code: string } | { ok: false };
 
 // Carries only a fixed message. It never holds a code, verifier or token (G5).
-export class SignInError extends Error {}
+export class SignInError extends Error {
+    constructor(message: string, readonly status?: number) {
+        super(message);
+    }
+}
 
 const AUTHORIZE_URL: string = "https://github.com/login/oauth/authorize";
 const RETURN_PARAMS: string[] = ["code", "state", "error", "error_description"];
@@ -117,7 +121,7 @@ export async function backendPost(
         throw new SignInError("The sign-in server could not be reached");
     }
     if (!res.ok) {
-        throw new SignInError(`The sign-in server refused the request (${res.status})`);
+        throw new SignInError(`The sign-in server refused the request (${res.status})`, res.status);
     }
     try {
         return (await res.json()) as TokenAnswer;
@@ -143,10 +147,10 @@ export async function exchangeCode(
         throw new SignInError("The sign-in server's answer was incomplete");
     }
     const record: SignInRecord = { accessToken: answer.access_token, login: answer.login };
-    if (typeof answer.expires_in === "number") {
+    if (typeof answer.expires_in === "number" && answer.expires_in > 0) {
         record.expiresAt = now() + answer.expires_in * 1000;
     }
-    if (typeof answer.refresh_token === "string") {
+    if (typeof answer.refresh_token === "string" && answer.refresh_token !== "") {
         record.refreshToken = answer.refresh_token;
     }
     // Keep the key order stable for equality checks: accessToken, expiresAt, refreshToken, login.
@@ -175,8 +179,8 @@ export async function refreshTokens(
     }
     return {
         accessToken: answer.access_token,
-        ...(typeof answer.expires_in === "number" ? { expiresAt: now() + answer.expires_in * 1000 } : {}),
-        ...(typeof answer.refresh_token === "string" ? { refreshToken: answer.refresh_token } : {}),
+        ...(typeof answer.expires_in === "number" && answer.expires_in > 0 ? { expiresAt: now() + answer.expires_in * 1000 } : {}),
+        ...(typeof answer.refresh_token === "string" && answer.refresh_token !== "" ? { refreshToken: answer.refresh_token } : {}),
         login: record.login,
     };
 }

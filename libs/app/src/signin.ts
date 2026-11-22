@@ -6,6 +6,7 @@ export interface SignInState {
     // True after a sign-in that did not finish: cancelled, denied, or failed.
     notice: boolean;
     busy: boolean;
+    status: "checking" | "ready" | "unavailable";
 }
 
 // How a host reaches its own sign-in. The shell is the same in both hosts; only the port differs.
@@ -19,28 +20,47 @@ export interface SignInPort {
 export interface SignInController {
     get(): SignInState;
     start(): void;
+    check(): void;
     subscribe(listener: () => void): () => void;
 }
 
 export function createSignInController(port: SignInPort, initial: { notice?: boolean } = {}): SignInController {
-    let state: SignInState = { login: null, notice: initial.notice ?? false, busy: false };
+    let state: SignInState = { login: null, notice: initial.notice ?? false, busy: false, status: "checking" };
     const listeners: Set<() => void> = new Set();
     const set = (next: SignInState): void => {
         state = next;
         listeners.forEach((l) => l());
     };
-    void port
-        .status()
-        .then((login: string | null) => {
-            if (login && state.login === null) {
-                set({ ...state, login });
-            }
-        })
-        .catch(() => undefined);
+    let checking = false;
+    function check(): void {
+        if (checking || state.busy) {
+            return;
+        }
+        checking = true;
+        const previous = state;
+        void port.status()
+            .then(
+                (login) => {
+                    if (state === previous) {
+                        set({ ...state, login, status: "ready" });
+                    }
+                },
+                () => {
+                    if (state === previous) {
+                        set({ ...state, login: null, status: "unavailable" });
+                    }
+                },
+            )
+            .finally(() => {
+                checking = false;
+            });
+    }
+    check();
     return {
         get: () => state,
+        check,
         start() {
-            if (state.busy) {
+            if (state.busy || state.login || state.status !== "ready") {
                 return;
             }
             set({ ...state, busy: true, notice: false });
@@ -48,7 +68,7 @@ export function createSignInController(port: SignInPort, initial: { notice?: boo
                 .signIn()
                 .catch(() => null)
                 .then((result: { login: string } | null) => {
-                    set(result ? { login: result.login, notice: false, busy: false } : { ...state, notice: true, busy: false });
+                    set(result ? { login: result.login, notice: false, busy: false, status: "ready" } : { ...state, notice: true, busy: false });
                 });
         },
         subscribe(listener) {
@@ -65,7 +85,16 @@ export function useSignIn(controller: SignInController | undefined): SignInState
             return;
         }
         setState(controller.get());
-        return controller.subscribe(() => setState(controller.get()));
+        const unsubscribe = controller.subscribe(() => setState(controller.get()));
+        const timer = window.setInterval(controller.check, 60_000);
+        window.addEventListener("focus", controller.check);
+        document.addEventListener("visibilitychange", controller.check);
+        return () => {
+            unsubscribe();
+            window.clearInterval(timer);
+            window.removeEventListener("focus", controller.check);
+            document.removeEventListener("visibilitychange", controller.check);
+        };
     }, [controller]);
     return controller ? state : null;
 }

@@ -1,9 +1,17 @@
 // Run from the repo root: node apps/web/build.ts
 // Every address in the build is relative, so the files work at the root or under a sub-path.
 import { build } from "esbuild";
+import { withBackend } from "./src/csp.ts";
 import { cp, mkdir, readFile, rm, writeFile } from "node:fs/promises";
 
 const out: string = "dist/apps/web";
+
+// Team build settings (D10): fixed in the bundle when each team builds the web view.
+const team = {
+    clientId: process.env.RAIDEN_GITHUB_CLIENT_ID ?? "",
+    backendUrl: process.env.RAIDEN_BACKEND_URL ?? "",
+    returnUrl: process.env.RAIDEN_WEB_RETURN_URL ?? "",
+};
 
 await rm(out, { recursive: true, force: true });
 await mkdir(out, { recursive: true });
@@ -18,6 +26,7 @@ await build({
     alias: { react: "preact/compat", "react-dom": "preact/compat" },
     loader: { ".css": "text" },
     minify: true,
+    define: { __RAIDEN_TEAM__: JSON.stringify(team) },
     outfile: `${out}/main.js`,
 });
 // The offline worker gets a new cache name every build, so the next update replaces the offline
@@ -39,6 +48,6 @@ await writeFile(`${out}/offline.html`, offline);
 await cp("apps/web/manifest.webmanifest", `${out}/manifest.webmanifest`);
 await cp("docs/assets/raiden-192x.png", `${out}/raiden-192x.png`);
 await cp("docs/assets/raiden-512x.png", `${out}/raiden-512x.png`);
-await cp("apps/web/index.html", `${out}/index.html`);
+await writeFile(`${out}/index.html`, withBackend(await readFile("apps/web/index.html", "utf8"), team.backendUrl));
 await cp("libs/design-system/fonts", `${out}/fonts`, { recursive: true });
 await cp("docs/assets/raiden-128x.png", `${out}/raiden-128x.png`);

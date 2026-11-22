@@ -12,3 +12,13 @@
 - **Choice:** A request with an unlisted Origin is refused before any GitHub call.
 - **Why:** G10 limits cross-origin answers to the configured origins, and refusing early saves a GitHub call.
 - **Refuted alternative:** serve the request and omit the CORS headers.
+
+## 2026-11-22 — Web view finishes the return before the shell mounts, in main.ts
+- **Choice:** `finishReturn` runs first, strips the address, then the shell mounts with the result.
+- **Why:** G9 needs the code gone from the address and history before pages mount, and D4 needs the page to open on Grooming.
+- **Refuted alternative:** finish the return inside the shell after mounting.
+
+## 2026-11-22 — CSP is a meta tag in index.html with a build-time backend placeholder
+- **Choice:** A `<meta http-equiv>` policy; the build fills the backend origin.
+- **Why:** The web view is static files with no server of its own to send a header.
+- **Refuted alternative:** a header file such as `_headers`, which only some hosts read.

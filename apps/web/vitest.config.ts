@@ -7,6 +7,7 @@ export default defineConfig({
     esbuild: { jsx: "automatic", jsxImportSource: "preact" },
     resolve: {
         alias: [
+            { find: /^@raiden\/shared$/, replacement: lib("shared/src/index.ts") },
             { find: /^@raiden\/app$/, replacement: lib("app/src/index.ts") },
             { find: /^@raiden\/app\/(.*)$/, replacement: lib("app/src/$1") },
             { find: /^@raiden\/design-system\/(.*)$/, replacement: lib("design-system/$1") },

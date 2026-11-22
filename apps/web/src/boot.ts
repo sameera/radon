@@ -1,9 +1,10 @@
-import { mountApp, type PreferenceStore } from "@raiden/app";
+import { mountApp, type PreferenceStore, type SignInController } from "@raiden/app";
 import { applyTheme } from "./theme.ts";
 
 export interface WebOptions {
     css: string;
     prefs: PreferenceStore;
+    signIn?: SignInController;
 }
 
 export const HOST_ID: string = "raiden-web";
@@ -34,6 +35,7 @@ export async function boot(doc: Document, win: Window, options: WebOptions): Pro
     const unmount: () => void = await mountApp(host.attachShadow({ mode: "open" }), {
         css: options.css,
         prefs: options.prefs,
+        signIn: options.signIn,
         banner: { icon: "raiden-128x.png" },
     });
     return () => {

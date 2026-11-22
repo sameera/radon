@@ -22,10 +22,11 @@ const (
 
 // fakeGitHub plays GitHub's token endpoint and user endpoint.
 type fakeGitHub struct {
-	form  url.Values
-	auth  string
-	fail  bool
-	tests *testing.T
+	form      url.Values
+	auth      string
+	fail      bool
+	errorCode string
+	tests     *testing.T
 }
 
 func (f *fakeGitHub) server() *httptest.Server {
@@ -34,6 +35,10 @@ func (f *fakeGitHub) server() *httptest.Server {
 		_ = r.ParseForm()
 		f.form = r.PostForm
 		w.Header().Set("content-type", "application/json")
+		if f.errorCode != "" {
+			_ = json.NewEncoder(w).Encode(map[string]string{"error": f.errorCode, "error_description": "secretcode"})
+			return
+		}
 		if f.fail {
 			_, _ = w.Write([]byte(`{"error":"bad_verification_code","error_description":"secretcode"}`))
 			return
@@ -145,10 +150,42 @@ func TestExchangeGitHubFailureLeaksNothing(t *testing.T) {
 	if res.StatusCode != 400 {
 		t.Fatalf("got %d", res.StatusCode)
 	}
-	for _, leak := range []string{"secretcode", "s3cret", "bad_verification_code"} {
+	for _, leak := range []string{"secretcode", "s3cret"} {
 		if strings.Contains(res.Body, leak) {
 			t.Fatalf("response leaks %q: %s", leak, res.Body)
 		}
+	}
+}
+
+func TestExchangeReportsSafeGitHubFailureReason(t *testing.T) {
+	for _, tc := range []struct {
+		upstream string
+		status   int
+		reason   string
+	}{
+		{"incorrect_client_credentials", 502, "incorrect_client_credentials"},
+		{"redirect_uri_mismatch", 502, "redirect_uri_mismatch"},
+		{"bad_verification_code", 400, "bad_verification_code"},
+		{"invalid_grant", 400, "invalid_grant"},
+		{"unverified_user_email", 400, "unverified_user_email"},
+		{"unexpected_error", 502, ""},
+	} {
+		t.Run(tc.upstream, func(t *testing.T) {
+			gh := (&fakeGitHub{errorCode: tc.upstream}).server()
+			defer gh.Close()
+			res, _ := authHandler(gh).Handle(context.Background(),
+				post("/auth/exchange", webOrigin, `{"code":"secretcode","verifier":"v","redirect_uri":"`+webReturn+`"}`))
+			if res.StatusCode != tc.status {
+				t.Fatalf("got %d want %d: %s", res.StatusCode, tc.status, res.Body)
+			}
+			var body map[string]string
+			if err := json.Unmarshal([]byte(res.Body), &body); err != nil {
+				t.Fatal(err)
+			}
+			if body["error"] != "exchange failed" || body["reason"] != tc.reason || strings.Contains(res.Body, "secretcode") {
+				t.Fatalf("unsafe or incorrect response: %s", res.Body)
+			}
+		})
 	}
 }
 

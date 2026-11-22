@@ -160,7 +160,11 @@ func (h *Handler) exchange(ctx context.Context, req events.APIGatewayV2HTTPReque
 		"redirect_uri":  {in.RedirectURI},
 	})
 	if status != http.StatusOK {
-		return authRespond(http.StatusBadRequest, map[string]string{"error": "exchange failed"}, cors)
+		body := map[string]string{"error": "exchange failed"}
+		if tok.Error != "" {
+			body["reason"] = tok.Error
+		}
+		return authRespond(status, body, cors)
 	}
 	login, ok := h.Auth.login(ctx, tok.AccessToken)
 	if !ok {
@@ -174,7 +178,7 @@ func (h *Handler) exchange(ctx context.Context, req events.APIGatewayV2HTTPReque
 	}, cors)
 }
 
-// tokens asks GitHub for tokens and maps failures to fixed statuses without exposing upstream errors.
+// tokens asks GitHub for tokens and maps failures to fixed statuses and safe error categories.
 func (a *AuthConfig) tokens(ctx context.Context, form url.Values) (tokenAnswer, int) {
 	form.Set("client_id", a.ClientID)
 	form.Set("client_secret", a.ClientSecret)
@@ -194,8 +198,13 @@ func (a *AuthConfig) tokens(ctx context.Context, form url.Values) (tokenAnswer, 
 	if err != nil || res.StatusCode == http.StatusTooManyRequests || res.StatusCode >= 500 || json.Unmarshal(b, &out) != nil {
 		return tokenAnswer{}, http.StatusBadGateway
 	}
-	if out.Error == "bad_refresh_token" || out.Error == "bad_verification_code" {
-		return tokenAnswer{}, http.StatusBadRequest
+	// Only return documented, fixed error codes. GitHub's description and any unknown error
+	// may contain request details, so neither is sent to the browser.
+	switch out.Error {
+	case "bad_refresh_token", "bad_verification_code", "invalid_grant", "unverified_user_email":
+		return tokenAnswer{Error: out.Error}, http.StatusBadRequest
+	case "incorrect_client_credentials", "redirect_uri_mismatch":
+		return tokenAnswer{Error: out.Error}, http.StatusBadGateway
 	}
 	if res.StatusCode != http.StatusOK || out.Error != "" || out.AccessToken == "" {
 		return tokenAnswer{}, http.StatusBadGateway

@@ -20,6 +20,10 @@ Other platforms: see the [getting started guide](https://docs.aws.amazon.com/emu
 
 ## Run
 
+For a split terminal window, run `./run-server.sh` from the repo root. It starts the emulator, waits for DynamoDB, creates the table, loads `.env.backend.local` if present, and runs the Go server. It uses a tmux session named `raiden-server`; detach with `Ctrl-b d` and reattach with `tmux attach -t raiden-server`. Ctrl+C in the backend pane stops the backend and leaves the emulator running. The stopped pane stays visible; run `./run-server.sh` again to restart it. To stop both processes, run `tmux kill-session -t raiden-server`.
+
+To run each step manually:
+
     scripts/emulator.sh start          # terminal 1, foreground, https://127.0.0.1:9297
     scripts/emulator.sh setup          # terminal 2, creates the table from backend/local/table.json
     eval "$(scripts/emulator.sh env)"  # points the AWS CLI and Go SDK at the emulator

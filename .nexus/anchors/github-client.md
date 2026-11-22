@@ -1,6 +1,6 @@
 ---
 concept: github-client
-source_sha: d3aa3e23642bda7a2b5efc2274c05777cd6d7cca
+source_sha: caae34dcf7af60b0769efe13a8e02b3e9b74c43d
 generated: 2026-11-22
 ---
 
@@ -9,7 +9,8 @@ generated: 2026-11-22
 
 # Code Anchors: GitHub Client
 
-- `libs/shared/src/github.ts` — the shared client: token, renewal, failure kinds, API-path check (#45)
+- `libs/shared/src/github.ts` — the shared client: token, renewal, failure kinds, API-path check, session status (#47)
 - `libs/app/src/gateway.ts` — gateway given by hosts to pages (#45)
 - `apps/extension/src/gateway.ts` — extension gateway passing requests to the worker (#45)
-- `apps/web/src/gateway.ts` — web view gateway running the client in the page (#45)
+- `apps/web/src/gateway.ts` — web view gateway running the client in the page (#47)
+- `libs/app/src/signin.ts` — session check on focus and every minute (#47)

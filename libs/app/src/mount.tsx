@@ -14,6 +14,9 @@ export interface AppOptions {
     css?: string;
     prefs?: PreferenceStore;
     session?: SessionStore;
+    // The web address of the repository the user is on, for example https://github.com/acme/widgets.
+    // The host works it out from the page. Without it, the page builds no GitHub links.
+    repoUrl?: string;
 }
 
 const SHOW_ISSUES: string = "showIssues";
@@ -53,6 +56,7 @@ export async function mountApp(root: ShadowRoot | HTMLElement, options: AppOptio
     render(
         <App
             session={options.session ?? sharedSession()}
+            repoUrl={options.repoUrl}
             showIssues={showIssues}
             onShowIssues={(value: boolean) => void options.prefs?.set(SHOW_ISSUES, value)}
             sidebarCollapsed={collapsed}

@@ -29,6 +29,7 @@ import {
     type PlanEntry,
     type SessionState,
 } from "./plan.ts";
+import { ExternalLink, repoPage } from "./links.tsx";
 import { GROOMING_SPRINT, INITIATIVES } from "./sample.ts";
 import type { SessionStore } from "./session.ts";
 
@@ -108,6 +109,7 @@ function goalLabel(state: SessionState, goalId: string | null): string {
 }
 
 interface BacklogProps {
+    repoUrl?: string;
     state: SessionState;
     session: SessionStore;
     dnd: DragApi;
@@ -188,10 +190,11 @@ function ItemMenu({ state, session, menu, kind, num }: ItemMenuProps): VNode {
     );
 }
 
-function Backlog({ state, session, dnd, filter, onFilter, width, menu }: BacklogProps): VNode {
+function Backlog({ repoUrl, state, session, dnd, filter, onFilter, width, menu }: BacklogProps): VNode {
     const shown: Initiative[] = filterBacklog(INITIATIVES, filter);
     const filtering: boolean = filter.trim() !== "";
     const total: number = totalEpics(INITIATIVES);
+    const newInitiative: string | null = repoPage(repoUrl, "issues/new");
     const d: Drag | null = dnd.drag;
     // Only an item dragged out of a goal, with a plan of its own, can be dropped here.
     const accepts: boolean =
@@ -290,6 +293,13 @@ function Backlog({ state, session, dnd, filter, onFilter, width, menu }: Backlog
                     );
                 })}
             </div>
+            {newInitiative !== null && (
+                <div class="rd-backlog__foot">
+                    <ExternalLink class="rd-backlog__new rd-text-small" href={newInitiative}>
+                        New initiative in GitHub
+                    </ExternalLink>
+                </div>
+            )}
         </section>
     );
 }
@@ -521,6 +531,7 @@ function GoalCard({ state, session, goal, showIssues, dnd, menu, focus, onFocuse
 }
 
 interface GroomingProps {
+    repoUrl?: string;
     session: SessionStore;
     state: SessionState;
     showIssues: boolean;
@@ -608,6 +619,7 @@ function Divider({ width, min, max, onChange }: DividerProps): VNode {
 }
 
 export function GroomingPage({
+    repoUrl,
     session,
     state,
     showIssues,
@@ -676,10 +688,10 @@ export function GroomingPage({
             }
         };
         document.addEventListener("keydown", onKey);
-        document.addEventListener("click", onClick);
+        document.addEventListener("click", onClick, true);
         return () => {
             document.removeEventListener("keydown", onKey);
-            document.removeEventListener("click", onClick);
+            document.removeEventListener("click", onClick, true);
         };
     }, [menuKey]);
     return (
@@ -724,6 +736,7 @@ export function GroomingPage({
             </header>
             <div class="rd-groom__panels" ref={panelsRef}>
                 <Backlog
+                    repoUrl={repoUrl}
                     state={state}
                     session={session}
                     dnd={dnd}

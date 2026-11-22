@@ -73,6 +73,7 @@ export async function mountApp(root: ShadowRoot | HTMLElement, options: AppOptio
             banner={options.banner}
             signIn={options.signIn}
             gateway={options.gateway}
+            prefs={options.prefs}
             showIssues={showIssues}
             onShowIssues={(value: boolean) => void options.prefs?.set(SHOW_ISSUES, value)}
             sidebarCollapsed={collapsed}

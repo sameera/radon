@@ -8,6 +8,8 @@ import { GroomingPage } from "./grooming.tsx";
 import { PlaceholderPage } from "./pages.tsx";
 import { RepoContext, useRepo, useRepoStore, type RepoStore } from "./repo.tsx";
 import { useRepoList } from "./repolist.ts";
+import { REMEMBERED, useRemembered, writeRemembered } from "./remember.ts";
+import type { PreferenceStore } from "./mount.tsx";
 import { INITIATIVES } from "./sample.ts";
 import { unplannedEpicCount } from "./plan.ts";
 import { useSession, type SessionStore } from "./session.ts";
@@ -27,6 +29,7 @@ export interface AppProps {
     banner?: { icon: string };
     signIn?: SignInController;
     gateway?: GitHubGateway;
+    prefs?: PreferenceStore;
 }
 
 // The current page is in-memory state: switching never touches the address, and a reload
@@ -42,6 +45,7 @@ function Shell({
     banner,
     signIn,
     gateway,
+    prefs,
 }: Omit<AppProps, "repo">): VNode {
     const [backlogWidth, setBacklogWidth] = useState<number | undefined>(initialWidth);
     const [collapsed, setCollapsed] = useState<boolean>(sidebarCollapsed);
@@ -69,7 +73,16 @@ function Shell({
         };
     }, [gateway, signIn]);
     // Only a host with a banner lets the person pick a repository, and only while signed in (G5, G6).
-    const repos = useRepoList(banner ? protectedGateway : undefined, auth?.login);
+    const pickable: boolean = banner !== undefined;
+    useRemembered(pickable, auth?.login, prefs, repoStore);
+    const repos = useRepoList(pickable ? protectedGateway : undefined, auth?.login, (fresh) => {
+        // A complete list without the current repository means the person lost it (D7).
+        const now = repoStore?.get();
+        if (now && !fresh.some((r) => r.owner === now.owner && r.name === now.name)) {
+            repoStore?.set(null);
+            void prefs?.set(REMEMBERED, null);
+        }
+    });
     const account = signIn && auth ? <Account signIn={signIn} state={auth} /> : undefined;
     const layout: VNode = signIn && !auth?.login ? (
         <main class="rd-sign-in">
@@ -121,7 +134,10 @@ function Shell({
                 icon={banner.icon}
                 picker={
                     auth?.login ? (
-                        <RepoPicker repos={repos} current={current} onPick={(repo) => repoStore?.set(repo)} />
+                        <RepoPicker repos={repos} current={current} onPick={(repo) => {
+                                repoStore?.set(repo);
+                                writeRemembered(prefs, auth.login!, repo);
+                            }} />
                     ) : undefined
                 }
             />

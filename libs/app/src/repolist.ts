@@ -1,4 +1,4 @@
-import { useEffect, useState } from "preact/hooks";
+import { useEffect, useRef, useState } from "preact/hooks";
 import type { GitHubRequest, GitHubResult } from "@raiden/shared";
 import type { GitHubGateway } from "./gateway.ts";
 import type { Repo } from "./repo.tsx";
@@ -89,9 +89,16 @@ export async function loadReachable(gateway: GitHubGateway): Promise<Reachable> 
     return { complete: true, repos };
 }
 
-// Loads the reachable list while `login` is set. A failed or partial load changes nothing (G12).
-export function useRepoList(gateway: GitHubGateway | undefined, login: string | null | undefined): Repo[] {
+// Loads the reachable list while `login` is set. Only a complete load counts: `onComplete` runs
+// with it. A failed or partial load changes nothing (G12).
+export function useRepoList(
+    gateway: GitHubGateway | undefined,
+    login: string | null | undefined,
+    onComplete?: (repos: Repo[]) => void,
+): Repo[] {
     const [repos, setRepos] = useState<Repo[]>([]);
+    const latest = useRef(onComplete);
+    latest.current = onComplete;
     useEffect(() => {
         if (!gateway || !login) {
             setRepos([]);
@@ -101,6 +108,7 @@ export function useRepoList(gateway: GitHubGateway | undefined, login: string | 
         void loadReachable(gateway).then((result: Reachable) => {
             if (live && result.complete) {
                 setRepos(result.repos);
+                latest.current?.(result.repos);
             }
         });
         return () => {

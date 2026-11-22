@@ -30,5 +30,5 @@ await build({
     outfile: `${out}/app.js`,
 });
 await cp("apps/extension/manifest.json", `${out}/manifest.json`);
-await cp("apps/extension/fonts", `${out}/fonts`, { recursive: true });
-await cp("docs/assets/raiden.png", `${out}/raiden.png`);
+await cp("libs/design-system/fonts", `${out}/fonts`, { recursive: true });
+await cp("docs/assets/raiden-128x.png", `${out}/raiden-128x.png`);

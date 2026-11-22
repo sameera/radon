@@ -15,6 +15,7 @@ An unavailable action is `disabled` and uses `rd-fg-subtle`. Hover darkens one s
 ## Consumer provides
 
 - The trigger's `aria-haspopup="menu"` and `aria-expanded`.
+- Keyboard: on open, focus moves to the first enabled entry. Up, Down, Home and End move between enabled entries. Escape closes the menu and returns focus to the trigger. Tab closes it. After an entry is picked, focus goes to a control that still exists.
 - Closing: on Escape, on a click outside, and after an entry is picked. Only one menu is open at a time.
 
 ## Don't

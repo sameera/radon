@@ -11,6 +11,8 @@ An IssueRef names one GitHub issue by its Nexus type glyph, its number and its t
 
 **Structure:** `a.rd-ref` > `.rd-glyph` + `.rd-ref__num` (mono, `rd-fg-muted`) + `.rd-ref__title`. Titles truncate with an ellipsis; give the parent a width.
 
+**Link.** The whole reference, number and title, is the link. Open it in a new tab with `rel="noopener noreferrer"`. Inside a draggable row, set `draggable="false"` on the link so a drag that starts on it drags the row. With no repository address, render `span.rd-ref` instead, as plain text.
+
 **Consumer provides:** the issue URL, number, title, type and open/closed state. Indent children 18px under their epic.
 
 **Don't** make the IssueRef editable. Issues are edited in GitHub.

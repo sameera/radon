@@ -10,6 +10,9 @@ export interface RepoNav {
     nav: HTMLElement;
     list: HTMLElement;
     base: string;
+    // The repository's web address: the origin and path of the Code tab link. It needs no
+    // network request.
+    url: string;
 }
 
 // The tab bar is `nav[aria-label="Repository"]` on repository pages only. Organization and
@@ -22,11 +25,12 @@ export function findRepoNav(doc: Document): RepoNav | null {
     if (!nav || !list || !code) {
         return null;
     }
-    const base: string = new URL(code.href, doc.baseURI).pathname.replace(/\/+$/, "");
+    const link: URL = new URL(code.href, doc.baseURI);
+    const base: string = link.pathname.replace(/\/+$/, "");
     if (!REPO_PATH.test(base)) {
         return null;
     }
-    return { nav, list, base };
+    return { nav, list, base, url: `${link.origin}${base}` };
 }
 
 export const RAIDEN_PARAM: string = "raiden";

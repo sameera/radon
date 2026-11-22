@@ -1,0 +1,23 @@
+{
+    "name": "web",
+    "projectType": "application",
+    "sourceRoot": "apps/web/src",
+    "tags": ["scope:web"],
+    "implicitDependencies": ["app", "design-system"],
+    "targets": {
+        "build": {
+            "executor": "nx:run-commands",
+            "inputs": ["default", "^default", "{workspaceRoot}/docs/assets/*.png"],
+            "options": { "command": "node apps/web/build.ts", "cwd": "{workspaceRoot}" },
+            "outputs": ["{workspaceRoot}/dist/apps/web"]
+        },
+        "typecheck": {
+            "executor": "nx:run-commands",
+            "options": { "command": "tsc --noEmit -p apps/web/tsconfig.json", "cwd": "{workspaceRoot}" }
+        },
+        "test": {
+            "executor": "nx:run-commands",
+            "options": { "command": "vitest run --root apps/web", "cwd": "{workspaceRoot}" }
+        }
+    }
+}

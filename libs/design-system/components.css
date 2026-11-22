@@ -44,6 +44,7 @@
 .rd-btn--danger:hover { background: var(--rd-danger-muted); border-color: var(--rd-danger); }
 .rd-btn--sm { height: 28px; padding: 0 var(--rd-space-2); font-size: 12px; }
 .rd-btn[disabled] { color: var(--rd-fg-subtle); cursor: not-allowed; box-shadow: none; }
+.rd-btn[aria-disabled="true"] { color: var(--rd-fg-subtle); cursor: not-allowed; box-shadow: none; }
 .rd-btn--primary[disabled] { background: var(--rd-canvas-inset); border-color: var(--rd-border); }
 
 /* ---------- Pill ---------- */
@@ -244,6 +245,23 @@ a.rd-ref:hover .rd-ref__title { color: var(--rd-accent); text-decoration: underl
 .rd-icon-btn:focus-visible { outline: 2px solid var(--rd-accent); outline-offset: 2px; }
 .rd-icon-btn[disabled] { color: var(--rd-fg-subtle); cursor: not-allowed; background: transparent; }
 
+/* ---------- Tooltip ---------- */
+.rd-tooltip-wrap { position: relative; display: block; width: 100%; }
+.rd-tooltip {
+    position: absolute;
+    left: calc(100% + var(--rd-space-2));
+    top: 50%;
+    transform: translateY(-50%);
+    z-index: 10;
+    padding: var(--rd-space-1) var(--rd-space-2);
+    border-radius: var(--rd-radius-sm);
+    background: var(--rd-fg);
+    color: var(--rd-canvas);
+    font: 500 12px/16px var(--font-sans);
+    white-space: nowrap;
+    pointer-events: none;
+}
+
 /* ---------- Sidebar ---------- */
 .rd-nav {
     display: flex;
@@ -267,6 +285,18 @@ a.rd-ref:hover .rd-ref__title { color: var(--rd-accent); text-decoration: underl
 .rd-nav__sep { height: 1px; margin: var(--rd-space-2) var(--rd-space-1); background: var(--rd-border-muted); }
 .rd-nav__foot { margin-top: auto; padding: var(--rd-space-3) var(--rd-space-2) 0; font-size: 12px; line-height: 18px; color: var(--rd-fg-muted); }
 .rd-nav__foot b { color: var(--rd-fg); font-weight: 600; }
+.rd-nav__toggle { align-self: flex-end; margin-bottom: var(--rd-space-2); }
+
+/* Collapsed rail: icons only. Each item has a tooltip. */
+.rd-nav--collapsed { width: 56px; align-items: center; }
+.rd-nav--collapsed .rd-nav__toggle { align-self: center; }
+.rd-nav--collapsed .rd-nav__proj,
+.rd-nav--collapsed .rd-nav__group,
+.rd-nav--collapsed .rd-nav__foot,
+.rd-nav--collapsed .rd-nav-item__label { display: none; }
+.rd-nav--collapsed .rd-nav__brand { padding: 0 0 var(--rd-space-3); align-items: center; }
+.rd-nav--collapsed .rd-nav__word { font-size: 12px; }
+.rd-nav--collapsed .rd-nav-item { justify-content: center; padding: 0; }
 
 .rd-nav-item {
     position: relative;
@@ -289,6 +319,17 @@ a.rd-ref:hover .rd-ref__title { color: var(--rd-accent); text-decoration: underl
 .rd-nav-item:hover { background: var(--rd-canvas-subtle); }
 .rd-nav-item:focus-visible { outline: 2px solid var(--rd-accent); outline-offset: 2px; }
 .rd-nav-item__label { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.rd-nav-item__count {
+    flex: none;
+    min-width: 18px;
+    padding: 0 var(--rd-space-1);
+    border-radius: var(--rd-radius-full);
+    background: var(--rd-brand-muted);
+    color: var(--rd-brand-fg);
+    font: 600 11px/18px var(--font-sans);
+    text-align: center;
+}
+.rd-nav--collapsed .rd-nav-item__count { position: absolute; top: 0; right: 2px; min-width: 16px; font-size: 10px; line-height: 16px; }
 .rd-nav-item[aria-current="page"] { background: var(--rd-brand-muted); color: var(--rd-brand-fg); font-weight: 600; }
 .rd-nav-item[aria-current="page"] svg { color: var(--rd-brand-fg); }
 
@@ -380,3 +421,22 @@ a.rd-ref:hover .rd-ref__title { color: var(--rd-accent); text-decoration: underl
 .rd-menu__item--danger { color: var(--rd-danger); }
 .rd-menu__item--danger:hover { background: var(--rd-danger-muted); }
 .rd-menu__sep { height: 1px; margin: var(--rd-space-1) 0; background: var(--rd-border-muted); }
+
+/* ---------- Banner ---------- */
+.rd-frame { display: flex; flex-direction: column; }
+.rd-banner {
+    position: sticky;
+    top: 0;
+    z-index: 1;
+    display: flex;
+    flex: none;
+    align-items: center;
+    gap: var(--rd-space-2);
+    height: var(--rd-header-height);
+    padding: 0 var(--rd-header-padding);
+    box-sizing: border-box;
+    background: var(--rd-canvas-subtle);
+    border-bottom: 1px solid var(--rd-border-muted);
+}
+.rd-banner__mark { width: var(--rd-header-icon); height: var(--rd-header-icon); }
+.rd-banner__word { color: var(--rd-brand-fg); }

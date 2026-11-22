@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="docs/assets/raiden.png" width="144" height="144" alt="Raiden logo: a masked figure in a conical hat with glowing blue eyes and lightning">
+  <img src="docs/assets/raiden-256x.png" width="144" height="144" alt="Raiden logo, an angular cyan and blue R">
 </p>
 
 # Raiden

@@ -1,7 +1,25 @@
 import { useEffect, useRef, useState } from "preact/hooks";
 import type { GitHubRequest, GitHubResult } from "@raiden/shared";
 import type { GitHubGateway } from "./gateway.ts";
+import type { PreferenceStore } from "./mount.tsx";
 import type { Repo } from "./repo.tsx";
+
+export const KEPT_LIST: string = "repositories";
+
+// The kept list as stored: the login of the person who wrote it and their repositories (D6, G14).
+function readKept(value: unknown, login: string): Repo[] | null {
+    if (!isRecord(value) || value.login !== login || !Array.isArray(value.repos)) {
+        return null;
+    }
+    const repos: Repo[] = [];
+    for (const row of value.repos) {
+        if (!isRecord(row) || typeof row.owner !== "string" || typeof row.name !== "string" || typeof row.url !== "string") {
+            return null;
+        }
+        repos.push({ owner: row.owner, name: row.name, url: row.url });
+    }
+    return repos;
+}
 
 const PER_PAGE: number = 100;
 
@@ -95,6 +113,7 @@ export function useRepoList(
     gateway: GitHubGateway | undefined,
     login: string | null | undefined,
     onComplete?: (repos: Repo[]) => void,
+    prefs?: PreferenceStore,
 ): Repo[] {
     const [repos, setRepos] = useState<Repo[]>([]);
     const latest = useRef(onComplete);
@@ -105,15 +124,26 @@ export function useRepoList(
             return;
         }
         let live = true;
+        let fresh = false;
+        // The kept list shows at once, unless another person wrote it or a fresh list came first.
+        setRepos([]);
+        void prefs?.get(KEPT_LIST).then((value: unknown) => {
+            const kept: Repo[] | null = readKept(value, login);
+            if (live && !fresh && kept) {
+                setRepos(kept);
+            }
+        });
         void loadReachable(gateway).then((result: Reachable) => {
             if (live && result.complete) {
+                fresh = true;
                 setRepos(result.repos);
+                void prefs?.set(KEPT_LIST, { login, repos: result.repos.map((r) => ({ owner: r.owner, name: r.name, url: r.url })) });
                 latest.current?.(result.repos);
             }
         });
         return () => {
             live = false;
         };
-    }, [gateway, login]);
+    }, [gateway, login, prefs]);
     return repos;
 }

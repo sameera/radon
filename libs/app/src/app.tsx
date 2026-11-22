@@ -82,7 +82,7 @@ function Shell({
             repoStore?.set(null);
             void prefs?.set(REMEMBERED, null);
         }
-    });
+    }, prefs);
     const account = signIn && auth ? <Account signIn={signIn} state={auth} /> : undefined;
     const layout: VNode = signIn && !auth?.login ? (
         <main class="rd-sign-in">

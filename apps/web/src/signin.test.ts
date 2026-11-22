@@ -19,7 +19,7 @@ interface Rig {
     events: string[];
 }
 
-function rig(href: string, answer: () => Response = () => Response.json({ access_token: "at", expires_in: 60, refresh_token: "rt", login: "octo" })): Rig {
+function rig(href: string, answer: () => Response = () => Response.json({ access_token: "at", expires_in: 28_800, refresh_token: "rt", login: "octo" })): Rig {
     const events: string[] = [];
     const replaceState = vi.fn((_s: unknown, _t: string, url: string) => events.push(`replace:${url}`));
     const assign = vi.fn();
@@ -178,8 +178,10 @@ describe("web view shell", () => {
     });
 
     it("opens on the first page, Grooming, after the return (D4)", async () => {
-        const r = rig(RETURN);
-        const root = await open(r, false);
+        const r = rig(`${RETURN}?code=c1&state=s1`);
+        r.session.setItem(PENDING_KEY, pendingFor("s1"));
+        const { notice } = await finishReturn(r.deps);
+        const root = await open(r, notice);
         expect(root.querySelector(".rd-nav-item[aria-current=\"page\"]")!.textContent).toContain("Grooming");
     });
 });

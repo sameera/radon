@@ -1,5 +1,6 @@
 /* Raiden app layout. Only rd- tokens and design-system classes: no literal colors or text styles. */
 .rd-app { display: flex; min-height: 70vh; border-top: 1px solid var(--rd-border); }
+.rd-sign-in { display: grid; place-items: center; min-height: 70vh; }
 .rd-main { flex: 1; min-width: 0; padding: var(--rd-space-6); }
 .rd-page__placeholder { color: var(--rd-fg-muted); max-width: 60ch; margin: var(--rd-space-2) 0 0; }
 

@@ -1,7 +1,7 @@
 // The one piece of code that sends GitHub API requests, in both hosts (D6, G17). It attaches the
 // signed-in user's token, renews it, and sorts each failure into a kind. Callers never see a
 // token. Results are plain data, so the extension can pass them between contexts.
-import { refreshTokens, type RecordStore, type SignInRecord, type TeamSettings } from "./signin.ts";
+import { refreshTokens, SignInError, type RecordStore, type SignInRecord, type TeamSettings } from "./signin.ts";
 
 export interface GitHubRequest {
     // An absolute path on GitHub's API, for example "/repos/acme/widgets/issues".
@@ -17,6 +17,7 @@ export type GitHubFailureKind = "sign-in-needed" | "network" | "rate-limit" | "p
 export type GitHubResult = { ok: true; status: number; body: unknown } | { ok: false; kind: GitHubFailureKind };
 
 export interface GitHubClient {
+    status(): Promise<string | null>;
     request(request: GitHubRequest): Promise<GitHubResult>;
 }
 
@@ -25,8 +26,10 @@ export interface GitHubClientDeps {
     records: RecordStore;
     fetch: typeof fetch;
     now?: () => number;
+    withRefreshLock?: (run: () => Promise<SignInRecord | null>) => Promise<SignInRecord | null>;
 }
 
+const REFRESH_LEAD_MS = 5 * 60_000;
 const API_ORIGIN: string = "https://api.github.com";
 const API_VERSION: string = "2022-11-28";
 const SAFE_PATH: RegExp = /^\/[A-Za-z0-9._~!$&'()*+,;=:@%/-]*$/;
@@ -87,24 +90,37 @@ export function createGitHubClient(deps: GitHubClientDeps): GitHubClient {
         if (current.accessToken !== used.accessToken) {
             return current;
         }
+        if (!current.refreshToken) {
+            await deps.records.set(null);
+            return null;
+        }
+        let next: SignInRecord;
         try {
-            const next: SignInRecord = await refreshTokens(deps.settings, deps.fetch, current, now);
-            await deps.records.set(next);
-            return next;
-        } catch {
+            next = await refreshTokens(deps.settings, deps.fetch, current, now);
+        } catch (error) {
             // Read the storage again before giving up, in case another tab just renewed.
             const again: SignInRecord | null = await deps.records.get();
-            if (again && again.accessToken !== used.accessToken) {
+            if (again?.accessToken !== used.accessToken) {
                 return again;
+            }
+            if (!(error instanceof SignInError) || error.status !== 400) {
+                throw error;
             }
             await deps.records.set(null);
             return null;
         }
+        const latest = await deps.records.get();
+        if (latest?.accessToken !== used.accessToken) {
+            return latest;
+        }
+        await deps.records.set(next);
+        return next;
     }
 
     // Requests that fail together share one renewal (G20).
     function renew(used: SignInRecord): Promise<SignInRecord | null> {
-        renewing ??= renewOnce(used).finally(() => {
+        const run = () => renewOnce(used);
+        renewing ??= (deps.withRefreshLock ? deps.withRefreshLock(run) : run()).finally(() => {
             renewing = null;
         });
         return renewing;
@@ -125,6 +141,24 @@ export function createGitHubClient(deps: GitHubClientDeps): GitHubClient {
     }
 
     return {
+        async status() {
+            const record = await deps.records.get();
+            if (!record || record.expiresAt === undefined) {
+                return record?.login ?? null;
+            }
+            const remaining = record.expiresAt - now();
+            if (remaining > 0 && (!record.refreshToken || remaining > REFRESH_LEAD_MS)) {
+                return record.login;
+            }
+            try {
+                return (await renew(record))?.login ?? null;
+            } catch (error) {
+                if (record.expiresAt > now()) {
+                    return record.login;
+                }
+                throw error;
+            }
+        },
         async request(request: GitHubRequest): Promise<GitHubResult> {
             const url: string | null = apiAddress(request);
             if (!url || (request.method !== undefined && request.method !== "GET" && request.method !== "POST")) {
@@ -134,14 +168,14 @@ export function createGitHubClient(deps: GitHubClientDeps): GitHubClient {
             if (!record) {
                 return SIGN_IN_NEEDED;
             }
-            if (record.expiresAt !== undefined && record.expiresAt <= now()) {
-                record = await renew(record);
-                if (!record) {
-                    return SIGN_IN_NEEDED;
-                }
-            }
             let res: Response;
             try {
+                if (record.expiresAt !== undefined && record.expiresAt <= now()) {
+                    record = await renew(record);
+                    if (!record) {
+                        return SIGN_IN_NEEDED;
+                    }
+                }
                 res = await send(url, request, record);
                 if (res.status === 401) {
                     const next: SignInRecord | null = await renew(record);
@@ -150,7 +184,9 @@ export function createGitHubClient(deps: GitHubClientDeps): GitHubClient {
                     }
                     res = await send(url, request, next);
                     if (res.status === 401) {
-                        await deps.records.set(null);
+                        if ((await deps.records.get())?.accessToken === next.accessToken) {
+                            await deps.records.set(null);
+                        }
                         return SIGN_IN_NEEDED;
                     }
                 }

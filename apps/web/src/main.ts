@@ -23,11 +23,12 @@ const deps: WebSignInDeps = {
 // or signed out, on the first page.
 async function start(): Promise<void> {
     const { notice } = await finishReturn(deps);
+    const gateway = webGateway(deps);
     await boot(document, window, {
         css: `${tokensCss}\n${componentsCss}\n${appCss}`,
         prefs: webPreferences(),
-        gateway: webGateway({ settings: team, local: window.localStorage, fetch: deps.fetch }),
-        signIn: createSignInController(webSignInPort(deps), { notice }),
+        gateway,
+        signIn: createSignInController(webSignInPort(deps, gateway), { notice }),
     });
 }
 

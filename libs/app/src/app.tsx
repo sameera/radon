@@ -1,8 +1,8 @@
 import type { VNode } from "preact";
-import { useState } from "preact/hooks";
+import { useMemo, useState } from "preact/hooks";
 import { GatewayContext, type GitHubGateway } from "./gateway.ts";
 import { Account } from "./account.tsx";
-import type { SignInController } from "./signin.ts";
+import { useSignIn, type SignInController } from "./signin.ts";
 import { Banner } from "./banner.tsx";
 import { GroomingPage } from "./grooming.tsx";
 import { PlaceholderPage } from "./pages.tsx";
@@ -46,13 +46,36 @@ export function App({
     const [page, setPage] = useState<PageId>("grooming");
     const [showIssues, setShowIssues] = useState<boolean>(initialShowIssues);
     const state = useSession(session);
-    const layout: VNode = (
+    const auth = useSignIn(signIn);
+    const protectedGateway = useMemo<GitHubGateway | undefined>(() => {
+        if (!gateway || !signIn) {
+            return gateway;
+        }
+        return {
+            async request(request) {
+                if (!signIn.get().login) {
+                    return { ok: false, kind: "sign-in-needed" };
+                }
+                const result = await gateway.request(request);
+                if (!result.ok && result.kind === "sign-in-needed") {
+                    signIn.check();
+                }
+                return result;
+            },
+        };
+    }, [gateway, signIn]);
+    const account = signIn && auth ? <Account signIn={signIn} state={auth} /> : undefined;
+    const layout: VNode = signIn && !auth?.login ? (
+        <main class="rd-sign-in">
+            {account}
+        </main>
+    ) : (
         <div class={banner ? "rd-app rd-app--framed" : "rd-app"}>
             <Sidebar
                 current={page}
                 unplanned={unplannedEpicCount(INITIATIVES, state)}
                 onSelect={setPage}
-                account={signIn ? <Account signIn={signIn} /> : undefined}
+                account={account}
                 collapsed={collapsed}
                 onToggle={() => {
                     setCollapsed(!collapsed);
@@ -92,5 +115,5 @@ export function App({
     ) : (
         layout
     );
-    return <GatewayContext.Provider value={gateway}>{framed}</GatewayContext.Provider>;
+    return <GatewayContext.Provider value={protectedGateway}>{framed}</GatewayContext.Provider>;
 }

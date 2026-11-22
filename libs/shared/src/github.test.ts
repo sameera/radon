@@ -218,6 +218,30 @@ describe("GitHub client: renewal (D7, G20)", () => {
     });
 });
 
+describe("GitHub client: session status", () => {
+    it("renews an expiring session without a GitHub API request and shares the renewal", async () => {
+        const store = memoryStore(signed);
+        const { fetchFn, calls } = fakeFetch(() => refreshed());
+        const client = createGitHubClient({ settings, records: store, fetch: fetchFn, now: () => 0 });
+        expect(await Promise.all([client.status(), client.status()])).toEqual(["octo", "octo"]);
+        expect(calls.map((call) => call.url)).toEqual(["https://api.team.example/auth/refresh"]);
+        expect(store.current?.refreshToken).toBe("rt2");
+    });
+
+    it("keeps the refresh token after a temporary failure and restores an expired session on retry", async () => {
+        const store = memoryStore(signed);
+        let shouldFail = true;
+        const { fetchFn } = fakeFetch(() => shouldFail ? new Response(null, { status: 502 }) : refreshed());
+        const client = createGitHubClient({ settings, records: store, fetch: fetchFn, now: () => 20_000 });
+        await expect(client.status()).rejects.toThrow();
+        expect(await client.request({ path: "/user" })).toEqual({ ok: false, kind: "network" });
+        expect(store.current).toEqual(signed);
+        shouldFail = false;
+        await expect(client.status()).resolves.toBe("octo");
+        expect(store.current?.refreshToken).toBe("rt2");
+    });
+});
+
 describe("GitHub client: token custody (G5, G6)", () => {
     it("sends the access token only to GitHub's API and the refresh token only to the backend (G6)", async () => {
         const store = memoryStore({ ...signed, expiresAt: 1 });

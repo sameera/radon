@@ -22,3 +22,18 @@
 - **Choice:** A `<meta http-equiv>` policy; the build fills the backend origin.
 - **Why:** The web view is static files with no server of its own to send a header.
 - **Refuted alternative:** a header file such as `_headers`, which only some hosts read.
+
+## 2026-11-22 — The GitHub client returns results as data and never throws
+- **Choice:** `request` resolves to `{ok, status, body}` or `{ok:false, kind}`.
+- **Why:** The extension passes the answer between contexts, and plain data survives that hop with the failure kind intact (G19).
+- **Refuted alternative:** throw a typed error, which structured clone would turn into a plain Error.
+
+## 2026-11-22 — A 404 from GitHub reads as a permission failure
+- **Choice:** 403 and 404 both map to `permission`; 429 or an exhausted rate limit maps to `rate-limit`.
+- **Why:** R4 says an App that is not installed answers "not found", and the record asks that to read as a permission failure.
+- **Refuted alternative:** keep 404 as `other`.
+
+## 2026-11-22 — Renewal reads storage first and again on failure
+- **Choice:** Before refreshing, compare the stored token with the failed one; after a failed refresh, re-read before dropping.
+- **Why:** Refresh tokens work once, so a second tab or request must reuse the first one's result (G20).
+- **Refuted alternative:** a lock shared between tabs, which the web view's storage cannot give.

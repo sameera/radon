@@ -4,6 +4,7 @@ import componentsCss from "@raiden/design-system/components.css";
 import tokensCss from "@raiden/design-system/tokens.css";
 import { boot } from "./boot.ts";
 import { webPreferences } from "./prefs.ts";
+import { webGateway } from "./gateway.ts";
 import { finishReturn, webSignInPort, type WebSignInDeps } from "./signin.ts";
 import { registerWorker } from "./sw.ts";
 import { teamSettings } from "./team-settings.ts";
@@ -25,6 +26,7 @@ async function start(): Promise<void> {
     await boot(document, window, {
         css: `${tokensCss}\n${componentsCss}\n${appCss}`,
         prefs: webPreferences(),
+        gateway: webGateway({ settings: team, local: window.localStorage, fetch: deps.fetch }),
         signIn: createSignInController(webSignInPort(deps), { notice }),
     });
 }

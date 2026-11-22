@@ -38,6 +38,11 @@ func (h *Handler) Handle(ctx context.Context, req events.APIGatewayV2HTTPRequest
 			return h.exchange(ctx, req), nil
 		}
 		return respond(http.StatusNotFound, map[string]string{"error": "not found"}), nil
+	case "POST /auth/refresh", "OPTIONS /auth/refresh":
+		if h.Auth != nil {
+			return h.refresh(ctx, req), nil
+		}
+		return respond(http.StatusNotFound, map[string]string{"error": "not found"}), nil
 	default:
 		return respond(http.StatusNotFound, map[string]string{"error": "not found"}), nil
 	}

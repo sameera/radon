@@ -1,10 +1,11 @@
-import { mountApp, type PreferenceStore, type SignInController } from "@raiden/app";
+import { mountApp, type PreferenceStore, type SignInController, type GitHubGateway } from "@raiden/app";
 import { applyTheme } from "./theme.ts";
 
 export interface WebOptions {
     css: string;
     prefs: PreferenceStore;
     signIn?: SignInController;
+    gateway?: GitHubGateway;
 }
 
 export const HOST_ID: string = "raiden-web";
@@ -36,6 +37,7 @@ export async function boot(doc: Document, win: Window, options: WebOptions): Pro
         css: options.css,
         prefs: options.prefs,
         signIn: options.signIn,
+        gateway: options.gateway,
         banner: { icon: "raiden-128x.png" },
     });
     return () => {

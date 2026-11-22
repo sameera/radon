@@ -5,3 +5,4 @@ export {
     type SignInPort,
     type SignInState,
 } from "./signin.ts";
+export { GatewayContext, useGateway, type GitHubGateway } from "./gateway.ts";

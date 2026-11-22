@@ -2,6 +2,11 @@
 // extension's storage and are never sent to a tab (G3). Tabs learn only the username.
 import {
     SignInError,
+    createGitHubClient,
+    type GitHubClient,
+    type GitHubRequest,
+    type GitHubResult,
+    type RecordStore,
     checkReturn,
     exchangeCode,
     startAttempt,
@@ -27,12 +32,36 @@ export interface Worker {
     handle(message: unknown, sender: { id?: string }): Promise<unknown> | null;
 }
 
+const OTHER_FAILURE: GitHubResult = { ok: false, kind: "other" };
+
+function shapedRequest(value: unknown): GitHubRequest | null {
+    if (typeof value !== "object" || value === null) {
+        return null;
+    }
+    const r = value as { path?: unknown; method?: unknown; query?: unknown };
+    const queryOk: boolean =
+        r.query === undefined ||
+        (typeof r.query === "object" && r.query !== null && Object.values(r.query).every((v: unknown) => typeof v === "string"));
+    if (typeof r.path !== "string" || !queryOk || (r.method !== undefined && r.method !== "GET" && r.method !== "POST")) {
+        return null;
+    }
+    return value as GitHubRequest;
+}
+
 export function createWorker(deps: WorkerDeps): Worker {
+    const records: RecordStore = {
+        async get(): Promise<SignInRecord | null> {
+            const r = (await deps.storage.get(SIGNIN_KEY)) as SignInRecord | null | undefined;
+            return r && typeof r.accessToken === "string" && typeof r.login === "string" ? r : null;
+        },
+        set: (record: SignInRecord | null): Promise<void> => deps.storage.set(SIGNIN_KEY, record),
+    };
+    // The one shared GitHub client runs here, so the token never reaches a tab (D6, G3).
+    const client: GitHubClient = createGitHubClient({ settings: deps.settings, records, fetch: deps.fetch });
     let inFlight: Promise<{ login: string | null }> | null = null;
 
     async function readLogin(): Promise<string | null> {
-        const record: SignInRecord | undefined = (await deps.storage.get(SIGNIN_KEY)) as SignInRecord | undefined;
-        return typeof record?.login === "string" ? record.login : null;
+        return (await records.get())?.login ?? null;
     }
 
     async function signIn(): Promise<{ login: string | null }> {
@@ -59,11 +88,15 @@ export function createWorker(deps: WorkerDeps): Worker {
     return {
         handle(message: unknown, sender: { id?: string }): Promise<unknown> | null {
             const type: unknown = typeof message === "object" && message !== null ? (message as { type?: unknown }).type : undefined;
-            if (type !== "raiden/status" && type !== "raiden/sign-in") {
+            if (type !== "raiden/status" && type !== "raiden/sign-in" && type !== "raiden/github") {
                 return null;
             }
             if (sender.id !== deps.extensionId) {
                 return Promise.resolve({ error: "refused" });
+            }
+            if (type === "raiden/github") {
+                const request: GitHubRequest | null = shapedRequest((message as { request?: unknown }).request);
+                return request ? client.request(request) : Promise.resolve(OTHER_FAILURE);
             }
             if (type === "raiden/status") {
                 return readLogin().then((login: string | null) => ({ login }));

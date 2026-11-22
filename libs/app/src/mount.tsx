@@ -1,5 +1,6 @@
 import { render } from "preact";
 import { App } from "./app.tsx";
+import type { GitHubGateway } from "./gateway.ts";
 import type { SignInController } from "./signin.ts";
 import { sharedSession, type SessionStore } from "./session.ts";
 
@@ -22,6 +23,8 @@ export interface AppOptions {
     banner?: { icon: string };
     // The host's sign-in. Without it the shell shows no sign-in control.
     signIn?: SignInController;
+    // The host's GitHub gateway. Every GitHub request a page makes goes through it.
+    gateway?: GitHubGateway;
 }
 
 const SHOW_ISSUES: string = "showIssues";
@@ -64,6 +67,7 @@ export async function mountApp(root: ShadowRoot | HTMLElement, options: AppOptio
             repoUrl={options.repoUrl}
             banner={options.banner}
             signIn={options.signIn}
+            gateway={options.gateway}
             showIssues={showIssues}
             onShowIssues={(value: boolean) => void options.prefs?.set(SHOW_ISSUES, value)}
             sidebarCollapsed={collapsed}

@@ -219,3 +219,32 @@ func (a *AuthConfig) login(ctx context.Context, accessToken string) (string, boo
 	}
 	return u.Login, true
 }
+
+type refreshRequest struct {
+	RefreshToken string `json:"refresh_token"`
+}
+
+// refresh trades a refresh token for a new access token and refresh token. GitHub refresh tokens
+// work once, so the caller must store the new one.
+func (h *Handler) refresh(ctx context.Context, req events.APIGatewayV2HTTPRequest) events.APIGatewayV2HTTPResponse {
+	cors, done := h.authGate(req)
+	if done != nil {
+		return *done
+	}
+	var in refreshRequest
+	if err := json.Unmarshal([]byte(req.Body), &in); err != nil || in.RefreshToken == "" {
+		return authRespond(http.StatusBadRequest, map[string]string{"error": "bad request"}, cors)
+	}
+	tok, ok := h.Auth.tokens(ctx, url.Values{
+		"grant_type":    {"refresh_token"},
+		"refresh_token": {in.RefreshToken},
+	})
+	if !ok {
+		return authRespond(http.StatusBadRequest, map[string]string{"error": "refresh failed"}, cors)
+	}
+	return authRespond(http.StatusOK, map[string]any{
+		"access_token":  tok.AccessToken,
+		"expires_in":    tok.ExpiresIn,
+		"refresh_token": tok.RefreshToken,
+	}, cors)
+}

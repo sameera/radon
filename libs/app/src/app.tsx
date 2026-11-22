@@ -1,5 +1,6 @@
 import type { VNode } from "preact";
 import { useState } from "preact/hooks";
+import { GatewayContext, type GitHubGateway } from "./gateway.ts";
 import { Account } from "./account.tsx";
 import type { SignInController } from "./signin.ts";
 import { Banner } from "./banner.tsx";
@@ -22,6 +23,7 @@ export interface AppProps {
     // When set, the shell draws the banner above the sidebar and the page. The extension never sets it.
     banner?: { icon: string };
     signIn?: SignInController;
+    gateway?: GitHubGateway;
 }
 
 // The current page is in-memory state: switching never touches the address, and a reload
@@ -37,6 +39,7 @@ export function App({
     onBacklogWidth,
     banner,
     signIn,
+    gateway,
 }: AppProps): VNode {
     const [backlogWidth, setBacklogWidth] = useState<number | undefined>(initialWidth);
     const [collapsed, setCollapsed] = useState<boolean>(sidebarCollapsed);
@@ -81,7 +84,7 @@ export function App({
             </main>
         </div>
     );
-    return banner ? (
+    const framed: VNode = banner ? (
         <div class="rd-frame">
             <Banner icon={banner.icon} />
             {layout}
@@ -89,4 +92,5 @@ export function App({
     ) : (
         layout
     );
+    return <GatewayContext.Provider value={gateway}>{framed}</GatewayContext.Provider>;
 }

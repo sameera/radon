@@ -157,3 +157,26 @@ export async function exchangeCode(
         login: record.login,
     };
 }
+
+// Asks the backend to renew a sign-in. The refresh token goes only to the backend (G6). The
+// username is kept from the old record.
+export async function refreshTokens(
+    settings: TeamSettings,
+    fetchFn: typeof fetch,
+    record: SignInRecord,
+    now: () => number = Date.now,
+): Promise<SignInRecord> {
+    if (!record.refreshToken) {
+        throw new SignInError("There is no refresh token to renew with");
+    }
+    const answer: TokenAnswer = await backendPost(settings, fetchFn, "/auth/refresh", { refresh_token: record.refreshToken });
+    if (typeof answer.access_token !== "string") {
+        throw new SignInError("The sign-in server's answer was incomplete");
+    }
+    return {
+        accessToken: answer.access_token,
+        ...(typeof answer.expires_in === "number" ? { expiresAt: now() + answer.expires_in * 1000 } : {}),
+        ...(typeof answer.refresh_token === "string" ? { refreshToken: answer.refresh_token } : {}),
+        login: record.login,
+    };
+}

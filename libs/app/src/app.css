@@ -1,0 +1,68 @@
+/* Raiden app layout. Only rd- tokens and design-system classes: no literal colors or text styles. */
+.rd-app { display: flex; min-height: 70vh; border-top: 1px solid var(--rd-border); }
+.rd-main { flex: 1; min-width: 0; padding: var(--rd-space-6); }
+.rd-page__placeholder { color: var(--rd-fg-muted); max-width: 60ch; margin: var(--rd-space-2) 0 0; }
+
+/* ---------- Grooming ---------- */
+.rd-groom__header { display: flex; flex-wrap: wrap; align-items: flex-start; justify-content: space-between; gap: var(--rd-space-4); margin-bottom: var(--rd-space-4); }
+.rd-groom__eyebrow { color: var(--rd-brand-fg); }
+.rd-groom__header h1 { margin: var(--rd-space-1) 0; }
+.rd-groom__instruction { margin: 0; color: var(--rd-fg-muted); max-width: 60ch; }
+.rd-groom__actions { display: flex; align-items: center; gap: var(--rd-space-4); flex-wrap: wrap; }
+.rd-groom__sum { display: flex; flex-direction: column; align-items: flex-end; color: var(--rd-fg-muted); }
+.rd-groom__summary { color: var(--rd-fg); font-variant-numeric: tabular-nums; }
+.rd-groom__panels { display: flex; align-items: flex-start; gap: var(--rd-space-4); }
+.rd-panel { min-width: 0; }
+.rd-panel__head { display: flex; align-items: baseline; justify-content: space-between; gap: var(--rd-space-2); padding: var(--rd-space-2) var(--rd-space-1); }
+.rd-panel__head h2 { margin: 0; color: var(--rd-fg-muted); }
+.rd-panel__sub { color: var(--rd-fg-muted); font-size: 12px; }
+.rd-backlog { flex: 0 0 360px; border: 1px solid var(--rd-border); border-radius: var(--rd-radius-md); background: var(--rd-canvas); }
+.rd-goals { flex: 1; }
+.rd-goals__tools { display: flex; align-items: center; gap: var(--rd-space-4); }
+.rd-bl-row { display: flex; align-items: center; gap: var(--rd-space-2); padding: var(--rd-space-1) var(--rd-space-3); }
+.rd-bl-row:hover { background: var(--rd-canvas-subtle); }
+.rd-bl-row--epic { padding-left: var(--rd-space-8); }
+.rd-bl-row--init .rd-ref__title { font-weight: 600; }
+.rd-bl-row.is-planned .rd-ref__title { color: var(--rd-fg-muted); }
+.rd-bl-row .rd-ref { flex: 1; min-width: 0; }
+.rd-bl-meta { color: var(--rd-fg-muted); font-size: 12px; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.rd-goals__list { display: flex; flex-direction: column; gap: var(--rd-space-3); }
+.rd-goal-card { display: flex; gap: var(--rd-space-3); padding: var(--rd-space-4); border: 1px solid var(--rd-border); border-radius: var(--rd-radius-md); background: var(--rd-canvas); box-shadow: var(--rd-shadow-sm); }
+.rd-goal-card__rank { display: inline-flex; align-items: center; justify-content: center; width: 24px; height: 24px; border-radius: var(--rd-radius-full); background: var(--rd-brand-muted); color: var(--rd-brand-fg); }
+.rd-goal-card__body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: var(--rd-space-1); }
+.rd-goal-card__top { display: flex; align-items: center; gap: var(--rd-space-2); }
+.rd-goal-card__title { flex: 1; font-family: var(--font-display); font-weight: 650; font-size: 17px; line-height: 24px; }
+.rd-goal-card__desc { color: var(--rd-fg-muted); font-size: 13px; line-height: 19px; }
+.rd-goal-card__count, .rd-goal-card__summary { color: var(--rd-fg-muted); white-space: nowrap; font-variant-numeric: tabular-nums; margin: 0; }
+.rd-plan-list { list-style: none; margin: var(--rd-space-2) 0 0; padding: 0; display: flex; flex-direction: column; gap: var(--rd-space-1); }
+.rd-plan-item { display: flex; align-items: center; gap: var(--rd-space-2); padding: var(--rd-space-1) var(--rd-space-2); border-radius: var(--rd-radius-sm); background: var(--rd-canvas-subtle); }
+.rd-goal-card__drop { margin-top: var(--rd-space-2); padding: var(--rd-space-3); border: 1px dashed var(--rd-border-control); border-radius: var(--rd-radius-md); color: var(--rd-fg-muted); text-align: center; }
+
+/* ---------- Drag and drop ---------- */
+.rd-bl-row.is-dragged, .rd-plan-item.is-dragged { opacity: 0.45; }
+.rd-bl-row[draggable="true"], .rd-plan-item[draggable="true"] { cursor: grab; }
+.rd-goal-card.is-over, .rd-backlog.is-over { border-color: var(--rd-brand); box-shadow: var(--rd-shadow-glow); }
+.rd-goal-card.is-over .rd-goal-card__drop { background: var(--rd-brand-muted); color: var(--rd-brand-fg); }
+
+/* ---------- Goals: add, reorder, options ---------- */
+.rd-goals__add { margin-top: var(--rd-space-3); }
+.rd-goal-card { position: relative; }
+.rd-goal-card__rail { display: flex; flex-direction: column; align-items: center; gap: var(--rd-space-1); }
+.rd-goal-card__grip { display: flex; padding: var(--rd-space-1) 2px; color: var(--rd-fg-subtle); cursor: grab; border-radius: var(--rd-radius-sm); }
+.rd-goal-card__grip svg { width: 16px; height: 16px; }
+.rd-goal-card__grip:hover { color: var(--rd-fg-muted); background: var(--rd-canvas-subtle); }
+.rd-goal-card__grip[draggable="false"] { cursor: default; opacity: 0.4; }
+.rd-goal-card__menu-wrap { position: relative; }
+.rd-goal-card.is-dragged { opacity: 0.45; }
+.rd-goal-card.insert-before::before, .rd-goal-card.insert-after::after {
+    content: "";
+    position: absolute;
+    left: 0;
+    right: 0;
+    height: 3px;
+    border-radius: var(--rd-radius-full);
+    background: var(--rd-brand);
+}
+.rd-goal-card.insert-before::before { top: calc(-1 * var(--rd-space-2)); }
+.rd-goal-card.insert-after::after { bottom: calc(-1 * var(--rd-space-2)); }
+.rd-goal-card.is-over.insert-before, .rd-goal-card.is-over.insert-after { border-color: var(--rd-border); box-shadow: none; }

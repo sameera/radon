@@ -115,6 +115,47 @@
         </div>
         </div>
     </section>
+    <section class="ds-section">
+        <h2 class="ds-h">SidebarItem <a href="components/SidebarItem.md">guidelines</a></h2>
+        <nav class="rd-nav" aria-label="Preview" style="width:232px">
+            <div class="rd-nav__brand"><span class="rd-nav__word">Raiden</span><span class="rd-nav__proj">Raiden roadmap</span></div>
+            <div class="rd-nav__group">Sprint</div>
+            <button class="rd-nav-item" type="button"><span class="rd-nav-item__label">Sprint goal</span></button>
+            <button class="rd-nav-item" type="button" aria-current="page"><span class="rd-nav-item__label">Grooming</span></button>
+            <div class="rd-nav__foot"><b>Sprint 14</b> ends in 7 days</div>
+        </nav>
+    </section>
+
+    <section class="ds-section">
+        <h2 class="ds-h">IconButton <a href="components/IconButton.md">guidelines</a></h2>
+        <button class="rd-icon-btn" type="button" aria-label="Options"><svg viewBox="0 0 16 16" fill="currentColor"><circle cx="3" cy="8" r="1.3"/><circle cx="8" cy="8" r="1.3"/><circle cx="13" cy="8" r="1.3"/></svg></button>
+        <button class="rd-icon-btn" type="button" aria-label="Options" disabled><svg viewBox="0 0 16 16" fill="currentColor"><circle cx="3" cy="8" r="1.3"/><circle cx="8" cy="8" r="1.3"/><circle cx="13" cy="8" r="1.3"/></svg></button>
+    </section>
+
+    <section class="ds-section">
+        <h2 class="ds-h">TextInput <a href="components/TextInput.md">guidelines</a></h2>
+        <input class="rd-input" type="text" aria-label="Goal name" value="Pilot team plans its next sprint" style="max-width:360px">
+        <input class="rd-input rd-input--inline" type="text" aria-label="Inline goal name" value="Inline: reads as text" style="max-width:360px">
+    </section>
+
+    <section class="ds-section">
+        <h2 class="ds-h">Switch <a href="components/Switch.md">guidelines</a></h2>
+        <label class="rd-switch"><input class="rd-switch__input" type="checkbox" role="switch" checked><span>Show issues</span></label>
+        <label class="rd-switch"><input class="rd-switch__input" type="checkbox" role="switch"><span>Show issues</span></label>
+    </section>
+
+    <section class="ds-section">
+        <h2 class="ds-h">PopupMenu <a href="components/PopupMenu.md">guidelines</a></h2>
+        <div style="position:relative;height:150px">
+            <div class="rd-menu" role="menu" aria-label="Preview" style="right:auto;left:0;top:0;margin:0">
+                <button class="rd-menu__item" type="button" role="menuitem" disabled>Move up</button>
+                <button class="rd-menu__item" type="button" role="menuitem">Move down</button>
+                <div class="rd-menu__sep" role="separator"></div>
+                <button class="rd-menu__item rd-menu__item--danger" type="button" role="menuitem">Delete goal</button>
+            </div>
+        </div>
+    </section>
+
 </main>
 <script>
     const root = document.documentElement;

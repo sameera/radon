@@ -1,0 +1,17 @@
+{
+    "name": "app",
+    "projectType": "library",
+    "sourceRoot": "libs/app/src",
+    "tags": ["scope:shared"],
+    "implicitDependencies": ["design-system"],
+    "targets": {
+        "typecheck": {
+            "executor": "nx:run-commands",
+            "options": { "command": "tsc --noEmit -p libs/app/tsconfig.json", "cwd": "{workspaceRoot}" }
+        },
+        "test": {
+            "executor": "nx:run-commands",
+            "options": { "command": "vitest run --root libs/app", "cwd": "{workspaceRoot}" }
+        }
+    }
+}

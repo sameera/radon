@@ -2,3 +2,4 @@
 github:
   classification: labels
   project: none
+  features-as-issues: true

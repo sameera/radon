@@ -8,9 +8,27 @@
     },
     "content_scripts": [
         {
-            "matches": ["https://github.com/*"],
-            "js": ["content.js"],
+            "matches": [
+                "https://github.com/*"
+            ],
+            "js": [
+                "content.js"
+            ],
             "run_at": "document_idle"
+        }
+    ],
+    "permissions": [
+        "storage"
+    ],
+    "web_accessible_resources": [
+        {
+            "resources": [
+                "app.js",
+                "fonts/bricolage-grotesque.woff2"
+            ],
+            "matches": [
+                "https://github.com/*"
+            ]
         }
     ]
 }

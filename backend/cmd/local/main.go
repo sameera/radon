@@ -23,7 +23,7 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	h := &handler.Handler{DB: db}
+	h := &handler.Handler{DB: db, Auth: handler.AuthFromEnv()}
 
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		body, _ := io.ReadAll(r.Body)

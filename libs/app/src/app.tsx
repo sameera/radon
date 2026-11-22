@@ -1,5 +1,7 @@
 import type { VNode } from "preact";
 import { useState } from "preact/hooks";
+import { Account } from "./account.tsx";
+import type { SignInController } from "./signin.ts";
 import { Banner } from "./banner.tsx";
 import { GroomingPage } from "./grooming.tsx";
 import { PlaceholderPage } from "./pages.tsx";
@@ -19,6 +21,7 @@ export interface AppProps {
     onBacklogWidth?: (value: number) => void;
     // When set, the shell draws the banner above the sidebar and the page. The extension never sets it.
     banner?: { icon: string };
+    signIn?: SignInController;
 }
 
 // The current page is in-memory state: switching never touches the address, and a reload
@@ -33,6 +36,7 @@ export function App({
     backlogWidth: initialWidth,
     onBacklogWidth,
     banner,
+    signIn,
 }: AppProps): VNode {
     const [backlogWidth, setBacklogWidth] = useState<number | undefined>(initialWidth);
     const [collapsed, setCollapsed] = useState<boolean>(sidebarCollapsed);
@@ -45,6 +49,7 @@ export function App({
                 current={page}
                 unplanned={unplannedEpicCount(INITIATIVES, state)}
                 onSelect={setPage}
+                account={signIn ? <Account signIn={signIn} /> : undefined}
                 collapsed={collapsed}
                 onToggle={() => {
                     setCollapsed(!collapsed);

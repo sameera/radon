@@ -16,6 +16,6 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	h := &handler.Handler{DB: db}
+	h := &handler.Handler{DB: db, Auth: handler.AuthFromEnv()}
 	lambda.Start(h.Handle)
 }

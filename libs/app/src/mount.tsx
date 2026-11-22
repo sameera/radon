@@ -1,5 +1,6 @@
 import { render } from "preact";
 import { App } from "./app.tsx";
+import type { SignInController } from "./signin.ts";
 import { sharedSession, type SessionStore } from "./session.ts";
 
 // A small key-value store for UI preferences that last across reloads. The host supplies it, so
@@ -19,6 +20,8 @@ export interface AppOptions {
     repoUrl?: string;
     // Set by a host with no page around Raiden. Carries the icon the banner shows. The extension leaves it off.
     banner?: { icon: string };
+    // The host's sign-in. Without it the shell shows no sign-in control.
+    signIn?: SignInController;
 }
 
 const SHOW_ISSUES: string = "showIssues";
@@ -60,6 +63,7 @@ export async function mountApp(root: ShadowRoot | HTMLElement, options: AppOptio
             session={options.session ?? sharedSession()}
             repoUrl={options.repoUrl}
             banner={options.banner}
+            signIn={options.signIn}
             showIssues={showIssues}
             onShowIssues={(value: boolean) => void options.prefs?.set(SHOW_ISSUES, value)}
             sidebarCollapsed={collapsed}

@@ -81,3 +81,6 @@
 .rd-backlog__new { color: var(--rd-accent); text-decoration: none; }
 .rd-backlog__new:hover { text-decoration: underline; }
 .rd-backlog__new:focus-visible { outline: 2px solid var(--rd-accent); outline-offset: 2px; }
+
+/* With the banner on, the frame fills the window below it. The document stays the scroller. */
+.rd-app--framed { min-height: calc(100vh - var(--rd-header-height)); border-top: 0; }

@@ -81,6 +81,9 @@
     --rd-space-4: 16px;
     --rd-space-6: 24px;
     --rd-space-8: 32px;
+    --rd-header-height: 64px;
+    --rd-header-padding: 32px;
+    --rd-header-icon: 32px;
     --rd-radius-sm: 4px;
     --rd-radius-md: 6px;
     --rd-radius-lg: 12px;
@@ -104,6 +107,14 @@
     line-height: 26px;
     font-weight: 650;
     letter-spacing: -0.01em;
+}
+
+.rd-text-wordmark {
+    font-family: var(--font-display);
+    font-size: 22px;
+    line-height: 28px;
+    font-weight: 800;
+    letter-spacing: -0.02em;
 }
 
 .rd-text-title {

@@ -421,3 +421,22 @@ a.rd-ref:hover .rd-ref__title { color: var(--rd-accent); text-decoration: underl
 .rd-menu__item--danger { color: var(--rd-danger); }
 .rd-menu__item--danger:hover { background: var(--rd-danger-muted); }
 .rd-menu__sep { height: 1px; margin: var(--rd-space-1) 0; background: var(--rd-border-muted); }
+
+/* ---------- Banner ---------- */
+.rd-frame { display: flex; flex-direction: column; }
+.rd-banner {
+    position: sticky;
+    top: 0;
+    z-index: 1;
+    display: flex;
+    flex: none;
+    align-items: center;
+    gap: var(--rd-space-2);
+    height: var(--rd-header-height);
+    padding: 0 var(--rd-header-padding);
+    box-sizing: border-box;
+    background: var(--rd-canvas-subtle);
+    border-bottom: 1px solid var(--rd-border-muted);
+}
+.rd-banner__mark { width: var(--rd-header-icon); height: var(--rd-header-icon); }
+.rd-banner__word { color: var(--rd-brand-fg); }

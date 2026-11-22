@@ -17,6 +17,8 @@ export interface AppOptions {
     // The web address of the repository the user is on, for example https://github.com/acme/widgets.
     // The host works it out from the page. Without it, the page builds no GitHub links.
     repoUrl?: string;
+    // Set by a host with no page around Raiden. Carries the icon the banner shows. The extension leaves it off.
+    banner?: { icon: string };
 }
 
 const SHOW_ISSUES: string = "showIssues";
@@ -57,6 +59,7 @@ export async function mountApp(root: ShadowRoot | HTMLElement, options: AppOptio
         <App
             session={options.session ?? sharedSession()}
             repoUrl={options.repoUrl}
+            banner={options.banner}
             showIssues={showIssues}
             onShowIssues={(value: boolean) => void options.prefs?.set(SHOW_ISSUES, value)}
             sidebarCollapsed={collapsed}

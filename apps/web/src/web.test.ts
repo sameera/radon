@@ -155,3 +155,16 @@ describe("saved choices (G6, G7, G8)", () => {
         expect(set).not.toHaveBeenCalled();
     });
 });
+
+describe("banner (G17, G18, G10)", () => {
+    it("shows the banner with the Raiden icon from its own address, above the sidebar", async () => {
+        stubMedia(false);
+        await open();
+        const frame: Element = shadow().querySelector(".rd-frame")!;
+        expect(frame.firstElementChild!.classList.contains("rd-banner")).toBe(true);
+        const mark: Element = frame.querySelector(".rd-banner img")!;
+        expect(mark.getAttribute("src")).toBe("raiden-128x.png");
+        expect(frame.querySelector(".rd-banner__word")!.textContent).toBe("Raiden");
+        expect(fetch).not.toHaveBeenCalled();
+    });
+});

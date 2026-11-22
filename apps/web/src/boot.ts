@@ -34,6 +34,7 @@ export async function boot(doc: Document, win: Window, options: WebOptions): Pro
     const unmount: () => void = await mountApp(host.attachShadow({ mode: "open" }), {
         css: options.css,
         prefs: options.prefs,
+        banner: { icon: "raiden-128x.png" },
     });
     return () => {
         unmount();

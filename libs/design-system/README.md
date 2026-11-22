@@ -72,7 +72,7 @@ Compared to GitHub's palette, Raiden's hues are more saturated, and dark-mode ne
 
 - Hierarchy glyphs are CSS shapes (`rd-glyph--epic|story|decision`, `rd-glyph--closed` for an outlined closed state). No icon font needed.
 - For other icons use GitHub's Octicons (MIT licensed, `@primer/octicons`) at 16px in `rd-fg-muted`, so Raiden's icons match the page. No Octicons are bundled in this system yet.
-- No logo yet: set "Raiden" in Bricolage Grotesque 800 where a mark is needed.
+- The mark is the Raiden icon (`docs/assets/raiden-128x.png`) followed by "Raiden" in Bricolage Grotesque 800 (`rd-text-wordmark`). The host supplies the icon; see [Banner](components/Banner.md).
 
 ## Injecting into github.com
 

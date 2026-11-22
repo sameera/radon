@@ -1,5 +1,6 @@
 import type { VNode } from "preact";
 import { useState } from "preact/hooks";
+import { Banner } from "./banner.tsx";
 import { GroomingPage } from "./grooming.tsx";
 import { PlaceholderPage } from "./pages.tsx";
 import { INITIATIVES } from "./sample.ts";
@@ -16,6 +17,8 @@ export interface AppProps {
     onSidebarCollapsed?: (value: boolean) => void;
     backlogWidth?: number;
     onBacklogWidth?: (value: number) => void;
+    // When set, the shell draws the banner above the sidebar and the page. The extension never sets it.
+    banner?: { icon: string };
 }
 
 // The current page is in-memory state: switching never touches the address, and a reload
@@ -29,14 +32,15 @@ export function App({
     onSidebarCollapsed,
     backlogWidth: initialWidth,
     onBacklogWidth,
+    banner,
 }: AppProps): VNode {
     const [backlogWidth, setBacklogWidth] = useState<number | undefined>(initialWidth);
     const [collapsed, setCollapsed] = useState<boolean>(sidebarCollapsed);
     const [page, setPage] = useState<PageId>("grooming");
     const [showIssues, setShowIssues] = useState<boolean>(initialShowIssues);
     const state = useSession(session);
-    return (
-        <div class="rd-app">
+    const layout: VNode = (
+        <div class={banner ? "rd-app rd-app--framed" : "rd-app"}>
             <Sidebar
                 current={page}
                 unplanned={unplannedEpicCount(INITIATIVES, state)}
@@ -71,5 +75,13 @@ export function App({
                 )}
             </main>
         </div>
+    );
+    return banner ? (
+        <div class="rd-frame">
+            <Banner icon={banner.icon} />
+            {layout}
+        </div>
+    ) : (
+        layout
     );
 }

@@ -1,15 +1,18 @@
-import type { VNode } from "preact";
+import type { ComponentChildren, VNode } from "preact";
 import { useEffect, useRef, useState } from "preact/hooks";
 import { ChevronIcon, GripIcon, MoreIcon, PlusIcon } from "./icons.tsx";
 import {
     addGoal,
     canMoveGoal,
     canPlanIn,
+    canTakeOut,
     deleteGoal,
+    filterBacklog,
     effectiveGoal,
     goalEpicCount,
     goalItems,
     goalRank,
+    hasUnsaved,
     initiativeEpicsPlanned,
     moveGoalBy,
     moveGoalNextTo,
@@ -33,6 +36,53 @@ import type { SessionStore } from "./session.ts";
 // inside the Raiden page are accepted. `from` is the goal the item is planned in, or null when
 // the drag started in the backlog.
 export type Drag = { type: "item"; kind: ItemKind; num: number; from: string | null } | { type: "goal"; id: string };
+
+// One open menu at a time, shared by the item menus and the goal menus. `key` names the menu's
+// trigger. `done` closes the menu and says which control gets focus next.
+interface MenuApi {
+    open: string | null;
+    toggle(key: string): void;
+    done(focusKey: string | null): void;
+}
+
+// The menu's keyboard behaviour: focus moves to the first enabled entry, and Up, Down, Home and
+// End move between enabled entries. Escape, Tab and outside clicks are handled by the page.
+function MenuList({ label, children }: { label: string; children: ComponentChildren }): VNode {
+    const ref = useRef<HTMLDivElement>(null);
+    const enabled = (): HTMLButtonElement[] =>
+        Array.from(ref.current?.querySelectorAll<HTMLButtonElement>('[role="menuitem"]:not(:disabled)') ?? []);
+    useEffect(() => {
+        enabled()[0]?.focus();
+    }, []);
+    return (
+        <div
+            ref={ref}
+            class="rd-menu"
+            role="menu"
+            aria-label={label}
+            onKeyDown={(e: KeyboardEvent) => {
+                const list: HTMLButtonElement[] = enabled();
+                const at: number = list.indexOf(document.activeElement as HTMLButtonElement);
+                const to: number | null =
+                    e.key === "ArrowDown"
+                        ? (at + 1) % list.length
+                        : e.key === "ArrowUp"
+                          ? (at - 1 + list.length) % list.length
+                          : e.key === "Home"
+                            ? 0
+                            : e.key === "End"
+                              ? list.length - 1
+                              : null;
+                if (to !== null && list.length > 0) {
+                    e.preventDefault();
+                    list[to]!.focus();
+                }
+            }}
+        >
+            {children}
+        </div>
+    );
+}
 
 export type DropTarget = "backlog" | string;
 type Side = "before" | "after";
@@ -61,21 +111,99 @@ interface BacklogProps {
     state: SessionState;
     session: SessionStore;
     dnd: DragApi;
+    filter: string;
+    onFilter: (text: string) => void;
+    width: number;
+    menu: MenuApi;
 }
 
-function Backlog({ state, session, dnd }: BacklogProps): VNode {
+interface ItemMenuProps {
+    state: SessionState;
+    session: SessionStore;
+    menu: MenuApi;
+    kind: ItemKind;
+    num: number;
+}
+
+// The entries come from the drop rules: a goal is enabled exactly when a drop on it would be
+// accepted, and "Take out of plan" is there exactly when the backlog would accept the item
+// dragged from its goal. Each entry makes the same plan change as the matching drop.
+function ItemMenu({ state, session, menu, kind, num }: ItemMenuProps): VNode {
+    const key: string = `item:${kind}:${num}`;
+    const open: boolean = menu.open === key;
+    const own: string | null = ownGoal(state, kind, num);
+    const covered: boolean = kind === "epic" && own === null && effectiveGoal(INITIATIVES, state, num) !== null;
+    const pick = (change: (s: SessionState) => SessionState): void => {
+        menu.done(key);
+        session.change(change);
+    };
+    return (
+        <div class="rd-menu-wrap">
+            <button
+                type="button"
+                class="rd-icon-btn"
+                data-focus-key={key}
+                aria-label={`Plan options for #${num}`}
+                aria-haspopup="menu"
+                aria-expanded={open}
+                onClick={() => menu.toggle(key)}
+            >
+                <MoreIcon />
+            </button>
+            {open && (
+                <MenuList label={`Plan options for #${num}`}>
+                    {state.goals.map((goal: Goal, i: number) => (
+                        <button
+                            type="button"
+                            role="menuitem"
+                            class="rd-menu__item"
+                            key={goal.id}
+                            disabled={!canPlanIn(INITIATIVES, state, kind, num, goal.id)}
+                            onClick={() => pick((s) => planItem(INITIATIVES, s, kind, num, goal.id))}
+                        >
+                            {`Plan in Goal ${i + 1}${goal.title ? `: ${goal.title}` : ""}`}
+                        </button>
+                    ))}
+                    {canTakeOut(state, kind, num) && (
+                        <>
+                            <div class="rd-menu__sep" role="separator" />
+                            <button
+                                type="button"
+                                role="menuitem"
+                                class="rd-menu__item"
+                                onClick={() => pick((s) => unplanItem(s, kind, num))}
+                            >
+                                Take out of plan
+                            </button>
+                        </>
+                    )}
+                    {covered && (
+                        <p class="rd-menu__note rd-text-small">
+                            Its initiative's goal covers it. Picking a goal plans it on its own.
+                        </p>
+                    )}
+                </MenuList>
+            )}
+        </div>
+    );
+}
+
+function Backlog({ state, session, dnd, filter, onFilter, width, menu }: BacklogProps): VNode {
+    const shown: Initiative[] = filterBacklog(INITIATIVES, filter);
+    const filtering: boolean = filter.trim() !== "";
     const total: number = totalEpics(INITIATIVES);
     const d: Drag | null = dnd.drag;
     // Only an item dragged out of a goal, with a plan of its own, can be dropped here.
     const accepts: boolean =
-        d !== null && d.type === "item" && d.from !== null && ownGoal(state, d.kind, d.num) !== null;
+        d !== null && d.type === "item" && d.from !== null && canTakeOut(state, d.kind, d.num);
     return (
         <section
             class={`rd-panel rd-backlog${dnd.over?.target === "backlog" ? " is-over" : ""}`}
+            style={{ flexBasis: `${width}px` }}
             aria-labelledby="rd-backlog-title"
             {...dnd.zone("backlog", accepts, () => {
                 if (d?.type === "item") {
-                    session.update((s) => unplanItem(s, d.kind, d.num));
+                    session.change((s) => unplanItem(s, d.kind, d.num));
                 }
             })}
         >
@@ -85,9 +213,25 @@ function Backlog({ state, session, dnd }: BacklogProps): VNode {
                 </h2>
                 <span class="rd-panel__sub">{plural(total, "epic")}</span>
             </div>
+            <div class="rd-backlog__filter">
+                <input
+                    class="rd-input"
+                    type="search"
+                    aria-label="Filter backlog"
+                    placeholder="Filter by title or number"
+                    value={filter}
+                    onInput={(e) => onFilter((e.currentTarget as HTMLInputElement).value)}
+                />
+            </div>
             <div class="rd-backlog__list">
-                {INITIATIVES.map((init: Initiative) => {
-                    const open: boolean = !state.collapsed.includes(init.num);
+                {shown.length === 0 && (
+                    <p class="rd-backlog__empty rd-text-small">
+                        No initiatives or epics match. Clear the filter to show them all.
+                    </p>
+                )}
+                {shown.map((init: Initiative) => {
+                    // While filtering, matches show open. Each initiative's own setting stays.
+                    const open: boolean = filtering || !state.collapsed.includes(init.num);
                     const own: string | null = ownGoal(state, "init", init.num);
                     const planned: number = initiativeEpicsPlanned(INITIATIVES, state, init);
                     const meta: string =
@@ -118,6 +262,7 @@ function Backlog({ state, session, dnd }: BacklogProps): VNode {
                                     <span class="rd-ref__title">{init.title}</span>
                                 </span>
                                 <span class="rd-bl-meta">{meta}</span>
+                                <ItemMenu state={state} session={session} menu={menu} kind="init" num={init.num} />
                             </div>
                             {open &&
                                 init.epics.map((epic) => {
@@ -137,6 +282,7 @@ function Backlog({ state, session, dnd }: BacklogProps): VNode {
                                                 <span class="rd-ref__title">{epic.title}</span>
                                             </span>
                                             <span class="rd-bl-meta">{goalLabel(state, eff)}</span>
+                                            <ItemMenu state={state} session={session} menu={menu} kind="epic" num={epic.num} />
                                         </div>
                                     );
                                 })}
@@ -154,8 +300,7 @@ interface GoalCardProps {
     goal: Goal;
     showIssues: boolean;
     dnd: DragApi;
-    menuOpen: boolean;
-    onMenu: (open: boolean) => void;
+    menu: MenuApi;
     focus: boolean;
     onFocused: () => void;
 }
@@ -173,7 +318,8 @@ function itemTitle(entry: PlanEntry): { num: number; title: string } {
     return { num: entry.num, title: "" };
 }
 
-function GoalCard({ state, session, goal, showIssues, dnd, menuOpen, onMenu, focus, onFocused }: GoalCardProps): VNode {
+function GoalCard({ state, session, goal, showIssues, dnd, menu, focus, onFocused }: GoalCardProps): VNode {
+    const menuOpen: boolean = menu.open === `goal:${goal.id}`;
     const d: Drag | null = dnd.drag;
     const accepts: boolean =
         d !== null &&
@@ -204,8 +350,9 @@ function GoalCard({ state, session, goal, showIssues, dnd, menuOpen, onMenu, foc
         }
     }, [goal.desc]);
 
-    const pick = (change: () => void): void => {
-        onMenu(false);
+    const triggerKey: string = `goal:${goal.id}`;
+    const pick = (change: () => void, focusKey: string | null = triggerKey): void => {
+        menu.done(focusKey);
         change();
     };
     return (
@@ -215,9 +362,9 @@ function GoalCard({ state, session, goal, showIssues, dnd, menuOpen, onMenu, foc
             data-goal={goal.id}
             {...dnd.zone(goal.id, accepts, (side: Side) => {
                 if (d?.type === "item") {
-                    session.update((s) => planItem(INITIATIVES, s, d.kind, d.num, goal.id));
+                    session.change((s) => planItem(INITIATIVES, s, d.kind, d.num, goal.id));
                 } else if (d?.type === "goal") {
-                    session.update((s) => moveGoalNextTo(s, d.id, goal.id, side));
+                    session.change((s) => moveGoalNextTo(s, d.id, goal.id, side));
                 }
             })}
         >
@@ -248,32 +395,34 @@ function GoalCard({ state, session, goal, showIssues, dnd, menuOpen, onMenu, foc
                         type="text"
                         aria-label="Goal name"
                         placeholder="Name this goal"
+                        onBlur={() => session.endEdit()}
                         value={goal.title}
                         onInput={(e) => {
                             const title: string = (e.currentTarget as HTMLInputElement).value;
-                            session.update((s) => setGoalText(s, goal.id, { title }));
+                            session.change((s) => setGoalText(s, goal.id, { title }), `${goal.id}:title`);
                         }}
                     />
                     <span class="rd-goal-card__count rd-text-small">{plural(epics, "epic")}</span>
-                    <div class="rd-goal-card__menu-wrap">
+                    <div class="rd-goal-card__menu-wrap rd-menu-wrap">
                         <button
                             type="button"
                             class="rd-icon-btn"
                             aria-label="Goal options"
+                            data-focus-key={triggerKey}
                             aria-haspopup="menu"
                             aria-expanded={menuOpen}
-                            onClick={() => onMenu(!menuOpen)}
+                            onClick={() => menu.toggle(triggerKey)}
                         >
                             <MoreIcon />
                         </button>
                         {menuOpen && (
-                            <div class="rd-menu" role="menu" aria-label="Goal options">
+                            <MenuList label="Goal options">
                                 <button
                                     type="button"
                                     role="menuitem"
                                     class="rd-menu__item"
                                     disabled={!canMoveGoal(state, goal.id, -1)}
-                                    onClick={() => pick(() => session.update((s) => moveGoalBy(s, goal.id, -1)))}
+                                    onClick={() => pick(() => session.change((s) => moveGoalBy(s, goal.id, -1)))}
                                 >
                                     Move up
                                 </button>
@@ -282,7 +431,7 @@ function GoalCard({ state, session, goal, showIssues, dnd, menuOpen, onMenu, foc
                                     role="menuitem"
                                     class="rd-menu__item"
                                     disabled={!canMoveGoal(state, goal.id, 1)}
-                                    onClick={() => pick(() => session.update((s) => moveGoalBy(s, goal.id, 1)))}
+                                    onClick={() => pick(() => session.change((s) => moveGoalBy(s, goal.id, 1)))}
                                 >
                                     Move down
                                 </button>
@@ -291,11 +440,18 @@ function GoalCard({ state, session, goal, showIssues, dnd, menuOpen, onMenu, foc
                                     type="button"
                                     role="menuitem"
                                     class="rd-menu__item rd-menu__item--danger"
-                                    onClick={() => pick(() => session.update((s) => deleteGoal(s, goal.id)))}
+                                    onClick={() =>
+                                        pick(
+                                            () => session.change((s) => deleteGoal(s, goal.id)),
+                                            state.goals[state.goals.findIndex((g: Goal) => g.id === goal.id) + 1]
+                                                ? `goal:${state.goals[state.goals.findIndex((g: Goal) => g.id === goal.id) + 1]!.id}`
+                                                : "add-goal",
+                                        )
+                                    }
                                 >
                                     Delete goal
                                 </button>
-                            </div>
+                            </MenuList>
                         )}
                     </div>
                 </div>
@@ -304,11 +460,12 @@ function GoalCard({ state, session, goal, showIssues, dnd, menuOpen, onMenu, foc
                     class="rd-input rd-input--inline rd-goal-card__desc"
                     aria-label="Goal description"
                     placeholder="Describe the outcome"
+                    onBlur={() => session.endEdit()}
                     rows={1}
                     value={goal.desc}
                     onInput={(e) => {
                         const desc: string = (e.currentTarget as HTMLTextAreaElement).value;
-                        session.update((s) => setGoalText(s, goal.id, { desc }));
+                        session.change((s) => setGoalText(s, goal.id, { desc }), `${goal.id}:desc`);
                     }}
                 />
                 {items.length > 0 &&
@@ -331,6 +488,14 @@ function GoalCard({ state, session, goal, showIssues, dnd, menuOpen, onMenu, foc
                                             <span class="rd-ref__num">#{num}</span>
                                             <span class="rd-ref__title">{title}</span>
                                         </span>
+                                        <button
+                                            type="button"
+                                            class="rd-btn rd-btn--ghost"
+                                            aria-label={`Take out of plan: #${num} ${title}`}
+                                            onClick={() => pick(() => session.change((s) => unplanItem(s, entry.kind, entry.num)))}
+                                        >
+                                            Take out of plan
+                                        </button>
                                     </li>
                                 );
                             })}
@@ -353,25 +518,151 @@ interface GroomingProps {
     state: SessionState;
     showIssues: boolean;
     onShowIssues: (value: boolean) => void;
+    backlogWidth?: number;
+    onBacklogWidth?: (value: number, final: boolean) => void;
 }
 
-export function GroomingPage({ session, state, showIssues, onShowIssues }: GroomingProps): VNode {
-    const planned: number = plannedEpicCount(INITIATIVES, state);
-    const dnd: DragApi = useDnd();
-    const [menu, setMenu] = useState<string | null>(null);
-    const [focusId, setFocusId] = useState<string | null>(null);
+export const DEFAULT_BACKLOG_WIDTH: number = 360;
+const MIN_BACKLOG: number = 240;
+const MIN_GOALS: number = 360;
+const DIVIDER_WIDTH: number = 16;
+const FALLBACK_MAX: number = 720;
+const STEP: number = 16;
+const BIG_STEP: number = 64;
+
+// The preferred width is the lead's choice. The shown width is that choice fitted between the
+// two panels' minimum widths at the current size.
+function limits(space: number): { min: number; max: number } {
+    return { min: MIN_BACKLOG, max: space > 0 ? Math.max(MIN_BACKLOG, space - MIN_GOALS - DIVIDER_WIDTH) : FALLBACK_MAX };
+}
+function fit(preferred: number, space: number): number {
+    const { min, max } = limits(space);
+    return Math.min(max, Math.max(min, preferred));
+}
+
+interface DividerProps {
+    width: number;
+    min: number;
+    max: number;
+    onChange: (value: number, final: boolean) => void;
+}
+
+function Divider({ width, min, max, onChange }: DividerProps): VNode {
+    const drag = useRef<{ x: number; width: number } | null>(null);
+    const clamp = (v: number): number => Math.min(max, Math.max(min, v));
+    return (
+        <div
+            class="rd-divider"
+            role="separator"
+            aria-orientation="vertical"
+            aria-label="Resize backlog"
+            aria-valuenow={width}
+            aria-valuemin={min}
+            aria-valuemax={max}
+            tabIndex={0}
+            onPointerDown={(e: PointerEvent) => {
+                drag.current = { x: e.clientX, width };
+                (e.currentTarget as HTMLElement).setPointerCapture?.(e.pointerId);
+            }}
+            onPointerMove={(e: PointerEvent) => {
+                if (drag.current) {
+                    onChange(clamp(drag.current.width + e.clientX - drag.current.x), false);
+                }
+            }}
+            onPointerUp={(e: PointerEvent) => {
+                if (drag.current) {
+                    onChange(clamp(drag.current.width + e.clientX - drag.current.x), true);
+                    drag.current = null;
+                    (e.currentTarget as HTMLElement).releasePointerCapture?.(e.pointerId);
+                }
+            }}
+            onDblClick={() => onChange(clamp(DEFAULT_BACKLOG_WIDTH), true)}
+            onKeyDown={(e: KeyboardEvent) => {
+                const step: number = e.shiftKey ? BIG_STEP : STEP;
+                const next: number | null =
+                    e.key === "ArrowLeft"
+                        ? width - step
+                        : e.key === "ArrowRight"
+                          ? width + step
+                          : e.key === "Home"
+                            ? min
+                            : e.key === "End"
+                              ? max
+                              : e.key === "Enter"
+                                ? DEFAULT_BACKLOG_WIDTH
+                                : null;
+                if (next !== null) {
+                    e.preventDefault();
+                    onChange(clamp(next), true);
+                }
+            }}
+        />
+    );
+}
+
+export function GroomingPage({
+    session,
+    state,
+    showIssues,
+    onShowIssues,
+    backlogWidth = DEFAULT_BACKLOG_WIDTH,
+    onBacklogWidth,
+}: GroomingProps): VNode {
+    const [filter, setFilter] = useState<string>("");
+    const panelsRef = useRef<HTMLDivElement>(null);
+    const [space, setSpace] = useState<number>(0);
     useEffect(() => {
-        if (menu === null) {
+        const measure = (): void => setSpace(panelsRef.current?.getBoundingClientRect().width ?? 0);
+        measure();
+        window.addEventListener("resize", measure);
+        const observer: ResizeObserver | null =
+            typeof ResizeObserver === "function" && panelsRef.current ? new ResizeObserver(measure) : null;
+        if (observer && panelsRef.current) {
+            observer.observe(panelsRef.current);
+        }
+        return () => {
+            window.removeEventListener("resize", measure);
+            observer?.disconnect();
+        };
+    }, []);
+    const shownWidth: number = fit(backlogWidth, space);
+    const { min: minWidth, max: maxWidth } = limits(space);
+    const planned: number = plannedEpicCount(INITIATIVES, state);
+    const unsaved: boolean = hasUnsaved(state);
+    const dnd: DragApi = useDnd();
+    const [menuKey, setMenu] = useState<string | null>(null);
+    const [focusId, setFocusId] = useState<string | null>(null);
+    const [focusKey, setFocusKey] = useState<string | null>(null);
+    const pageRef = useRef<HTMLElement>(null);
+    const menu: MenuApi = {
+        open: menuKey,
+        toggle: (key: string) => setMenu(menuKey === key ? null : key),
+        done: (next: string | null) => {
+            setMenu(null);
+            setFocusKey(next);
+        },
+    };
+    // After a menu closes, focus goes to a control that exists.
+    useEffect(() => {
+        if (focusKey !== null) {
+            pageRef.current?.querySelector<HTMLElement>(`[data-focus-key="${focusKey}"]`)?.focus();
+            setFocusKey(null);
+        }
+    }, [focusKey, state]);
+    useEffect(() => {
+        if (menuKey === null) {
             return;
         }
         const onKey = (e: KeyboardEvent): void => {
             if (e.key === "Escape") {
+                menu.done(menuKey);
+            } else if (e.key === "Tab") {
                 setMenu(null);
             }
         };
         const onClick = (e: MouseEvent): void => {
             const inside: boolean = e.composedPath().some(
-                (n) => n instanceof HTMLElement && n.classList.contains("rd-goal-card__menu-wrap"),
+                (n) => n instanceof HTMLElement && n.classList.contains("rd-menu-wrap"),
             );
             if (!inside) {
                 setMenu(null);
@@ -383,9 +674,9 @@ export function GroomingPage({ session, state, showIssues, onShowIssues }: Groom
             document.removeEventListener("keydown", onKey);
             document.removeEventListener("click", onClick);
         };
-    }, [menu]);
+    }, [menuKey]);
     return (
-        <section class="rd-groom" aria-labelledby="rd-groom-title">
+        <section class="rd-groom" aria-labelledby="rd-groom-title" ref={pageRef}>
             <header class="rd-groom__header">
                 <div>
                     <div class="rd-text-axis rd-groom__eyebrow">
@@ -401,15 +692,45 @@ export function GroomingPage({ session, state, showIssues, onShowIssues }: Groom
                 <div class="rd-groom__actions">
                     <div class="rd-groom__sum">
                         <b class="rd-groom__summary">{`${planned} of ${totalEpics(INITIATIVES)} epics planned`}</b>
-                        <span class="rd-groom__save-state">All changes saved</span>
+                        <span class="rd-groom__save-state" role="status">
+                            {unsaved ? "Unsaved changes" : "All changes saved"}
+                        </span>
                     </div>
-                    <button type="button" class="rd-btn rd-btn--primary">
+                    {/* aria-disabled, not disabled: a disabled button would drop keyboard focus. */}
+                    <button
+                        type="button"
+                        class="rd-btn"
+                        aria-disabled={state.undo.length === 0}
+                        onClick={() => state.undo.length > 0 && session.undo()}
+                    >
+                        Undo
+                    </button>
+                    <button
+                        type="button"
+                        class="rd-btn rd-btn--primary"
+                        aria-disabled={!unsaved}
+                        onClick={() => unsaved && session.save()}
+                    >
                         Save plan
                     </button>
                 </div>
             </header>
-            <div class="rd-groom__panels">
-                <Backlog state={state} session={session} dnd={dnd} />
+            <div class="rd-groom__panels" ref={panelsRef}>
+                <Backlog
+                    state={state}
+                    session={session}
+                    dnd={dnd}
+                    filter={filter}
+                    onFilter={setFilter}
+                    width={shownWidth}
+                    menu={menu}
+                />
+                <Divider
+                    width={shownWidth}
+                    min={minWidth}
+                    max={maxWidth}
+                    onChange={(value: number, final: boolean) => onBacklogWidth?.(value, final)}
+                />
                 <section class="rd-panel rd-goals" aria-labelledby="rd-goals-title">
                     <div class="rd-panel__head">
                         <h2 class="rd-text-axis" id="rd-goals-title">
@@ -437,8 +758,7 @@ export function GroomingPage({ session, state, showIssues, onShowIssues }: Groom
                                 goal={goal}
                                 showIssues={showIssues}
                                 dnd={dnd}
-                                menuOpen={menu === goal.id}
-                                onMenu={(open: boolean) => setMenu(open ? goal.id : null)}
+                                menu={menu}
                                 focus={focusId === goal.id}
                                 onFocused={() => setFocusId(null)}
                                 key={goal.id}
@@ -448,9 +768,10 @@ export function GroomingPage({ session, state, showIssues, onShowIssues }: Groom
                     <button
                         type="button"
                         class="rd-btn rd-btn--ghost rd-goals__add"
+                        data-focus-key="add-goal"
                         onClick={() => {
                             setFocusId(`g${state.nextId}`);
-                            session.update(addGoal);
+                            session.change(addGoal);
                         }}
                     >
                         <PlusIcon />

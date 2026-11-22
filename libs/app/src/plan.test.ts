@@ -71,7 +71,7 @@ describe("collapsed initiatives", () => {
     });
 });
 
-import { planItem, unplanItem } from "./plan.ts";
+import { canTakeOut, planItem, unplanItem } from "./plan.ts";
 
 const eff = (s: ReturnType<typeof initialState>, n: number) => effectiveGoal(INITIATIVES, s, n);
 
@@ -109,6 +109,16 @@ describe("planning an item in a goal", () => {
         expect(eff(s, 42)).toBe("g3");
         const sum: number = s.goals.reduce((n, g) => n + goalEpicCount(INITIATIVES, s, g.id), 0);
         expect(sum).toBe(plannedEpicCount(INITIATIVES, s));
+    });
+});
+
+describe("when an item can be taken out of the plan", () => {
+    it("holds only for an item with a plan of its own", () => {
+        expect(canTakeOut(state, "epic", 31)).toBe(true);
+        expect(canTakeOut(state, "init", 14)).toBe(true);
+        expect(canTakeOut(state, "epic", 9999)).toBe(false);
+        // an epic covered only by its initiative's goal has no plan of its own
+        expect(canTakeOut(unplanItem(state, "epic", 31), "epic", 31)).toBe(false);
     });
 });
 

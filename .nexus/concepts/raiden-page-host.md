@@ -1,8 +1,8 @@
 ---
 title: Raiden Page Host
 aliases: [raiden tab, raiden address, raiden host]
-touches: [raiden-app-shell, grooming-plan, raiden-web-view, grooming-github-links]
-last_updated_by: "#12"
+touches: [raiden-app-shell, grooming-plan, raiden-web-view, grooming-github-links, github-sign-in, github-client]
+last_updated_by: "#39"
 status: active
 verification: verified
 ---
@@ -35,6 +35,8 @@ The app code loads only when the Raiden address opens, so every other github.com
 - [grooming-plan](grooming-plan.md) — the host opens on Grooming, and the Show issues choice is stored through the host's preference store.
 - [raiden-web-view](raiden-web-view.md) — the web view is a second host beside this one, with its own theme and preference store.
 - [grooming-github-links](grooming-github-links.md) — the Grooming links are built from the repository address this host reads from GitHub's page.
+- [github-sign-in](github-sign-in.md) — the extension host signs in through its background worker and keeps the record in extension storage.
+- [github-client](github-client.md) — the extension host forwards gateway requests to its worker, which runs the client.
 
 ## Decision Log
 
@@ -46,3 +48,6 @@ The web view is a second thin host that mounts the same shell, so the host contr
 
 ### 2026-11-22 — #12 — The host gives the shell the repository address
 The epic's assumptions put both GitHub links in the current repository. The host already reads the repository from GitHub's Code tab to build the Raiden address, so it needs no network call. Taking the origin from the page also points links at the right server if the extension ever runs on another GitHub. Refuted alternative: the app reads the repository from the browser's current address. It needs no new start-up input, but it ties the host-free library to github.com's address layout. The new grooming-github-links page names this page as a neighbour, so this page names it back.
+
+### 2026-11-22 — #39 — Reciprocal link from github-sign-in and github-client
+The extension host's worker owns the sign-in record and runs the client. Recorded for the two new pages.

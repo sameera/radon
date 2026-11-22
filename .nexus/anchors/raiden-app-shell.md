@@ -1,6 +1,6 @@
 ---
 concept: raiden-app-shell
-source_sha: 2a0cb091f456e0fd34e0ffbf61b44b7e8a7407b8
+source_sha: d3aa3e23642bda7a2b5efc2274c05777cd6d7cca
 generated: 2026-11-22
 ---
 
@@ -18,3 +18,5 @@ generated: 2026-11-22
 - `libs/design-system/components.css` — shared controls, including the banner and tooltip (#26, #28, #36)
 - `libs/design-system/fonts/bricolage-grotesque.woff2` — display font shared by both hosts (#36)
 - `libs/design-system/README.md` — design system usage rules (#13, #36)
+- `libs/app/src/account.tsx` — sign-in control in the shell (#45)
+- `libs/app/src/gateway.ts` — gateway context for pages (#45)

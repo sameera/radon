@@ -1,8 +1,8 @@
 ---
 title: Raiden App Shell
 aliases: [raiden app, raiden pages frame]
-touches: [raiden-page-host, grooming-plan, grooming-backlog-view, raiden-web-view, raiden-sidebar]
-last_updated_by: "#12"
+touches: [raiden-page-host, grooming-plan, grooming-backlog-view, raiden-web-view, raiden-sidebar, github-sign-in, github-client]
+last_updated_by: "#39"
 status: active
 verification: verified
 ---
@@ -40,6 +40,8 @@ Reusable controls go into the design system, each with its own guideline page: s
 - [grooming-backlog-view](grooming-backlog-view.md) — the shell reads the preferred backlog width before its first render and keeps it through the preference store.
 - [raiden-web-view](raiden-web-view.md) — the web view mounts the shell with the banner option set.
 - [raiden-sidebar](raiden-sidebar.md) — the shell draws the sidebar, keeps its collapsed choice through the preference store, and passes it the not-planned count.
+- [github-sign-in](github-sign-in.md) — the shell shows the sign-in control and the username, and does not block pages.
+- [github-client](github-client.md) — the shell receives the GitHub gateway from the host and gives it to pages.
 
 ## Decision Log
 
@@ -54,3 +56,6 @@ The banner is a design-system component that the shell draws when the host passe
 
 ### 2026-11-22 — #12 — Sidebar split out, and the extension host passes the repository address
 This page was past the 400-word cap, so the sidebar's items, collapse, not-planned count and tooltips moved to the raiden-sidebar page, with the sidebar aliases. The extension host now also gives the shell the current repository's web address at start, and the shell builds every GitHub link from it. The library must not depend on a host, so it does not read github.com's address layout itself. The design system gains a tooltip control with its own guideline page. Refuted alternative: the app reads the repository from the browser's current address. It needs no new start-up input, but it ties the host-free library to github.com's address layout, and a later web host and the tests would have to fake a github.com address.
+
+### 2026-11-22 — #39 — Reciprocal link from github-sign-in and github-client
+The shell shows the sign-in control, and the host supplies the GitHub gateway. Recorded for the two new pages.

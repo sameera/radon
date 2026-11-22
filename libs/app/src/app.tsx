@@ -2,6 +2,8 @@ import type { VNode } from "preact";
 import { useState } from "preact/hooks";
 import { GroomingPage } from "./grooming.tsx";
 import { PlaceholderPage } from "./pages.tsx";
+import { INITIATIVES } from "./sample.ts";
+import { unplannedEpicCount } from "./plan.ts";
 import { useSession, type SessionStore } from "./session.ts";
 import { Sidebar, type PageId } from "./sidebar.tsx";
 
@@ -35,6 +37,7 @@ export function App({
         <div class="rd-app">
             <Sidebar
                 current={page}
+                unplanned={unplannedEpicCount(INITIATIVES, state)}
                 onSelect={setPage}
                 collapsed={collapsed}
                 onToggle={() => {

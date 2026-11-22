@@ -97,6 +97,11 @@ export function plannedEpicCount(initiatives: Initiative[], state: SessionState)
     );
 }
 
+// The epics that are not planned in any goal, with the same rule as the header count.
+export function unplannedEpicCount(initiatives: Initiative[], state: SessionState): number {
+    return totalEpics(initiatives) - plannedEpicCount(initiatives, state);
+}
+
 // Each epic counts once, under its effective goal.
 export function goalEpicCount(initiatives: Initiative[], state: SessionState, goalId: string): number {
     return initiatives.reduce(

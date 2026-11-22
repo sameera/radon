@@ -320,6 +320,17 @@ a.rd-ref:hover .rd-ref__title { color: var(--rd-accent); text-decoration: underl
 .rd-nav-item:hover { background: var(--rd-canvas-subtle); }
 .rd-nav-item:focus-visible { outline: 2px solid var(--rd-accent); outline-offset: 2px; }
 .rd-nav-item__label { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.rd-nav-item__count {
+    flex: none;
+    min-width: 18px;
+    padding: 0 var(--rd-space-1);
+    border-radius: var(--rd-radius-full);
+    background: var(--rd-brand-muted);
+    color: var(--rd-brand-fg);
+    font: 600 11px/18px var(--font-sans);
+    text-align: center;
+}
+.rd-nav--collapsed .rd-nav-item__count { position: absolute; top: 0; right: 2px; min-width: 16px; font-size: 10px; line-height: 16px; }
 .rd-nav-item[aria-current="page"] { background: var(--rd-brand-muted); color: var(--rd-brand-fg); font-weight: 600; }
 .rd-nav-item[aria-current="page"] svg { color: var(--rd-brand-fg); }
 

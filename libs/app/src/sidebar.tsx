@@ -10,21 +10,29 @@ interface NavItemProps {
     onSelect: (page: PageId) => void;
     icon: VNode;
     label: string;
+    // A count badge. It shows only when above zero. `countWords` is how it reads aloud.
+    count?: number;
+    countWords?: string;
     children: ComponentChildren;
 }
 
-function NavItem({ page, current, onSelect, icon, label, children }: NavItemProps): VNode {
+function NavItem({ page, current, onSelect, icon, label, count = 0, countWords, children }: NavItemProps): VNode {
     return (
         <button
             type="button"
             class="rd-nav-item"
-            aria-label={label}
+            aria-label={count > 0 && countWords ? `${label}, ${countWords}` : label}
             data-label={label}
             aria-current={page === current ? "page" : undefined}
             onClick={() => onSelect(page)}
         >
             {icon}
             <span class="rd-nav-item__label">{children}</span>
+            {count > 0 && (
+                <span class="rd-nav-item__count" aria-hidden="true">
+                    {count}
+                </span>
+            )}
         </button>
     );
 }
@@ -34,9 +42,11 @@ interface SidebarProps {
     onSelect: (page: PageId) => void;
     collapsed: boolean;
     onToggle: () => void;
+    // The epics not planned in any goal. It shows on the Grooming item.
+    unplanned?: number;
 }
 
-export function Sidebar({ current, onSelect, collapsed, onToggle }: SidebarProps): VNode {
+export function Sidebar({ current, onSelect, collapsed, onToggle, unplanned = 0 }: SidebarProps): VNode {
     const item = { current, onSelect };
     return (
         <nav class={`rd-nav${collapsed ? " rd-nav--collapsed" : ""}`} aria-label="Raiden pages">
@@ -59,7 +69,11 @@ export function Sidebar({ current, onSelect, collapsed, onToggle }: SidebarProps
             <NavItem page="goal" icon={<GoalIcon />} label="Sprint goal" {...item}>
                 Sprint goal
             </NavItem>
-            <NavItem page="grooming" icon={<GroomingIcon />} label="Grooming" {...item}>
+            <NavItem page="grooming" icon={<GroomingIcon />} label="Grooming"
+                count={unplanned}
+                countWords={`${unplanned} ${unplanned === 1 ? "epic" : "epics"} not planned`}
+                {...item}
+            >
                 Grooming
             </NavItem>
             <div class="rd-nav__group">Roadmap</div>

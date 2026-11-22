@@ -5,6 +5,7 @@ import {
     addGoal,
     canMoveGoal,
     canPlanIn,
+    canTakeOut,
     deleteGoal,
     filterBacklog,
     effectiveGoal,
@@ -163,7 +164,7 @@ function ItemMenu({ state, session, menu, kind, num }: ItemMenuProps): VNode {
                             {`Plan in Goal ${i + 1}${goal.title ? `: ${goal.title}` : ""}`}
                         </button>
                     ))}
-                    {own !== null && (
+                    {canTakeOut(state, kind, num) && (
                         <>
                             <div class="rd-menu__sep" role="separator" />
                             <button
@@ -194,7 +195,7 @@ function Backlog({ state, session, dnd, filter, onFilter, width, menu }: Backlog
     const d: Drag | null = dnd.drag;
     // Only an item dragged out of a goal, with a plan of its own, can be dropped here.
     const accepts: boolean =
-        d !== null && d.type === "item" && d.from !== null && ownGoal(state, d.kind, d.num) !== null;
+        d !== null && d.type === "item" && d.from !== null && canTakeOut(state, d.kind, d.num);
     return (
         <section
             class={`rd-panel rd-backlog${dnd.over?.target === "backlog" ? " is-over" : ""}`}

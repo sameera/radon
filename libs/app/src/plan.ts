@@ -162,6 +162,12 @@ export function planItem(
     return { ...state, plan: [...rest, { kind, num, goal: goalId }] };
 }
 
+// Whether the item has a plan of its own to take out. The item menu and the backlog drop both
+// use this rule.
+export function canTakeOut(state: SessionState, kind: ItemKind, num: number): boolean {
+    return ownGoal(state, kind, num) !== null;
+}
+
 // Takes the item's own plan out. An epic then falls back to its initiative's goal, if any.
 export function unplanItem(state: SessionState, kind: ItemKind, num: number): SessionState {
     return { ...state, plan: state.plan.filter((p: PlanEntry) => !(p.kind === kind && p.num === num)) };
@@ -185,11 +191,8 @@ export function moveGoalBy(state: SessionState, id: string, delta: -1 | 1): Sess
     if (!canMoveGoal(state, id, delta)) {
         return state;
     }
-    const goals: Goal[] = [...state.goals];
-    const at: number = goals.findIndex((g: Goal) => g.id === id);
-    const [moved] = goals.splice(at, 1);
-    goals.splice(at + delta, 0, moved!);
-    return { ...state, goals };
+    const at: number = state.goals.findIndex((g: Goal) => g.id === id);
+    return moveGoalNextTo(state, id, state.goals[at + delta]!.id, delta < 0 ? "before" : "after");
 }
 
 // Places a goal just before or just after another one. Returns the same state when the order

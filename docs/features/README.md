@@ -6,3 +6,4 @@
 | [Grooming Tab](grooming-tab/README.md) | The Raiden tab shows the Grooming page, where a lead plans epics and initiatives into prioritized sprint goals. |
 | [Standalone Web View](standalone-web-view/README.md) | The Raiden pages are served on their own, outside github.com, and can be installed as an app. |
 | [GitHub Authentication](github-authentication/README.md) | A person signs in with GitHub from the Raiden extension tab and the standalone web view, and both call GitHub's APIs as that person. |
+| [Project Context](project-context/README.md) | Every Raiden page knows which repository it works on: the extension takes it from the page, the web view from a drop-down. |

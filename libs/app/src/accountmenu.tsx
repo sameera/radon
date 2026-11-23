@@ -9,7 +9,8 @@ export function avatarUrl(login: string): string {
 
 interface AccountMenuProps {
     login: string;
-    onSignOut: () => void;
+    // Absent when the host has no sign-out step. The menu would be empty, so the avatar is only a picture.
+    onSignOut?: () => void;
 }
 
 // The signed-in person's avatar at the right end of the banner. It opens a menu that closes itself
@@ -40,6 +41,19 @@ export function AccountMenu({ login, onSignOut }: AccountMenuProps): VNode {
         return () => document.removeEventListener("mousedown", outside);
     }, [open]);
 
+    const picture: VNode = broken ? (
+        <PersonIcon />
+    ) : (
+        <img src={avatarUrl(login)} alt="" referrerpolicy="no-referrer" onError={() => setBroken(true)} />
+    );
+    if (!onSignOut) {
+        return (
+            <div class="rd-banner__account" role="img" aria-label={`Signed in as ${login}`}>
+                <span class="rd-banner__avatar">{picture}</span>
+            </div>
+        );
+    }
+
     const close = (focusTrigger: boolean): void => {
         setOpen(false);
         if (focusTrigger) {
@@ -58,16 +72,7 @@ export function AccountMenu({ login, onSignOut }: AccountMenuProps): VNode {
                 aria-expanded={open}
                 onClick={() => setOpen(!open)}
             >
-                {broken ? (
-                    <PersonIcon />
-                ) : (
-                    <img
-                        src={avatarUrl(login)}
-                        alt=""
-                        referrerpolicy="no-referrer"
-                        onError={() => setBroken(true)}
-                    />
-                )}
+                {picture}
             </button>
             {open && (
                 <div

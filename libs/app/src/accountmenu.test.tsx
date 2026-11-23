@@ -19,7 +19,7 @@ afterEach(() => {
 });
 
 async function open(login: string | null, banner: boolean = true): Promise<void> {
-    const port: SignInPort = { status: async () => login, signIn: async () => null };
+    const port: SignInPort = { status: async () => login, signIn: async () => null, signOut: async () => undefined };
     await act(async () => {
         unmount = await mountApp(root, {
             css: "",

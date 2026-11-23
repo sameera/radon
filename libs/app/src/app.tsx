@@ -148,7 +148,7 @@ function Shell({
                             }} />
                     ) : undefined
                 }
-                account={auth?.login ? <AccountMenu login={auth.login} onSignOut={() => undefined} /> : undefined}
+                account={auth?.login ? <AccountMenu login={auth.login} onSignOut={signIn?.signOut} /> : undefined}
             />
             {layout}
         </div>

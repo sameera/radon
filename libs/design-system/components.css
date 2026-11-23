@@ -456,6 +456,7 @@ a.rd-ref:hover .rd-ref__title { color: var(--rd-accent); text-decoration: underl
     color: var(--rd-fg-muted);
     cursor: pointer;
 }
+span.rd-banner__avatar { cursor: default; }
 .rd-banner__avatar img { width: 100%; height: 100%; object-fit: cover; }
 .rd-banner__avatar svg { width: 16px; height: 16px; }
 .rd-banner__avatar:hover { border-color: var(--rd-border); }

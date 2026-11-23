@@ -17,6 +17,15 @@ import {
 
 export const RECORD_KEY: string = "raiden:signin";
 export const PENDING_KEY: string = "raiden:signin-pending";
+// Set in this tab's session storage by Sign out. It holds no secret, only the mark "1" (G21).
+export const SIGNED_OUT_KEY: string = "raiden:signed-out";
+const REFRESH_LOCK: string = "raiden:signin-refresh";
+// The picker's two stored values and the preference prefix, as the shared prefs write them.
+const PERSONAL_KEYS: string[] = ["raiden:repository", "raiden:repositories"];
+
+interface LockManagerLike {
+    request<T>(name: string, run: () => Promise<T>): Promise<T>;
+}
 
 export interface WebSignInDeps {
     settings: TeamSettings;
@@ -26,6 +35,8 @@ export interface WebSignInDeps {
     local: Storage;
     session: Storage;
     fetch: typeof fetch;
+    // The browser's lock manager. Sign out takes the same lock as a token renewal. Null means none.
+    locks?: LockManagerLike | null;
 }
 
 function safely<T>(run: () => T, fallback: T): T {
@@ -82,9 +93,36 @@ export async function finishReturn(deps: WebSignInDeps): Promise<{ notice: boole
     try {
         const record: SignInRecord = await exchangeCode(deps.settings, deps.fetch, checked.code, pending);
         await webRecordStore(deps.local).set(record);
+        safely(() => deps.session.removeItem(SIGNED_OUT_KEY), undefined);
         return { notice: false };
     } catch {
         return { notice: true };
+    }
+}
+
+// True while the marker from a Sign out is present in this tab.
+export function wasSignedOut(session: Storage): boolean {
+    return safely(() => session.getItem(SIGNED_OUT_KEY) !== null, false);
+}
+
+// Ends the web view's sign-in on this host only. It sends no request. It waits for any renewal
+// under way, removes the sign-in record first, then the picker's values, then marks the tab and
+// reloads at the web view's own address so nothing in memory survives (D5, D6, D7).
+async function signOut(deps: WebSignInDeps): Promise<void> {
+    const locks: LockManagerLike | null | undefined =
+        deps.locks === undefined ? (globalThis.navigator?.locks as LockManagerLike | undefined) : deps.locks;
+    const clear = async (): Promise<void> => {
+        await webRecordStore(deps.local).set(null);
+        safely(() => deps.session.removeItem(PENDING_KEY), undefined);
+        for (const key of PERSONAL_KEYS) {
+            safely(() => deps.local.removeItem(key), undefined);
+        }
+        safely(() => deps.session.setItem(SIGNED_OUT_KEY, "1"), undefined);
+    };
+    try {
+        await (locks ? locks.request(REFRESH_LOCK, clear) : clear());
+    } finally {
+        deps.win.location.assign(deps.returnUrl);
     }
 }
 
@@ -96,8 +134,11 @@ export function webSignInPort(
 ): SignInPort {
     return {
         status: () => client.status(),
+        signOut: () => signOut(deps),
         async signIn(): Promise<{ login: string } | null> {
-            const { url, pending } = await startAttempt(deps.settings, deps.returnUrl);
+            const { url, pending } = await startAttempt(deps.settings, deps.returnUrl, {
+                chooser: wasSignedOut(deps.session),
+            });
             deps.session.setItem(PENDING_KEY, JSON.stringify(pending));
             deps.win.location.assign(url);
             // The page leaves for GitHub, so this never settles.

@@ -27,6 +27,7 @@ export interface AppProps {
     onBacklogWidth?: (value: number) => void;
     // When set, the shell draws the banner above the sidebar and the page. The extension never sets it.
     banner?: { icon: string };
+    signInLogo?: string;
     signIn?: SignInController;
     gateway?: GitHubGateway;
     prefs?: PreferenceStore;
@@ -43,6 +44,7 @@ function Shell({
     backlogWidth: initialWidth,
     onBacklogWidth,
     banner,
+    signInLogo,
     signIn,
     gateway,
     prefs,
@@ -84,12 +86,17 @@ function Shell({
         }
     }, prefs);
     const account = signIn && auth ? <Account signIn={signIn} state={auth} /> : undefined;
-    const layout: VNode = signIn && !auth?.login ? (
-        <main class="rd-sign-in">
-            {!current && <PickPrompt signedIn={false} />}
-            {account}
-        </main>
-    ) : (
+    if (signIn && !auth?.login) {
+        return (
+            <main class="rd-sign-in">
+                {signInLogo && <img class="rd-sign-in__logo" src={signInLogo} alt="" width={112} height={112} />}
+                <h1>Sign in to Raiden</h1>
+                {account}
+            </main>
+        );
+    }
+
+    const layout: VNode = (
         <div class={banner ? "rd-app rd-app--framed" : "rd-app"}>
             <Sidebar
                 current={page}
@@ -104,7 +111,7 @@ function Shell({
             />
             <main class="rd-main">
                 {!current ? (
-                    <PickPrompt signedIn={true} />
+                    <PickPrompt />
                 ) : page === "grooming" ? (
                     <GroomingPage
                         session={session}
@@ -150,10 +157,10 @@ function Shell({
 }
 
 // What the main area shows while the current repository is "none" (D2). No page renders then.
-function PickPrompt({ signedIn }: { signedIn: boolean }): VNode {
+function PickPrompt(): VNode {
     return (
         <p class="rd-pick-prompt" role="status">
-            {signedIn ? "Pick a repository to see its work." : "Sign in, then pick a repository."}
+            Pick a repository to see its work.
         </p>
     );
 }

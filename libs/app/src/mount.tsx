@@ -26,6 +26,7 @@ export interface AppOptions {
     repoUrl?: string;
     // Set by a host with no page around Raiden. Carries the icon the banner shows. The extension leaves it off.
     banner?: { icon: string };
+    signInLogo?: string;
     // The host's sign-in. Without it the shell shows no sign-in control.
     signIn?: SignInController;
     // The host's GitHub gateway. Every GitHub request a page makes goes through it.
@@ -71,6 +72,7 @@ export async function mountApp(root: ShadowRoot | HTMLElement, options: AppOptio
             session={options.session ?? sharedSession()}
             repo={options.repo ?? createRepoStore(repoFromUrl(options.repoUrl))}
             banner={options.banner}
+            signInLogo={options.signInLogo}
             signIn={options.signIn}
             gateway={options.gateway}
             prefs={options.prefs}

@@ -174,10 +174,10 @@ describe("repository drop-down in the banner (D5, G6, G8)", () => {
         expect(select()!.value).toBe("acme/gadgets");
     });
 
-    it("shows no drop-down when signed out", async () => {
+    it("shows neither the banner nor its drop-down when signed out", async () => {
         const { gateway } = fakeGitHub({ 1: [["acme", "widgets"]] });
         await open({ login: null, gateway });
-        expect(root.querySelector(".rd-banner")).not.toBeNull();
+        expect(root.querySelector(".rd-banner")).toBeNull();
         expect(select()).toBeNull();
     });
 

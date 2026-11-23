@@ -46,6 +46,7 @@ const tokens: string = await readFile("libs/design-system/tokens.css", "utf8");
 const offline: string = (await readFile("apps/web/offline.html", "utf8")).replace("/*TOKENS*/", () => tokens);
 await writeFile(`${out}/offline.html`, offline);
 await cp("apps/web/manifest.webmanifest", `${out}/manifest.webmanifest`);
+await cp("docs/assets/raiden.png", `${out}/raiden.png`);
 await cp("docs/assets/raiden-192x.png", `${out}/raiden-192x.png`);
 await cp("docs/assets/raiden-512x.png", `${out}/raiden-512x.png`);
 await writeFile(`${out}/index.html`, withBackend(await readFile("apps/web/index.html", "utf8"), team.backendUrl));

@@ -1,6 +1,6 @@
 ---
 concept: github-client
-source_sha: caae34dcf7af60b0769efe13a8e02b3e9b74c43d
+source_sha: 5f2a039e827647d63533398781eed4c6beba9f5d
 generated: 2026-11-22
 ---
 
@@ -14,3 +14,4 @@ generated: 2026-11-22
 - `apps/extension/src/gateway.ts` — extension gateway passing requests to the worker (#45)
 - `apps/web/src/gateway.ts` — web view gateway running the client in the page (#47)
 - `libs/app/src/signin.ts` — session check on focus and every minute (#47)
+- `libs/app/src/repolist.ts` — picker list requests through the client (#56)

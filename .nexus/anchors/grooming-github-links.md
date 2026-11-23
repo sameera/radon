@@ -1,6 +1,6 @@
 ---
 concept: grooming-github-links
-source_sha: 2a0cb091f456e0fd34e0ffbf61b44b7e8a7407b8
+source_sha: 5f2a039e827647d63533398781eed4c6beba9f5d
 generated: 2026-11-22
 ---
 

@@ -1,8 +1,8 @@
 ---
 title: Grooming GitHub Links
 aliases: [issue links, issue reference link, new initiative link, open issue on github]
-touches: [grooming-plan, raiden-page-host]
-last_updated_by: "#12"
+touches: [grooming-plan, raiden-page-host, repository-context]
+last_updated_by: "#50"
 status: active
 verification: verified
 ---
@@ -13,7 +13,7 @@ On the Grooming page, each initiative and epic issue reference opens that issue 
 
 ## How It Works
 
-The whole reference, number and title, is one native link, in the backlog and in goal rows. Each address is built from the current repository's web address when the page renders, so the sample data holds no addresses. The New initiative link opens the create-issue page with no template or label preset. The host supplies the repository address at mount. With no address, references are plain text and the New initiative link is hidden.
+The whole reference, number and title, is one native link, in the backlog and in goal rows. Each address is built from the current repository's web address, read from the repository context, when the page renders, so the sample data holds no addresses. The New initiative link opens the create-issue page with no template or label preset. The Grooming page renders only while a repository is current, so a person never sees these links with no repository.
 
 Each link opens in a new tab and gives that tab no handle back to Raiden. A click on a link stops inside Raiden, so GitHub's own page handlers cannot take it over, and the browser still opens the link. Nothing prefetches or preloads a linked page. Links are not draggable, so a drag that starts on one moves its row. The issue numbers in the sample data may open an unrelated issue or a "not found" page.
 
@@ -22,16 +22,20 @@ Each link opens in a new tab and gives that tab no handle back to Raiden. A clic
 1. Raiden's own code sends no request when a link is used. The only network activity is the browser loading the page the user opened.
 2. A page opened from a link has no handle back to the Raiden tab.
 3. After a link opens, the Raiden page keeps its address, plan, goals, goal order and collapsed initiatives.
-4. With no repository address, issue references are plain text and the New initiative link is not shown.
+4. Issue links and the New initiative link point at the current repository's github.com pages.
 5. A link is never dragged. A drag that starts on one moves its row.
 6. The links need no new extension permission and no new host access.
 
 ## Integration Points
 
 - [grooming-plan](grooming-plan.md) — the links sit in the plan's backlog and goal rows, and opening one leaves the plan unchanged.
-- [raiden-page-host](raiden-page-host.md) — the host reads the repository's web address from GitHub's page and passes it through the shell at mount.
+- [raiden-page-host](raiden-page-host.md) — the extension host reads the repository's web address from GitHub's page and writes it into the repository context.
+- [repository-context](repository-context.md) — each link reads the current repository from the shared context, and the page does not render while it is "none".
 
 ## Decision Log
 
 ### 2026-11-22 — #12 — Native links that open GitHub in a new tab
 Stories #22 and #23 need a way to reach GitHub. A native link gives Enter on focus, middle-click, copy link address and the address preview, and a script that opens a window would have to rebuild each. A new tab keeps the Raiden page and its in-memory plan, where navigating in place would discard the plan. No handle back means the opened page cannot script or redirect the Raiden tab. The no-network rule narrows to Raiden's own code, which keeps what epic #3 protected: no API traffic, no backend and no data leaving. The user creates the issue in GitHub, so Raiden still writes nothing to GitHub. Refuted alternative: make only the issue number the link, the literal reading of story #23. It lost because it departs from the design-system guideline and the mockup, and a screen reader would read a bare "#12" as the link name.
+
+### 2026-11-22 — #50 — Links read the repository from the shared context
+The links no longer take the address from a value passed through the shell and the Grooming page. They read the current repository directly. The shell now shows no page while the repository is "none", so the plain-text and hidden-link fallback for a missing address no longer applies. Refuted alternative: none.

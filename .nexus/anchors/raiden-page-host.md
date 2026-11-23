@@ -1,6 +1,6 @@
 ---
 concept: raiden-page-host
-source_sha: d3aa3e23642bda7a2b5efc2274c05777cd6d7cca
+source_sha: 5f2a039e827647d63533398781eed4c6beba9f5d
 generated: 2026-11-22
 ---
 
@@ -15,3 +15,4 @@ generated: 2026-11-22
 - `apps/extension/manifest.json` — storage permission and the on-demand app resource (#13)
 - `apps/extension/src/worker.ts` — worker owning the sign-in record (#45)
 - `apps/extension/src/gateway.ts` — gateway to the worker (#45)
+- `apps/extension/src/app.ts` — extension writes the repository into the context (#56)

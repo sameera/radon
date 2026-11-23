@@ -1,6 +1,6 @@
 ---
 concept: raiden-app-shell
-source_sha: d3aa3e23642bda7a2b5efc2274c05777cd6d7cca
+source_sha: 5f2a039e827647d63533398781eed4c6beba9f5d
 generated: 2026-11-22
 ---
 

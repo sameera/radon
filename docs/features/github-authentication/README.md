@@ -9,3 +9,4 @@ A person signs in with GitHub from the Raiden extension tab and from the standal
 ## Epics
 
 - **Sign in with GitHub** — [#39](https://github.com/sameera/raiden/issues/39)
+- **Sign out from the banner account menu** — [#58](https://github.com/sameera/raiden/issues/58)

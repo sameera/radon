@@ -1,6 +1,6 @@
 ---
 concept: raiden-web-view
-source_sha: d3aa3e23642bda7a2b5efc2274c05777cd6d7cca
+source_sha: 5f2a039e827647d63533398781eed4c6beba9f5d
 generated: 2026-11-22
 ---
 
@@ -19,3 +19,5 @@ generated: 2026-11-22
 - `apps/web/src/main.ts` — web entry point (#36)
 - `apps/web/src/signin.ts` — redirect sign-in (#45)
 - `apps/web/src/gateway.ts` — in-page gateway (#45)
+- `libs/app/src/banner.tsx` — drop-down in the banner (#56)
+- `libs/app/src/remember.ts` — remembered repository in local storage (#56)

@@ -1,8 +1,8 @@
 ---
 title: Raiden Page Host
 aliases: [raiden tab, raiden address, raiden host]
-touches: [raiden-app-shell, grooming-plan, raiden-web-view, grooming-github-links, github-sign-in, github-client]
-last_updated_by: "#39"
+touches: [raiden-app-shell, grooming-plan, raiden-web-view, grooming-github-links, github-sign-in, github-client, repository-context]
+last_updated_by: "#50"
 status: active
 verification: verified
 ---
@@ -13,7 +13,7 @@ The Raiden tab on a repository page opens the Raiden page in place of GitHub's c
 
 ## How It Works
 
-The Raiden tab and its More-menu entry point at the repository main page with a Raiden marker in the address. At that address, GitHub's content below the tab bar is hidden. The Raiden host is placed next to that content, not inside it, so a GitHub re-render of its content does not remove the host. The Raiden tab is marked as the current tab. The host reads the repository's web address from GitHub's own Code tab link, with no network request, and gives it to the shell at mount. The web view gives no address, so its issue references stay plain text.
+The Raiden tab and its More-menu entry point at the repository main page with a Raiden marker in the address. At that address, GitHub's content below the tab bar is hidden. The Raiden host is placed next to that content, not inside it, so a GitHub re-render of its content does not remove the host. The Raiden tab is marked as the current tab. The host reads the repository's web address from GitHub's Code tab link, with no network request, and writes it into the repository context at mount. It writes it again whenever a sync finds a different repository while the Raiden tab is showing, because GitHub's in-page navigation can keep the host alive across a repository change. The web view fills the context from its own drop-down instead.
 
 At any other address, the host is removed, GitHub's content is shown again, and the previous current tab is restored.
 
@@ -31,12 +31,13 @@ The app code loads only when the Raiden address opens, so every other github.com
 
 ## Integration Points
 
-- [raiden-app-shell](raiden-app-shell.md) — the host mounts the shell and gives it the preference store and the current repository's web address, read from the page without a network request.
+- [raiden-app-shell](raiden-app-shell.md) — the host mounts the shell and gives it the preference store and the repository context, which the host fills from the page without a network request.
 - [grooming-plan](grooming-plan.md) — the host opens on Grooming, and the Show issues choice is stored through the host's preference store.
 - [raiden-web-view](raiden-web-view.md) — the web view is a second host beside this one, with its own theme and preference store.
 - [grooming-github-links](grooming-github-links.md) — the Grooming links are built from the repository address this host reads from GitHub's page.
 - [github-sign-in](github-sign-in.md) — the extension host signs in through its background worker and keeps the record in extension storage.
 - [github-client](github-client.md) — the extension host forwards gateway requests to its worker, which runs the client.
+- [repository-context](repository-context.md) — the extension host fills the shared repository from the github.com page and rewrites it when the page's repository changes.
 
 ## Decision Log
 
@@ -51,3 +52,6 @@ The epic's assumptions put both GitHub links in the current repository. The host
 
 ### 2026-11-22 — #39 — Reciprocal link from github-sign-in and github-client
 The extension host's worker owns the sign-in record and runs the client. Recorded for the two new pages.
+
+### 2026-11-22 — #50 — The host rewrites the repository whenever the page's repository differs
+The host used to keep the address it mounted with and never compare it. The Raiden tab must always show the viewed page's repository, and in-page navigation can change that while the host stays. One comparison on each sync makes the guarantee hold in every case. Refuted alternative: none.

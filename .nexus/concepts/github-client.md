@@ -1,8 +1,8 @@
 ---
 title: GitHub Client
 aliases: [github gateway, shared github client, github requests]
-touches: [github-sign-in, raiden-app-shell, raiden-page-host, raiden-web-view]
-last_updated_by: "#39"
+touches: [github-sign-in, raiden-app-shell, raiden-page-host, raiden-web-view, web-repository-picker]
+last_updated_by: "#50"
 status: active
 verification: verified
 ---
@@ -33,6 +33,7 @@ The client never throws. It returns plain data: a success with its status and bo
 - [raiden-app-shell](raiden-app-shell.md) — the shell receives the gateway from the host and gives it to pages.
 - [raiden-page-host](raiden-page-host.md) — the extension host forwards gateway requests to its worker.
 - [raiden-web-view](raiden-web-view.md) — the web view runs the client in the page.
+- [web-repository-picker](web-repository-picker.md) — the picker's list requests go through the client as the signed-in person.
 
 ## Decision Log
 
@@ -41,3 +42,6 @@ One piece of code sends every GitHub request, so "100% carry my sign-in" and "bo
 
 ### 2026-11-22 — #47 — Renew sessions early and sign out only on a refused token
 Sessions expired silently, and a person was left with a dead token. The client now renews the token shortly before it expires. The app checks the session again on focus and every minute. A failed renewal signs the person out only when GitHub refuses the refresh token. A network error, a rate limit or a GitHub server error keeps the session, because the token may still be good.
+
+### 2026-11-22 — #50 — Reciprocal link from web-repository-picker
+The web view repository picker uses this page: the picker's list requests go through the client as the signed-in person.

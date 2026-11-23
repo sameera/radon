@@ -1,8 +1,8 @@
 ---
 title: GitHub Sign-In
 aliases: [sign in with github, github sign-in, sign-in flow, signed-in user]
-touches: [github-client, raiden-app-shell, raiden-page-host, raiden-web-view]
-last_updated_by: "#39"
+touches: [github-client, raiden-app-shell, raiden-page-host, raiden-web-view, web-repository-picker]
+last_updated_by: "#50"
 status: active
 verification: verified
 ---
@@ -36,6 +36,7 @@ The extension keeps its record in extension storage, and only the worker reads i
 - [raiden-app-shell](raiden-app-shell.md) — the shell shows the sign-in control and the username, and does not block pages.
 - [raiden-page-host](raiden-page-host.md) — the extension host signs in through its worker and keeps the record in extension storage.
 - [raiden-web-view](raiden-web-view.md) — the web view signs in by full-page redirect and keeps its record in local storage.
+- [web-repository-picker](web-repository-picker.md) — the login from sign-in tags and checks the picker's stored repository and list.
 
 ## Decision Log
 
@@ -44,3 +45,6 @@ Both hosts use the GitHub App web sign-in flow, and a small stateless backend ho
 
 ### 2026-11-22 — #47 — Require sign-in before the app shows any page
 The app was usable while signed out, and GitHub calls then failed without a clear cause. The app now shows only the sign-in screen until a person is signed in. A GitHub call made without a sign-in returns "sign-in needed" and does not reach GitHub. The backend now tells a refused refresh token apart from a GitHub outage, so the app can react to each differently.
+
+### 2026-11-22 — #50 — Reciprocal link from web-repository-picker
+The web view repository picker uses this page: the login from sign-in tags and checks the picker's stored repository and list.

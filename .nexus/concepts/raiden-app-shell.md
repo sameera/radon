@@ -1,8 +1,8 @@
 ---
 title: Raiden App Shell
 aliases: [raiden app, raiden pages frame]
-touches: [raiden-page-host, grooming-plan, grooming-backlog-view, raiden-web-view, raiden-sidebar, github-sign-in, github-client]
-last_updated_by: "#39"
+touches: [raiden-banner, raiden-page-host, grooming-plan, grooming-backlog-view, raiden-web-view, raiden-sidebar, github-sign-in, github-client, repository-context]
+last_updated_by: "#50"
 status: active
 verification: verified
 ---
@@ -13,13 +13,13 @@ The shell is the frame shared by every Raiden page. It shows the sidebar of Raid
 
 ## How It Works
 
-The shell is built with Preact in its own library. The extension host only mounts it, gives it the stylesheet text, gives it a preference store and gives it the current repository's web address. The shell reads preferences only through that store. It reads the Show issues choice, the sidebar choice and the backlog width in one pass before its first render, so the page does not flash the wrong state.
+The shell is built with Preact in its own library. The extension host only mounts it, gives it the stylesheet text, gives it a preference store and gives it a repository context that the host keeps current. The shell reads preferences only through that store. While the repository context is "none", the main area shows a pick prompt in place of the page. The sidebar and banner stay. It reads the Show issues choice, the sidebar choice and the backlog width in one pass before its first render, so the page does not flash the wrong state.
 
 Switching sidebar pages changes only what the shell shows. Nothing in the address changes.
 
 Keys typed in a Raiden text field stop inside Raiden, so GitHub's own keyboard shortcuts do not run while a lead types.
 
-When the host sets the banner option, the shell draws a banner above the sidebar and the page. The option carries the icon, so the shell imports nothing from an app. The banner is a design-system component with a neutral ground, the brand color on the wordmark, and the height and padding of GitHub's top header. It stays at the top of the window while the document scrolls, and the frame fills the window below it. The extension never sets the option.
+When the host sets the banner option, the shell draws the banner above the sidebar and the page. The banner has its own page.
 
 Reusable controls go into the design system, each with its own guideline page: sidebar item, text input, switch, icon button, popup menu and tooltip. Page-specific layout uses only the design system's tokens and type classes, with no literal colors or sizes. The few icons are copied from the Octicons set. The display font file lives in the design system, and each host ships its own copy, because GitHub blocks fonts from other hosts. If it does not load, the system font stack is used.
 
@@ -29,19 +29,20 @@ Reusable controls go into the design system, each with its own guideline page: s
 2. A control that more than one Raiden page needs lives in the design system, never in a page.
 3. Page layout uses design-system tokens only.
 4. The shell keeps preferences only through the injected preference store.
-5. The shell makes no network request.
+5. The shell sends GitHub requests only through the gateway the host supplies.
 6. A key typed in a Raiden text field never reaches GitHub's page.
-7. The banner shows only when the host sets the banner option.
 
 ## Integration Points
 
-- [raiden-page-host](raiden-page-host.md) — the host mounts the shell, supplies the stylesheet text, the preference store and the repository's web address, and resolves the theme.
+- [raiden-page-host](raiden-page-host.md) — the host mounts the shell, supplies the stylesheet text, the preference store and the repository context, and resolves the theme.
 - [grooming-plan](grooming-plan.md) — Grooming is the first page the shell shows, and it is the page that opens on every load.
 - [grooming-backlog-view](grooming-backlog-view.md) — the shell reads the preferred backlog width before its first render and keeps it through the preference store.
 - [raiden-web-view](raiden-web-view.md) — the web view mounts the shell with the banner option set.
+- [raiden-banner](raiden-banner.md) — the shell draws the banner when the host sets the option, and the banner holds the repository drop-down.
 - [raiden-sidebar](raiden-sidebar.md) — the shell draws the sidebar, keeps its collapsed choice through the preference store, and passes it the not-planned count.
 - [github-sign-in](github-sign-in.md) — the shell shows the sign-in control and the username, and does not block pages.
 - [github-client](github-client.md) — the shell receives the GitHub gateway from the host and gives it to pages.
+- [repository-context](repository-context.md) — the shell provides the shared current repository and shows the pick prompt while it is "none".
 
 ## Decision Log
 
@@ -59,3 +60,6 @@ This page was past the 400-word cap, so the sidebar's items, collapse, not-plann
 
 ### 2026-11-22 — #39 — Reciprocal link from github-sign-in and github-client
 The shell shows the sign-in control, and the host supplies the GitHub gateway. Recorded for the two new pages.
+
+### 2026-11-22 — #50 — The shell reads the repository from a shared context and handles "none" once
+The host no longer passes a repository address down through the shell. It supplies a repository context, and the shell shows a pick prompt in place of any page while it is "none". One check above every page means no page can forget it. The invariant that the shell makes no network request is restated, because the shell now loads the repository list in the web view through the gateway. The page passed the 400-word cap, so the banner's drawing, look and invariant moved to the new raiden-banner page, which also holds the drop-down. Refuted alternative: let each page render with "none" and show its own empty state. Every page would carry the same branch, and a page that forgot it would show broken data.

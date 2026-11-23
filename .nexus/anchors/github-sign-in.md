@@ -1,6 +1,6 @@
 ---
 concept: github-sign-in
-source_sha: caae34dcf7af60b0769efe13a8e02b3e9b74c43d
+source_sha: 5f2a039e827647d63533398781eed4c6beba9f5d
 generated: 2026-11-22
 ---
 
@@ -18,3 +18,4 @@ generated: 2026-11-22
 - `docs/setup/github-app.md` — App registration setup (#45)
 - `libs/app/src/app.tsx` — sign-in gate: shows only the sign-in screen when signed out (#47)
 - `libs/app/src/signin.ts` — sign-in controller: periodic session check (#47)
+- `libs/app/src/remember.ts` — login tags the stored values (#56)

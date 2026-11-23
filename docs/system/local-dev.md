@@ -40,6 +40,10 @@ Unit tests (`go test ./...`) use a fake DB and need no emulator.
 
 Change the port with `EMULATOR_PORT`.
 
+## Backend logging
+
+Set `RAIDEN_LOG_LEVEL=debug` in the repo root's `.env.backend.local` to see request timing and upstream activity. The backend accepts `debug`, `info`, `warn`, and `error` as minimum levels and defaults to `info`. Both the local server and Lambda write logs to stderr. Set the same variable in the Lambda environment to change its level.
+
 ## GitHub App for local sign-in
 
 Register a GitHub App using the permissions and security settings in the [GitHub App setup guide](../setup/github-app.md). For the local web view, add `http://localhost:4210/` as a **Callback URL** and turn the webhook off. Install the App on the repositories you want to read. Copy its **client ID** and generate a **client secret**.

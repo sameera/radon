@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"io"
+	"log/slog"
 	"net/http"
 	"net/url"
 	"os"
@@ -125,7 +126,7 @@ type tokenAnswer struct {
 
 // authGate handles the preflight and the origin check shared by both endpoints. It returns a
 // response when the request is finished.
-func (h *Handler) authGate(req events.APIGatewayV2HTTPRequest) (map[string]string, *events.APIGatewayV2HTTPResponse) {
+func (h *Handler) authGate(ctx context.Context, req events.APIGatewayV2HTTPRequest) (map[string]string, *events.APIGatewayV2HTTPResponse) {
 	origin := header(req, "origin")
 	cors := h.Auth.corsHeaders(origin)
 	if req.RequestContext.HTTP.Method == http.MethodOptions {
@@ -136,6 +137,7 @@ func (h *Handler) authGate(req events.APIGatewayV2HTTPRequest) (map[string]strin
 		return cors, &res
 	}
 	if origin != "" && cors == nil {
+		slog.DebugContext(ctx, "auth request rejected by origin policy", "request_id", req.RequestContext.RequestID)
 		res := respond(http.StatusForbidden, map[string]string{"error": "origin not allowed"})
 		return cors, &res
 	}
@@ -143,15 +145,17 @@ func (h *Handler) authGate(req events.APIGatewayV2HTTPRequest) (map[string]strin
 }
 
 func (h *Handler) exchange(ctx context.Context, req events.APIGatewayV2HTTPRequest) events.APIGatewayV2HTTPResponse {
-	cors, done := h.authGate(req)
+	cors, done := h.authGate(ctx, req)
 	if done != nil {
 		return *done
 	}
 	var in exchangeRequest
 	if err := json.Unmarshal([]byte(req.Body), &in); err != nil || in.Code == "" || in.Verifier == "" {
+		slog.DebugContext(ctx, "invalid OAuth exchange payload", "request_id", req.RequestContext.RequestID)
 		return authRespond(http.StatusBadRequest, map[string]string{"error": "bad request"}, cors)
 	}
 	if !contains(h.Auth.AllowedRedirects, in.RedirectURI) {
+		slog.DebugContext(ctx, "OAuth exchange redirect rejected", "request_id", req.RequestContext.RequestID)
 		return authRespond(http.StatusBadRequest, map[string]string{"error": "bad request"}, cors)
 	}
 	tok, status := h.Auth.tokens(ctx, url.Values{
@@ -184,29 +188,37 @@ func (a *AuthConfig) tokens(ctx context.Context, form url.Values) (tokenAnswer, 
 	form.Set("client_secret", a.ClientSecret)
 	r, err := http.NewRequestWithContext(ctx, http.MethodPost, a.githubURL()+"/login/oauth/access_token", strings.NewReader(form.Encode()))
 	if err != nil {
+		slog.ErrorContext(ctx, "failed to build GitHub OAuth token request")
 		return tokenAnswer{}, http.StatusBadGateway
 	}
 	r.Header.Set("content-type", "application/x-www-form-urlencoded")
 	r.Header.Set("accept", "application/json")
+	slog.DebugContext(ctx, "sending GitHub OAuth token request")
 	res, err := a.client().Do(r)
 	if err != nil {
+		slog.WarnContext(ctx, "GitHub OAuth token request failed")
 		return tokenAnswer{}, http.StatusBadGateway
 	}
 	defer res.Body.Close()
+	slog.DebugContext(ctx, "received GitHub OAuth token response", "status", res.StatusCode)
 	var out tokenAnswer
 	b, err := io.ReadAll(io.LimitReader(res.Body, 1<<20))
 	if err != nil || res.StatusCode == http.StatusTooManyRequests || res.StatusCode >= 500 || json.Unmarshal(b, &out) != nil {
+		slog.WarnContext(ctx, "GitHub token endpoint returned an unusable response", "status", res.StatusCode)
 		return tokenAnswer{}, http.StatusBadGateway
 	}
 	// Only return documented, fixed error codes. GitHub's description and any unknown error
 	// may contain request details, so neither is sent to the browser.
 	switch out.Error {
 	case "bad_refresh_token", "bad_verification_code", "invalid_grant", "unverified_user_email":
+		slog.DebugContext(ctx, "GitHub rejected OAuth credentials", "reason", out.Error)
 		return tokenAnswer{Error: out.Error}, http.StatusBadRequest
 	case "incorrect_client_credentials", "redirect_uri_mismatch":
+		slog.ErrorContext(ctx, "GitHub OAuth configuration rejected", "reason", out.Error)
 		return tokenAnswer{Error: out.Error}, http.StatusBadGateway
 	}
 	if res.StatusCode != http.StatusOK || out.Error != "" || out.AccessToken == "" {
+		slog.WarnContext(ctx, "GitHub token endpoint did not issue an access token", "status", res.StatusCode)
 		return tokenAnswer{}, http.StatusBadGateway
 	}
 	return out, http.StatusOK
@@ -215,20 +227,25 @@ func (a *AuthConfig) tokens(ctx context.Context, form url.Values) (tokenAnswer, 
 func (a *AuthConfig) login(ctx context.Context, accessToken string) (string, bool) {
 	r, err := http.NewRequestWithContext(ctx, http.MethodGet, a.apiURL()+"/user", nil)
 	if err != nil {
+		slog.ErrorContext(ctx, "failed to build GitHub user lookup request")
 		return "", false
 	}
 	r.Header.Set("authorization", "Bearer "+accessToken)
 	r.Header.Set("accept", "application/vnd.github+json")
+	slog.DebugContext(ctx, "sending GitHub user lookup request")
 	res, err := a.client().Do(r)
 	if err != nil {
+		slog.WarnContext(ctx, "GitHub user lookup request failed")
 		return "", false
 	}
 	defer res.Body.Close()
+	slog.DebugContext(ctx, "received GitHub user lookup response", "status", res.StatusCode)
 	var u struct {
 		Login string `json:"login"`
 	}
 	b, _ := io.ReadAll(io.LimitReader(res.Body, 1<<20))
 	if res.StatusCode != http.StatusOK || json.Unmarshal(b, &u) != nil || u.Login == "" {
+		slog.WarnContext(ctx, "GitHub user lookup returned an unusable response", "status", res.StatusCode)
 		return "", false
 	}
 	return u.Login, true
@@ -241,12 +258,13 @@ type refreshRequest struct {
 // refresh trades a refresh token for a new access token and refresh token. GitHub refresh tokens
 // work once, so the caller must store the new one.
 func (h *Handler) refresh(ctx context.Context, req events.APIGatewayV2HTTPRequest) events.APIGatewayV2HTTPResponse {
-	cors, done := h.authGate(req)
+	cors, done := h.authGate(ctx, req)
 	if done != nil {
 		return *done
 	}
 	var in refreshRequest
 	if err := json.Unmarshal([]byte(req.Body), &in); err != nil || in.RefreshToken == "" {
+		slog.DebugContext(ctx, "invalid OAuth refresh payload", "request_id", req.RequestContext.RequestID)
 		return authRespond(http.StatusBadRequest, map[string]string{"error": "bad request"}, cors)
 	}
 	tok, status := h.Auth.tokens(ctx, url.Values{

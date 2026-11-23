@@ -1,6 +1,6 @@
 ---
 concept: web-repository-picker
-source_sha: 5f2a039e827647d63533398781eed4c6beba9f5d
+source_sha: 151359bf4263d56729cceae9e32e67bb11bd1ce2
 generated: 2026-11-22
 ---
 
@@ -9,8 +9,9 @@ generated: 2026-11-22
 
 # Code Anchors: Web View Repository Picker
 
-- `libs/app/src/banner.tsx` — the drop-down in the banner (#56)
 - `libs/app/src/repolist.ts` — reads the reachable list and keeps it (#56)
 - `libs/app/src/remember.ts` — remembered repository tagged with the login (#56)
 - `libs/design-system/components/Select.md` — design-system page for the control (#56)
 - `libs/app/src/app.tsx` — wires the picker, list and remembered repository (#56)
+- `libs/app/src/banner.tsx` — the drop-down in the banner, beside the avatar (#63)
+- `apps/web/src/signin.ts` — sign out removes the remembered repository and the kept list (#63)

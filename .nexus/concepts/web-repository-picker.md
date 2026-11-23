@@ -1,8 +1,8 @@
 ---
 title: Web View Repository Picker
 aliases: [repository drop-down, repo picker, remembered repository, kept repository list, reachable list]
-touches: [raiden-banner, repository-context, raiden-web-view, github-client, github-sign-in]
-last_updated_by: "#50"
+touches: [raiden-banner, repository-context, raiden-web-view, github-client, github-sign-in, web-view-sign-out]
+last_updated_by: "#58"
 status: active
 verification: verified
 ---
@@ -19,6 +19,8 @@ The list is every repository the person can reach through the installations of R
 
 Picking a repository makes it the current repository and the remembered repository. The remembered repository and the kept list sit in the web view's local storage, each with the login of the person who wrote it. Sign-in resolves first. A value with another person's login is ignored and later overwritten. A value with the same login is used at once: the remembered repository becomes current and the kept list fills the drop-down, before GitHub answers.
 
+Sign out removes the remembered repository and the kept list.
+
 Only a complete list counts, meaning every request succeeded. A complete list replaces the kept list. If it lacks the current repository, the current repository becomes "none" and the remembered one is cleared. A failed or partial load changes nothing.
 
 ## Key Invariants
@@ -28,16 +30,21 @@ Only a complete list counts, meaning every request succeeded. A complete list re
 3. Only a complete list replaces the kept list or clears the remembered repository.
 4. The stored values hold only a login and repository owners, names and addresses, never a token or sign-in data.
 5. A storage error reads as "nothing stored", and a failed write is dropped without breaking the page.
+6. After sign out, neither stored value is left in the browser.
 
 ## Integration Points
 
 - [repository-context](repository-context.md) — a pick sets the shared current repository, and a complete list without it clears the repository.
 - [raiden-web-view](raiden-web-view.md) — the picker sits in the web view's banner and uses its preference store.
-- [raiden-banner](raiden-banner.md) — the drop-down is the one control the banner holds.
+- [raiden-banner](raiden-banner.md) — the drop-down is one of the banner's two controls, beside the avatar.
 - [github-client](github-client.md) — the list requests go through the shared client as the signed-in person.
 - [github-sign-in](github-sign-in.md) — the login from sign-in tags and checks the stored values.
+- [web-view-sign-out](web-view-sign-out.md) — sign out removes both stored values, because they hold private repository names.
 
 ## Decision Log
 
 ### 2026-11-22 — #50 — List by App installation, native control, one stored slot tagged with the login
 Listing by installation gives exactly the repositories both the person and the App can reach, and each installation's total lets the web view know the list is complete, because the gateway exposes no paging headers. The native list control gives type-to-jump, keyboard and screen-reader support for hundreds of entries without extra work. Values are tagged with the login, so a new person on a shared browser never inherits the previous person's repository. One slot per value keeps storage bounded. Only a complete list may clear anything, because one page refused by a rate limit would make a present repository look missing. The banner page records that the banner now allows this one control. Refuted alternative: list through GitHub's general listing for the signed-in user. It is one call family, but under an App token it is unclear whether it filters to installed repositories, and a bare list leaves completeness to a guess from a short last page. A second refuted alternative: one stored entry per login. People who take turns would each keep their last repository, but the map would keep every past person's private repository names indefinitely and need pruning.
+
+### 2026-11-22 — #58 — Sign out removes the stored values, although the login tag already hides them
+The tag hides one person's values from the next person in Raiden, but the saved list still sits in the browser's plain storage with the person's private repository names. A shared computer is why sign out exists, so sign out removes the remembered repository and the kept list. The tag rule stays for the case of a new sign-in without a sign out. The drop-down is now one of the banner's two controls. Refuted alternative: keep both values and rely on the tag, so the same person opens ready on the next sign-in, which leaves private repository names on the shared computer.

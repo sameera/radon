@@ -1,6 +1,6 @@
 ---
 concept: raiden-app-shell
-source_sha: 5f2a039e827647d63533398781eed4c6beba9f5d
+source_sha: 151359bf4263d56729cceae9e32e67bb11bd1ce2
 generated: 2026-11-22
 ---
 
@@ -9,14 +9,14 @@ generated: 2026-11-22
 
 # Code Anchors: Raiden App Shell
 
-- `libs/app/src/app.tsx` — shell frame, page selection, layout preferences and banner option (#26, #28, #36)
-- `libs/app/src/banner.tsx` — banner component (#36)
 - `libs/app/src/mount.tsx` — mounts the app into the host's shadow root, reads preferences, passes the banner option and repository address, keeps typed keys inside Raiden (#26, #28, #36)
-- `libs/app/src/icons.tsx` — Octicons copies (#26, #28)
 - `libs/app/src/shell.test.tsx` — shell and preference tests (#26, #28)
 - `apps/extension/src/app.ts` — app bundle entry, passes the repository address (#13, #28)
-- `libs/design-system/components.css` — shared controls, including the banner and tooltip (#26, #28, #36)
 - `libs/design-system/fonts/bricolage-grotesque.woff2` — display font shared by both hosts (#36)
 - `libs/design-system/README.md` — design system usage rules (#13, #36)
-- `libs/app/src/account.tsx` — sign-in control in the shell (#45)
 - `libs/app/src/gateway.ts` — gateway context for pages (#45)
+- `libs/app/src/app.tsx` — shell frame, page selection, layout preferences, banner option and account menu (#63)
+- `libs/app/src/banner.tsx` — banner component (#63)
+- `libs/app/src/account.tsx` — sign-in control in the shell (#63)
+- `libs/app/src/icons.tsx` — Octicons copies (#63)
+- `libs/design-system/components.css` — shared controls, including the banner, tooltip and avatar (#63)

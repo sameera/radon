@@ -1,6 +1,6 @@
 ---
 concept: raiden-web-view
-source_sha: 5f2a039e827647d63533398781eed4c6beba9f5d
+source_sha: 151359bf4263d56729cceae9e32e67bb11bd1ce2
 generated: 2026-11-22
 ---
 
@@ -16,8 +16,9 @@ generated: 2026-11-22
 - `apps/web/offline.html` — self-contained offline page (#36)
 - `apps/web/manifest.webmanifest` — app manifest for install (#36)
 - `apps/web/build.ts` — static build with relative addresses (#36)
-- `apps/web/src/main.ts` — web entry point (#36)
-- `apps/web/src/signin.ts` — redirect sign-in (#45)
 - `apps/web/src/gateway.ts` — in-page gateway (#45)
-- `libs/app/src/banner.tsx` — drop-down in the banner (#56)
 - `libs/app/src/remember.ts` — remembered repository in local storage (#56)
+- `apps/web/src/main.ts` — web entry point, supplies the sign-out step (#63)
+- `apps/web/src/signin.ts` — redirect sign-in and sign-out (#63)
+- `apps/web/index.html` — web page with its content policy (#63)
+- `libs/app/src/banner.tsx` — drop-down and avatar in the banner (#63)

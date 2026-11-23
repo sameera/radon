@@ -1,6 +1,6 @@
 ---
 concept: github-sign-in
-source_sha: 5f2a039e827647d63533398781eed4c6beba9f5d
+source_sha: 151359bf4263d56729cceae9e32e67bb11bd1ce2
 generated: 2026-11-22
 ---
 
@@ -9,13 +9,13 @@ generated: 2026-11-22
 
 # Code Anchors: GitHub Sign-In
 
-- `libs/shared/src/signin.ts` — sign-in core: authorize address, state, verifier, return check, exchange (#47)
 - `backend/internal/handler/auth.go` — stateless token exchange and renewal, origin check, refused-token vs outage statuses (#47)
 - `apps/extension/src/worker.ts` — extension worker owning the sign-in record (#47)
-- `apps/web/src/signin.ts` — web view redirect sign-in and return handling (#47)
 - `apps/web/src/csp.ts` — web view content security policy (#45)
-- `libs/app/src/account.tsx` — shell sign-in control (#47)
 - `docs/setup/github-app.md` — App registration setup (#45)
 - `libs/app/src/app.tsx` — sign-in gate: shows only the sign-in screen when signed out (#47)
-- `libs/app/src/signin.ts` — sign-in controller: periodic session check (#47)
 - `libs/app/src/remember.ts` — login tags the stored values (#56)
+- `libs/shared/src/signin.ts` — sign-in core: authorize address, account chooser option (#63)
+- `apps/web/src/signin.ts` — web view redirect sign-in, return handling and sign-out (#63)
+- `libs/app/src/account.tsx` — shell sign-in control and sign-out warning (#63)
+- `libs/app/src/signin.ts` — sign-in controller: periodic session check and sign-out step (#63)

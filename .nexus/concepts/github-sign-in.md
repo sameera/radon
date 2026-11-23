@@ -1,8 +1,8 @@
 ---
 title: GitHub Sign-In
 aliases: [sign in with github, github sign-in, sign-in flow, signed-in user]
-touches: [github-client, raiden-app-shell, raiden-page-host, raiden-web-view, web-repository-picker]
-last_updated_by: "#50"
+touches: [github-client, raiden-app-shell, raiden-page-host, raiden-web-view, web-repository-picker, web-view-sign-out]
+last_updated_by: "#58"
 status: active
 verification: verified
 ---
@@ -19,7 +19,7 @@ The code comes back to the host. The host checks the state, then sends the code 
 
 The extension signs in through the browser's sign-in window, which a background worker opens. The Raiden tab never navigates. The web view redirects the whole page to GitHub and back. It strips the code from the address before the shell mounts. A cancelled or denied sign-in leaves the person signed out, with a "sign-in did not finish" message.
 
-The extension keeps its record in extension storage, and only the worker reads it. The web view keeps its record in its own local storage, under a strict content security policy. The shell shows a sign-in control and the username. Pages never wait for it.
+The extension keeps its record in extension storage, and only the worker reads it. The web view keeps its record in its own local storage, under a strict content security policy. The shell shows a sign-in control. In the extension it shows the username in the sidebar. In the web view it shows the avatar and the menu in the banner, and the menu signs the person out of the web view only. Pages never wait for it.
 
 ## Key Invariants
 
@@ -33,10 +33,11 @@ The extension keeps its record in extension storage, and only the worker reads i
 ## Integration Points
 
 - [github-client](github-client.md) — the client reads the sign-in record, and asks the backend to renew it.
-- [raiden-app-shell](raiden-app-shell.md) — the shell shows the sign-in control and the username, and does not block pages.
+- [raiden-app-shell](raiden-app-shell.md) — the shell shows the sign-in control, and the username or, in the web view, the avatar and menu, and does not block pages.
 - [raiden-page-host](raiden-page-host.md) — the extension host signs in through its worker and keeps the record in extension storage.
 - [raiden-web-view](raiden-web-view.md) — the web view signs in by full-page redirect and keeps its record in local storage.
 - [web-repository-picker](web-repository-picker.md) — the login from sign-in tags and checks the picker's stored repository and list.
+- [web-view-sign-out](web-view-sign-out.md) — sign out ends the web view's sign-in only, and the next sign-in asks for the account chooser.
 
 ## Decision Log
 
@@ -48,3 +49,6 @@ The app was usable while signed out, and GitHub calls then failed without a clea
 
 ### 2026-11-22 — #50 — Reciprocal link from web-repository-picker
 The web view repository picker uses this page: the login from sign-in tags and checks the picker's stored repository and list.
+
+### 2026-11-22 — #58 — Sign-out is an optional host step, so the shell stays free of hosts
+The sign-in port gains an optional sign-out step, and the shell shows Sign out only when the host supplies it. The web view supplies it and the extension does not, so the extension is exactly as it was. Only the host knows where its sign-in record lives, and the shell must never import from a host. The behaviour of sign out has its own page, web-view-sign-out, which also records the reciprocal link. Refuted alternative: none.

@@ -4,7 +4,10 @@ package handler
 import (
 	"context"
 	"encoding/json"
+	"fmt"
+	"log/slog"
 	"net/http"
+	"time"
 
 	"github.com/aws/aws-lambda-go/events"
 	"github.com/aws/aws-sdk-go-v2/aws"
@@ -26,19 +29,31 @@ type Handler struct {
 }
 
 // Handle serves one request.
-func (h *Handler) Handle(ctx context.Context, req events.APIGatewayV2HTTPRequest) (events.APIGatewayV2HTTPResponse, error) {
-	switch req.RequestContext.HTTP.Method + " " + req.RawPath {
+func (h *Handler) Handle(ctx context.Context, req events.APIGatewayV2HTTPRequest) (res events.APIGatewayV2HTTPResponse, err error) {
+	start := time.Now()
+	route := "unmatched"
+	defer func() {
+		slog.DebugContext(ctx, "request completed", "route", route, "request_id", req.RequestContext.RequestID,
+			"status", res.StatusCode, "duration", time.Since(start))
+	}()
+
+	routeKey := req.RequestContext.HTTP.Method + " " + req.RawPath
+	switch routeKey {
 	case "GET /health":
+		route = routeKey
 		if _, err := h.DB.DescribeTable(ctx, &dynamodb.DescribeTableInput{TableName: aws.String(store.TableName())}); err != nil {
+			slog.ErrorContext(ctx, "DynamoDB health check failed", "request_id", req.RequestContext.RequestID, "error_type", fmt.Sprintf("%T", err))
 			return respond(http.StatusServiceUnavailable, map[string]string{"status": "db unavailable"}), nil
 		}
 		return respond(http.StatusOK, map[string]string{"status": "ok"}), nil
 	case "POST /auth/exchange", "OPTIONS /auth/exchange":
+		route = routeKey
 		if h.Auth != nil {
 			return h.exchange(ctx, req), nil
 		}
 		return respond(http.StatusNotFound, map[string]string{"error": "not found"}), nil
 	case "POST /auth/refresh", "OPTIONS /auth/refresh":
+		route = routeKey
 		if h.Auth != nil {
 			return h.refresh(ctx, req), nil
 		}

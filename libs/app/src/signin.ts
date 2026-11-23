@@ -6,6 +6,9 @@ export interface SignInState {
     // True after a sign-in that did not finish: cancelled, denied, or failed.
     notice: boolean;
     busy: boolean;
+    // True from the moment the person signs out until they sign in again. The sign-in screen then
+    // warns that GitHub may still be signed in (D8).
+    signedOut: boolean;
     status: "checking" | "ready" | "unavailable";
 }
 
@@ -15,17 +18,21 @@ export interface SignInPort {
     status(): Promise<string | null>;
     // Runs a sign-in. Null means it did not finish.
     signIn(): Promise<{ login: string } | null>;
+    // Optional (D4). Ends this host's sign-in. Only a host that supplies it shows a Sign out item.
+    signOut?(): Promise<void>;
 }
 
 export interface SignInController {
     get(): SignInState;
     start(): void;
     check(): void;
+    // Present only when the host's port supplies a sign-out step.
+    signOut?: () => void;
     subscribe(listener: () => void): () => void;
 }
 
-export function createSignInController(port: SignInPort, initial: { notice?: boolean } = {}): SignInController {
-    let state: SignInState = { login: null, notice: initial.notice ?? false, busy: false, status: "checking" };
+export function createSignInController(port: SignInPort, initial: { notice?: boolean; signedOut?: boolean } = {}): SignInController {
+    let state: SignInState = { login: null, notice: initial.notice ?? false, busy: false, signedOut: initial.signedOut ?? false, status: "checking" };
     const listeners: Set<() => void> = new Set();
     const set = (next: SignInState): void => {
         state = next;
@@ -56,9 +63,23 @@ export function createSignInController(port: SignInPort, initial: { notice?: boo
             });
     }
     check();
+    function signOut(): void {
+        const signOutStep = port.signOut;
+        if (!signOutStep || !state.login || state.busy) {
+            return;
+        }
+        const before = state;
+        // The sign-in screen replaces the pages at once. Busy keeps Sign in off until the host reloads.
+        set({ login: null, notice: false, busy: true, signedOut: true, status: "ready" });
+        void signOutStep.call(port).then(undefined, () => {
+            set({ ...before });
+            check();
+        });
+    }
     return {
         get: () => state,
         check,
+        signOut: port.signOut ? signOut : undefined,
         start() {
             if (state.busy || state.login || state.status !== "ready") {
                 return;
@@ -68,7 +89,7 @@ export function createSignInController(port: SignInPort, initial: { notice?: boo
                 .signIn()
                 .catch(() => null)
                 .then((result: { login: string } | null) => {
-                    set(result ? { login: result.login, notice: false, busy: false, status: "ready" } : { ...state, notice: true, busy: false });
+                    set(result ? { login: result.login, notice: false, busy: false, signedOut: false, status: "ready" } : { ...state, notice: true, busy: false });
                 });
         },
         subscribe(listener) {

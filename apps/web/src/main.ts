@@ -5,7 +5,7 @@ import tokensCss from "@raiden/design-system/tokens.css";
 import { boot } from "./boot.ts";
 import { webPreferences } from "./prefs.ts";
 import { webGateway } from "./gateway.ts";
-import { finishReturn, webSignInPort, type WebSignInDeps } from "./signin.ts";
+import { finishReturn, wasSignedOut, webSignInPort, type WebSignInDeps } from "./signin.ts";
 import { registerWorker } from "./sw.ts";
 import { teamSettings } from "./team-settings.ts";
 
@@ -28,7 +28,7 @@ async function start(): Promise<void> {
         css: `${tokensCss}\n${componentsCss}\n${appCss}`,
         prefs: webPreferences(),
         gateway,
-        signIn: createSignInController(webSignInPort(deps, gateway), { notice }),
+        signIn: createSignInController(webSignInPort(deps, gateway), { notice, signedOut: wasSignedOut(deps.session) }),
     });
 }
 

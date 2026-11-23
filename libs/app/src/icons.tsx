@@ -85,3 +85,13 @@ export function CloseIcon(): VNode {
         </svg>
     );
 }
+
+// A neutral person mark. It stands in for an avatar picture that did not load.
+export function PersonIcon(): VNode {
+    return (
+        <svg {...SVG} stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="8" cy="5.5" r="2.5" />
+            <path d="M3 13.5c0-2.5 2.2-4 5-4s5 1.5 5 4" />
+        </svg>
+    );
+}

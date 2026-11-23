@@ -74,5 +74,9 @@ Each team builds its own copy (D10). Set these before `pnpm build`:
 
 ## Signing out
 
-Raiden has no sign-out button yet. Users sign out by revoking the App in GitHub, or by clearing the browser's storage for
-the host.
+In the web view, click your avatar at the top right of the banner and choose Sign out. This ends the session on that
+browser only. It does not revoke the App or the token at GitHub. GitHub may still be signed in in the same browser, so the
+sign-in screen links to GitHub's sign-out and the next sign-in asks GitHub for its account chooser.
+
+The extension has no sign-out control. Users sign out there by revoking the App in GitHub, or by clearing the browser's
+storage for the extension.

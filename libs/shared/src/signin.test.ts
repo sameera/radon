@@ -51,6 +51,15 @@ describe("startAttempt", () => {
         const { url } = await startAttempt(settings, redirect);
         expect(url).not.toMatch(/secret/i);
     });
+
+    it("asks for GitHub's account chooser only when told to, and still asks for no scope (G16, G20)", async () => {
+        const plain = new URL((await startAttempt(settings, redirect)).url);
+        expect(plain.searchParams.has("prompt")).toBe(false);
+        const chooser = new URL((await startAttempt(settings, redirect, { chooser: true })).url);
+        expect(chooser.searchParams.get("prompt")).toBe("select_account");
+        expect(chooser.searchParams.has("scope")).toBe(false);
+        expect(chooser.searchParams.get("code_challenge_method")).toBe("S256");
+    });
 });
 
 describe("checkReturn", () => {

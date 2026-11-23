@@ -54,10 +54,12 @@ function randomToken(bytes: number): string {
 }
 
 // Makes a new attempt. No scope is asked: a GitHub App's read-only access comes from its
-// registration, not from the sign-in request (G11).
+// registration, not from the sign-in request (G11). With `chooser`, GitHub is asked to show its
+// account chooser. That adds no scope.
 export async function startAttempt(
     settings: TeamSettings,
     redirectUri: string,
+    options: { chooser?: boolean } = {},
 ): Promise<{ url: string; pending: PendingAttempt }> {
     const pending: PendingAttempt = { state: randomToken(32), verifier: randomToken(48), redirectUri };
     const digest: ArrayBuffer = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(pending.verifier));
@@ -67,6 +69,9 @@ export async function startAttempt(
     url.searchParams.set("state", pending.state);
     url.searchParams.set("code_challenge", base64url(new Uint8Array(digest)));
     url.searchParams.set("code_challenge_method", "S256");
+    if (options.chooser) {
+        url.searchParams.set("prompt", "select_account");
+    }
     return { url: url.toString(), pending };
 }
 

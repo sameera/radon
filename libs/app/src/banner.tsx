@@ -3,13 +3,15 @@ import type { Repo } from "./repo.tsx";
 
 // The banner across the top of a host that has no page of its own around Raiden. It carries the
 // Raiden mark, supplied by the host so this library imports nothing from an app, then the word.
-// While someone is signed in it also carries the repository drop-down (D5).
-export function Banner({ icon, picker }: { icon: string; picker?: VNode }): VNode {
+// While someone is signed in it also carries the repository drop-down (D5) and, at the right end,
+// the account avatar and its menu.
+export function Banner({ icon, picker, account }: { icon: string; picker?: VNode; account?: VNode }): VNode {
     return (
         <header class="rd-banner">
             <img class="rd-banner__mark" src={icon} alt="" />
             <span class="rd-banner__word rd-text-wordmark">Raiden</span>
             {picker}
+            {account}
         </header>
     );
 }

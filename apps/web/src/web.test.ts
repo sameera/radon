@@ -1,5 +1,6 @@
 // @vitest-environment jsdom
 import { act } from "preact/test-utils";
+import { createSignInController } from "@raiden/app";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { boot, HOST_ID } from "./boot.ts";
 import { webPreferences } from "./prefs.ts";
@@ -167,4 +168,28 @@ describe("banner (G17, G18, G10)", () => {
         expect(frame.querySelector(".rd-banner__word")!.textContent).toBe("Raiden");
         expect(fetch).not.toHaveBeenCalled();
     });
+});
+
+it("shows the Raiden artwork and GitHub sign-in without the banner when signed out", async () => {
+    stubMedia(false);
+    const signIn = createSignInController({
+        status: async () => null,
+        signIn: async () => ({ login: "octo" }),
+    });
+    await act(async () => {
+        unmount = await boot(document, window, { css: "", prefs: webPreferences(), signIn });
+    });
+    const page = shadow().querySelector(".rd-sign-in")!;
+    expect(page.querySelector("img")?.getAttribute("src")).toBe("./raiden.png");
+    expect(page.querySelector("h1")?.textContent).toBe("Sign in to Raiden");
+    const button = page.querySelector("button")!;
+    expect(button.textContent).toBe("Sign in with GitHub");
+    expect(shadow().querySelector(".rd-banner")).toBeNull();
+
+    await act(async () => {
+        button.click();
+        await new Promise((resolve) => setTimeout(resolve, 0));
+    });
+    expect(shadow().querySelector(".rd-sign-in")).toBeNull();
+    expect(shadow().querySelector(".rd-banner")).not.toBeNull();
 });

@@ -39,6 +39,7 @@ export async function boot(doc: Document, win: Window, options: WebOptions): Pro
         signIn: options.signIn,
         gateway: options.gateway,
         banner: { icon: "raiden-128x.png" },
+        signInLogo: "./raiden.png",
     });
     return () => {
         unmount();

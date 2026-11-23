@@ -1,10 +1,33 @@
 /* Raiden app layout. Only rd- tokens and design-system classes: no literal colors or text styles. */
 .rd-app { display: flex; min-height: 70vh; border-top: 1px solid var(--rd-border); }
-.rd-sign-in { display: grid; place-items: center; min-height: 100vh; min-height: 100dvh; }
-.rd-frame > .rd-sign-in {
-    min-height: calc(100vh - var(--rd-header-height));
-    min-height: calc(100dvh - var(--rd-header-height));
+.rd-sign-in {
+    display: grid;
+    align-content: start;
+    justify-items: center;
+    gap: var(--rd-space-4);
+    min-height: 100vh;
+    min-height: 100dvh;
+    padding: clamp(var(--rd-space-6), 9vh, 96px) var(--rd-space-4) var(--rd-space-6);
 }
+.rd-sign-in__logo { display: block; object-fit: contain; }
+.rd-sign-in h1 {
+    margin: 0;
+    font-family: var(--font-display);
+    font-size: 24px;
+    font-weight: 500;
+    line-height: 1.25;
+    text-align: center;
+}
+.rd-sign-in .rd-nav__account {
+    width: min(100%, 320px);
+    padding: var(--rd-space-4);
+    border: 1px solid var(--rd-border);
+    border-radius: var(--rd-radius-md);
+    background: var(--rd-canvas-subtle);
+    text-align: center;
+}
+.rd-sign-in .rd-btn { justify-content: center; min-height: 40px; }
+.rd-sign-in .rd-nav__account p { margin: 0; }
 .rd-main { flex: 1; min-width: 0; padding: var(--rd-space-6); }
 .rd-page__placeholder { color: var(--rd-fg-muted); max-width: 60ch; margin: var(--rd-space-2) 0 0; }
 

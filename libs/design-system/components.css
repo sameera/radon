@@ -441,6 +441,25 @@ a.rd-ref:hover .rd-ref__title { color: var(--rd-accent); text-decoration: underl
 .rd-banner__mark { width: var(--rd-header-icon); height: var(--rd-header-icon); }
 .rd-banner__word { color: var(--rd-brand-fg); }
 .rd-banner__repo { margin-left: var(--rd-space-3); max-width: 280px; }
+.rd-banner__account { margin-left: auto; }
+.rd-banner__avatar {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    padding: 0;
+    overflow: hidden;
+    border: 1px solid var(--rd-border-muted);
+    border-radius: 50%;
+    background: var(--rd-canvas-subtle);
+    color: var(--rd-fg-muted);
+    cursor: pointer;
+}
+.rd-banner__avatar img { width: 100%; height: 100%; object-fit: cover; }
+.rd-banner__avatar svg { width: 16px; height: 16px; }
+.rd-banner__avatar:hover { border-color: var(--rd-border); }
+.rd-banner__avatar:focus-visible { outline: 2px solid var(--rd-accent); outline-offset: 2px; }
 
 /* ---------- Select ---------- */
 .rd-select {

@@ -4,6 +4,7 @@ import { GatewayContext, type GitHubGateway } from "./gateway.ts";
 import { Account } from "./account.tsx";
 import { useSignIn, type SignInController } from "./signin.ts";
 import { Banner, RepoPicker } from "./banner.tsx";
+import { AccountMenu } from "./accountmenu.tsx";
 import { GroomingPage } from "./grooming.tsx";
 import { PlaceholderPage } from "./pages.tsx";
 import { RepoContext, useRepo, useRepoStore, type RepoStore } from "./repo.tsx";
@@ -85,7 +86,7 @@ function Shell({
             void prefs?.set(REMEMBERED, null);
         }
     }, prefs);
-    const account = signIn && auth ? <Account signIn={signIn} state={auth} /> : undefined;
+    const account = signIn && auth ? <Account signIn={signIn} state={auth} showUser={!banner} /> : undefined;
     if (signIn && !auth?.login) {
         return (
             <main class="rd-sign-in">
@@ -147,6 +148,7 @@ function Shell({
                             }} />
                     ) : undefined
                 }
+                account={auth?.login ? <AccountMenu login={auth.login} onSignOut={() => undefined} /> : undefined}
             />
             {layout}
         </div>

@@ -156,11 +156,12 @@ describe("web view shell", () => {
         return document.getElementById(HOST_ID)!.shadowRoot!;
     }
 
-    it("shows the username after the page reloads (G14)", async () => {
+    it("shows the account after the page reloads, as the banner avatar named for the username (G14, D1)", async () => {
         const r = rig(RETURN);
         r.local.setItem(RECORD_KEY, JSON.stringify({ accessToken: "at", login: "octo" }));
         const root = await open(r, false);
-        expect(root.querySelector(".rd-nav__account")!.textContent).toContain("octo");
+        expect(root.querySelector(".rd-banner__avatar")!.getAttribute("aria-label")).toContain("octo");
+        expect(root.querySelector(".rd-nav__user")).toBeNull();
     });
 
     it("never puts a token in the page (G4)", async () => {

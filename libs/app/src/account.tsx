@@ -1,11 +1,20 @@
 import type { VNode } from "preact";
 import type { SignInController, SignInState } from "./signin.ts";
 
-export function Account({ signIn, state }: { signIn: SignInController; state: SignInState }): VNode {
+// `showUser` is false where the banner's avatar names the account instead (D1).
+export function Account({
+    signIn,
+    state,
+    showUser = true,
+}: {
+    signIn: SignInController;
+    state: SignInState;
+    showUser?: boolean;
+}): VNode {
     return (
         <div class="rd-nav__account">
             {state.login ? (
-                <span class="rd-nav__user">{state.login}</span>
+                showUser ? <span class="rd-nav__user">{state.login}</span> : null
             ) : state.status === "checking" ? (
                 <p role="status">Checking sign-in…</p>
             ) : state.status === "unavailable" ? (

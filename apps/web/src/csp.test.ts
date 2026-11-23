@@ -35,3 +35,16 @@ describe("web view content security policy (G22)", () => {
         expect(html).not.toMatch(/<script[^>]+src="(?:https?:)?\/\//);
     });
 });
+
+describe("web view content security policy for the avatar (G7)", () => {
+    it("allows images from GitHub's avatar host and nothing else new", () => {
+        expect(policy(html).get("img-src")).toEqual(["'self'", "data:", "https://avatars.githubusercontent.com"]);
+    });
+    it("leaves scripts, connections, styles and fonts as they were", () => {
+        const csp = policy(withBackend(html, ""));
+        expect(csp.get("script-src")).toEqual(["'self'"]);
+        expect(csp.get("connect-src")).toEqual(["'self'", "https://api.github.com"]);
+        expect(csp.get("style-src")).toEqual(["'self'", "'unsafe-inline'"]);
+        expect(csp.get("font-src")).toEqual(["'self'"]);
+    });
+});

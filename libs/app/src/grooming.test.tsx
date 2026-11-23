@@ -13,7 +13,7 @@ const set = vi.fn<(key: string, value: unknown) => Promise<void>>();
 
 async function open(): Promise<void> {
     await act(async () => {
-        unmount = await mountApp(root, { prefs, session: createSessionStore() });
+        unmount = await mountApp(root, { prefs, session: createSessionStore(), repoUrl: "https://github.com/acme/widgets" });
     });
 }
 const $ = <T extends Element>(sel: string): T => root.querySelector<T>(sel)!;
@@ -144,7 +144,7 @@ describe("no network", () => {
         await act(() => save.click());
         expect(fetchSpy).not.toHaveBeenCalled();
         expect(set).not.toHaveBeenCalled();
-        expect(root.querySelectorAll("a[href]").length).toBe(0);
+        expect(Array.from(root.querySelectorAll("a[href]")).every((a) => (a as HTMLAnchorElement).href.startsWith("https://github.com/acme/widgets/"))).toBe(true);
     });
 });
 

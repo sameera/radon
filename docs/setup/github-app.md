@@ -50,6 +50,17 @@ The backend keeps no tokens. It needs these environment values, or an AWS secret
 
 For local checks, run `go run ./cmd/local` in `backend/` with these set.
 
+If `/auth/exchange` fails, its `reason` field identifies GitHub's safe error category:
+
+| Reason | Check |
+|---|---|
+| `incorrect_client_credentials` | Confirm the backend client ID and secret belong to the same GitHub App; rebuild the frontend with that client ID. |
+| `redirect_uri_mismatch` | Confirm the exact callback URL is registered in the App and matches `RAIDEN_ALLOWED_REDIRECTS` and the frontend return URL. |
+| `bad_verification_code` or `invalid_grant` | Start a fresh sign-in; authorization codes can expire or be used only once. |
+| `unverified_user_email` | Verify the primary email address on the GitHub account. |
+
+A 502 without a `reason` means GitHub could not be reached or gave an unrecognized response. The backend never returns GitHub's free-form error description, authorization codes, or secrets.
+
 ## Build settings for each host
 
 Each team builds its own copy (D10). Set these before `pnpm build`:

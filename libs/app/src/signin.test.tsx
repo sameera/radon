@@ -23,7 +23,7 @@ afterEach(() => {
 async function open(port?: SignInPort, initial?: { notice?: boolean }): Promise<void> {
     await act(async () => {
         const signIn = port ? createSignInController(port, initial) : undefined;
-        unmount = await mountApp(root, { css: "", signIn });
+        unmount = await mountApp(root, { css: "", signIn, repoUrl: "https://github.com/acme/widgets" });
     });
 }
 // Clicks, then lets the sign-in promise chain finish before the next check.
@@ -44,10 +44,11 @@ describe("sign-in control in the shell", () => {
         expect(root.querySelector(".rd-main")!.textContent).toContain("Grooming");
     });
 
-    it("shows a sign-in button while signed out, and the pages stay usable without any request (D9, G23)", async () => {
+    it("blocks navigation and page actions while signed out", async () => {
         await open({ status: async () => null, signIn: async () => null });
         expect(button()!.textContent).toBe("Sign in with GitHub");
-        expect(root.querySelector(".rd-main")!.textContent).toContain("Grooming");
+        expect(root.querySelector(".rd-main")).toBeNull();
+        expect(root.querySelector(".rd-nav")).toBeNull();
         expect(fetchSpy).not.toHaveBeenCalled();
     });
 
@@ -63,6 +64,44 @@ describe("sign-in control in the shell", () => {
         await click();
         expect(signIn).toHaveBeenCalledTimes(1);
         expect(account()!.textContent).toContain("octo");
+    });
+
+    it("closes the pages when a foreground check finds that the session ended", async () => {
+        const status = vi.fn(async (): Promise<string | null> => "octo");
+        await open({ status, signIn: async () => null });
+        expect(root.querySelector(".rd-main")).not.toBeNull();
+        status.mockResolvedValue(null);
+        await act(async () => {
+            window.dispatchEvent(new Event("focus"));
+        });
+        expect(root.querySelector(".rd-main")).toBeNull();
+        expect(button()?.textContent).toBe("Sign in with GitHub");
+    });
+
+    it("checks the session while the app is left open", async () => {
+        vi.useFakeTimers();
+        try {
+            const status = vi.fn(async () => "octo");
+            await open({ status, signIn: async () => null });
+            await act(async () => {
+                await vi.advanceTimersByTimeAsync(60_000);
+            });
+            expect(status).toHaveBeenCalledTimes(2);
+            expect(root.querySelector(".rd-main")).not.toBeNull();
+        } finally {
+            vi.useRealTimers();
+        }
+    });
+
+    it("retries an unavailable session check without asking the user to sign in again", async () => {
+        const status = vi.fn(async () => "octo").mockRejectedValueOnce(new Error("offline"));
+        const signIn = vi.fn(async () => null);
+        await open({ status, signIn });
+        expect(root.querySelector(".rd-main")).toBeNull();
+        expect(button()?.textContent).toBe("Retry");
+        await click();
+        expect(root.querySelector(".rd-main")).not.toBeNull();
+        expect(signIn).not.toHaveBeenCalled();
     });
 
     it("shows that sign-in did not finish and stays signed out when the sign-in fails (G13)", async () => {

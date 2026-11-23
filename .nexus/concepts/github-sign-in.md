@@ -41,3 +41,6 @@ The extension keeps its record in extension storage, and only the worker reads i
 
 ### 2026-11-22 — #39 — Web sign-in with a backend code exchange, one flow in both hosts
 Both hosts use the GitHub App web sign-in flow, and a small stateless backend holds the client secret and exchanges the code. GitHub's token exchange for an App needs the secret even with a verifier, and a browser build cannot hold a secret. GitHub's sign-in endpoints send no CORS headers, so the web view cannot call them directly. The extension signs in through the browser's sign-in window so the code never lands in a github.com address. The web view uses a full-page redirect, because popups misbehave in the installed app window. Refuted alternative: GitHub's device flow. It needs no secret, but the person must copy a code to a second page, the web view still needs a server, and device codes are easy to phish.
+
+### 2026-11-22 — #47 — Require sign-in before the app shows any page
+The app was usable while signed out, and GitHub calls then failed without a clear cause. The app now shows only the sign-in screen until a person is signed in. A GitHub call made without a sign-in returns "sign-in needed" and does not reach GitHub. The backend now tells a refused refresh token apart from a GitHub outage, so the app can react to each differently.

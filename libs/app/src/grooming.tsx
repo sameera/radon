@@ -30,6 +30,7 @@ import {
     type SessionState,
 } from "./plan.ts";
 import { ExternalLink, IssueRef, repoPage } from "./links.tsx";
+import { useRepo } from "./repo.tsx";
 import { GROOMING_SPRINT, INITIATIVES } from "./sample.ts";
 import type { SessionStore } from "./session.ts";
 
@@ -109,7 +110,6 @@ function goalLabel(state: SessionState, goalId: string | null): string {
 }
 
 interface BacklogProps {
-    repoUrl?: string;
     state: SessionState;
     session: SessionStore;
     dnd: DragApi;
@@ -190,11 +190,11 @@ function ItemMenu({ state, session, menu, kind, num }: ItemMenuProps): VNode {
     );
 }
 
-function Backlog({ repoUrl, state, session, dnd, filter, onFilter, width, menu }: BacklogProps): VNode {
+function Backlog({ state, session, dnd, filter, onFilter, width, menu }: BacklogProps): VNode {
     const shown: Initiative[] = filterBacklog(INITIATIVES, filter);
     const filtering: boolean = filter.trim() !== "";
     const total: number = totalEpics(INITIATIVES);
-    const newInitiative: string | null = repoPage(repoUrl, "issues/new");
+    const newInitiative: string | null = repoPage(useRepo()?.url, "issues/new");
     const d: Drag | null = dnd.drag;
     // Only an item dragged out of a goal, with a plan of its own, can be dropped here.
     const accepts: boolean =
@@ -260,7 +260,7 @@ function Backlog({ repoUrl, state, session, dnd, filter, onFilter, width, menu }
                                 >
                                     <ChevronIcon open={open} />
                                 </button>
-                                <IssueRef repoUrl={repoUrl} num={init.num} title={init.title} />
+                                <IssueRef num={init.num} title={init.title} />
                                 <span class="rd-bl-meta">{meta}</span>
                                 <ItemMenu state={state} session={session} menu={menu} kind="init" num={init.num} />
                             </div>
@@ -277,7 +277,7 @@ function Backlog({ repoUrl, state, session, dnd, filter, onFilter, width, menu }
                                             key={epic.num}
                                         >
                                             <span class="rd-glyph rd-glyph--epic" aria-hidden="true" />
-                                            <IssueRef repoUrl={repoUrl} num={epic.num} title={epic.title} />
+                                            <IssueRef num={epic.num} title={epic.title} />
                                             <span class="rd-bl-meta">{goalLabel(state, eff)}</span>
                                             <ItemMenu state={state} session={session} menu={menu} kind="epic" num={epic.num} />
                                         </div>
@@ -299,7 +299,6 @@ function Backlog({ repoUrl, state, session, dnd, filter, onFilter, width, menu }
 }
 
 interface GoalCardProps {
-    repoUrl?: string;
     state: SessionState;
     session: SessionStore;
     goal: Goal;
@@ -323,7 +322,7 @@ function itemTitle(entry: PlanEntry): { num: number; title: string } {
     return { num: entry.num, title: "" };
 }
 
-function GoalCard({ repoUrl, state, session, goal, showIssues, dnd, menu, focus, onFocused }: GoalCardProps): VNode {
+function GoalCard({ state, session, goal, showIssues, dnd, menu, focus, onFocused }: GoalCardProps): VNode {
     const menuOpen: boolean = menu.open === `goal:${goal.id}`;
     const d: Drag | null = dnd.drag;
     const accepts: boolean =
@@ -489,7 +488,7 @@ function GoalCard({ repoUrl, state, session, goal, showIssues, dnd, menu, focus,
                                         onDragEnd={dnd.end}
                                     >
                                         {entry.kind === "epic" && <span class="rd-glyph rd-glyph--epic" aria-hidden="true" />}
-                                        <IssueRef repoUrl={repoUrl} num={num} title={title} />
+                                        <IssueRef num={num} title={title} />
                                         <button
                                             type="button"
                                             class="rd-icon-btn"
@@ -523,7 +522,6 @@ function GoalCard({ repoUrl, state, session, goal, showIssues, dnd, menu, focus,
 }
 
 interface GroomingProps {
-    repoUrl?: string;
     session: SessionStore;
     state: SessionState;
     showIssues: boolean;
@@ -611,7 +609,6 @@ function Divider({ width, min, max, onChange }: DividerProps): VNode {
 }
 
 export function GroomingPage({
-    repoUrl,
     session,
     state,
     showIssues,
@@ -728,7 +725,6 @@ export function GroomingPage({
             </header>
             <div class="rd-groom__panels" ref={panelsRef}>
                 <Backlog
-                    repoUrl={repoUrl}
                     state={state}
                     session={session}
                     dnd={dnd}
@@ -765,7 +761,6 @@ export function GroomingPage({
                     <div class="rd-goals__list">
                         {state.goals.map((goal: Goal) => (
                             <GoalCard
-                                repoUrl={repoUrl}
                                 state={state}
                                 session={session}
                                 goal={goal}

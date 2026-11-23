@@ -12,7 +12,7 @@ let prefs: PreferenceStore;
 
 async function open(): Promise<void> {
     await act(async () => {
-        unmount = await mountApp(root, { prefs, session: createSessionStore() });
+        unmount = await mountApp(root, { prefs, session: createSessionStore(), repoUrl: "https://github.com/acme/widgets" });
     });
 }
 const $ = <T extends Element>(sel: string): T => root.querySelector<T>(sel)!;
@@ -112,7 +112,7 @@ describe("backlog filter", () => {
         await type("goal");
         expect($(".rd-groom__summary").textContent! + $(".rd-groom__save-state").textContent!).toBe(before);
         expect(fetchSpy).not.toHaveBeenCalled();
-        expect($$("a[href]").length).toBe(0);
+        expect(Array.from($$("a[href]")).every((a) => (a as HTMLAnchorElement).href.startsWith("https://github.com/acme/widgets/"))).toBe(true);
     });
 });
 

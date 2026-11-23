@@ -15,7 +15,7 @@ let session: SessionStore;
 async function open(): Promise<void> {
     session = createSessionStore();
     await act(async () => {
-        unmount = await mountApp(root, { session });
+        unmount = await mountApp(root, { session, repoUrl: "https://github.com/acme/widgets" });
     });
 }
 const $ = <T extends Element>(sel: string): T => root.querySelector<T>(sel)!;

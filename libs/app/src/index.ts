@@ -6,3 +6,4 @@ export {
     type SignInState,
 } from "./signin.ts";
 export { GatewayContext, useGateway, type GitHubGateway } from "./gateway.ts";
+export { createRepoStore, repoFromUrl, useRepo, type Repo, type RepoStore } from "./repo.tsx";

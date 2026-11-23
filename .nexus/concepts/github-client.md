@@ -38,3 +38,6 @@ The client never throws. It returns plain data: a success with its status and bo
 
 ### 2026-11-22 — #39 — One shared client behind a host-supplied gateway, failures returned as data
 One piece of code sends every GitHub request, so "100% carry my sign-in" and "both hosts get the same answer" are checked in one place. Pages stay host-agnostic because the gateway comes from the host. The client returns failures as data, because the extension passes the answer between contexts and a thrown error would lose its kind. The client renews once and retries once, and compares stored and failed tokens first, because refresh tokens work once and two web view tabs share one storage. Refuted alternative: pages import the client and each host gives only a token source. It is simpler, but the token would then live in the github.com tab's content script.
+
+### 2026-11-22 — #47 — Renew sessions early and sign out only on a refused token
+Sessions expired silently, and a person was left with a dead token. The client now renews the token shortly before it expires. The app checks the session again on focus and every minute. A failed renewal signs the person out only when GitHub refuses the refresh token. A network error, a rate limit or a GitHub server error keeps the session, because the token may still be good.

@@ -2,6 +2,7 @@ import { render } from "preact";
 import { App } from "./app.tsx";
 import type { GitHubGateway } from "./gateway.ts";
 import type { SignInController } from "./signin.ts";
+import { createRepoStore, repoFromUrl, type RepoStore } from "./repo.tsx";
 import { sharedSession, type SessionStore } from "./session.ts";
 
 // A small key-value store for UI preferences that last across reloads. The host supplies it, so
@@ -16,8 +17,12 @@ export interface AppOptions {
     css?: string;
     prefs?: PreferenceStore;
     session?: SessionStore;
+    // The repository context (D1). The host keeps it current: the extension from the github.com page,
+    // the web view from its drop-down. Without it, the context starts from repoUrl.
+    repo?: RepoStore;
     // The web address of the repository the user is on, for example https://github.com/acme/widgets.
-    // The host works it out from the page. Without it, the page builds no GitHub links.
+    // Used as the starting repository when the host gives no repo store. Without either, the
+    // current repository is "none".
     repoUrl?: string;
     // Set by a host with no page around Raiden. Carries the icon the banner shows. The extension leaves it off.
     banner?: { icon: string };
@@ -64,10 +69,11 @@ export async function mountApp(root: ShadowRoot | HTMLElement, options: AppOptio
     render(
         <App
             session={options.session ?? sharedSession()}
-            repoUrl={options.repoUrl}
+            repo={options.repo ?? createRepoStore(repoFromUrl(options.repoUrl))}
             banner={options.banner}
             signIn={options.signIn}
             gateway={options.gateway}
+            prefs={options.prefs}
             showIssues={showIssues}
             onShowIssues={(value: boolean) => void options.prefs?.set(SHOW_ISSUES, value)}
             sidebarCollapsed={collapsed}

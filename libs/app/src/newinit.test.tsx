@@ -98,13 +98,14 @@ describe("New initiative in GitHub link", () => {
         expect(root.querySelector('link[rel="prefetch"], link[rel="preload"], link[rel="prerender"]')).toBeNull();
     });
 
-    it("is not shown when no repository address is known", async () => {
+    it("is not shown when no repository is known; the page asks for one instead (G3)", async () => {
         session = createSessionStore();
         await act(async () => {
             unmount = await mountApp(root, { session });
         });
         expect(link()).toBeNull();
         expect(root.textContent).not.toContain("New initiative in GitHub");
+        expect(root.querySelector(".rd-pick-prompt")).not.toBeNull();
     });
 
     it("stays at the foot while the backlog filter hides every row", async () => {

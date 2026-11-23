@@ -11,11 +11,11 @@ function loginOf(answer: unknown): string | null {
 export function extensionSignInPort(send: Send): SignInPort {
     return {
         async status(): Promise<string | null> {
-            try {
-                return loginOf(await send({ type: "raiden/status" }));
-            } catch {
-                return null;
+            const answer = await send({ type: "raiden/status" });
+            if (typeof answer === "object" && answer !== null && "unavailable" in answer) {
+                throw new Error("Sign-in status unavailable");
             }
+            return loginOf(answer);
         },
         async signIn(): Promise<{ login: string } | null> {
             try {

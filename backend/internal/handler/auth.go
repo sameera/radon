@@ -154,13 +154,17 @@ func (h *Handler) exchange(ctx context.Context, req events.APIGatewayV2HTTPReque
 	if !contains(h.Auth.AllowedRedirects, in.RedirectURI) {
 		return authRespond(http.StatusBadRequest, map[string]string{"error": "bad request"}, cors)
 	}
-	tok, ok := h.Auth.tokens(ctx, url.Values{
+	tok, status := h.Auth.tokens(ctx, url.Values{
 		"code":          {in.Code},
 		"code_verifier": {in.Verifier},
 		"redirect_uri":  {in.RedirectURI},
 	})
-	if !ok {
-		return authRespond(http.StatusBadRequest, map[string]string{"error": "exchange failed"}, cors)
+	if status != http.StatusOK {
+		body := map[string]string{"error": "exchange failed"}
+		if tok.Error != "" {
+			body["reason"] = tok.Error
+		}
+		return authRespond(status, body, cors)
 	}
 	login, ok := h.Auth.login(ctx, tok.AccessToken)
 	if !ok {
@@ -174,28 +178,38 @@ func (h *Handler) exchange(ctx context.Context, req events.APIGatewayV2HTTPReque
 	}, cors)
 }
 
-// tokens asks GitHub for tokens, adding the client id and secret. It reports only success or
-// failure: nothing GitHub says is passed on, so no code or token can leak into an error (G5).
-func (a *AuthConfig) tokens(ctx context.Context, form url.Values) (tokenAnswer, bool) {
+// tokens asks GitHub for tokens and maps failures to fixed statuses and safe error categories.
+func (a *AuthConfig) tokens(ctx context.Context, form url.Values) (tokenAnswer, int) {
 	form.Set("client_id", a.ClientID)
 	form.Set("client_secret", a.ClientSecret)
 	r, err := http.NewRequestWithContext(ctx, http.MethodPost, a.githubURL()+"/login/oauth/access_token", strings.NewReader(form.Encode()))
 	if err != nil {
-		return tokenAnswer{}, false
+		return tokenAnswer{}, http.StatusBadGateway
 	}
 	r.Header.Set("content-type", "application/x-www-form-urlencoded")
 	r.Header.Set("accept", "application/json")
 	res, err := a.client().Do(r)
 	if err != nil {
-		return tokenAnswer{}, false
+		return tokenAnswer{}, http.StatusBadGateway
 	}
 	defer res.Body.Close()
 	var out tokenAnswer
-	b, _ := io.ReadAll(io.LimitReader(res.Body, 1<<20))
-	if json.Unmarshal(b, &out) != nil || out.Error != "" || out.AccessToken == "" {
-		return tokenAnswer{}, false
+	b, err := io.ReadAll(io.LimitReader(res.Body, 1<<20))
+	if err != nil || res.StatusCode == http.StatusTooManyRequests || res.StatusCode >= 500 || json.Unmarshal(b, &out) != nil {
+		return tokenAnswer{}, http.StatusBadGateway
 	}
-	return out, true
+	// Only return documented, fixed error codes. GitHub's description and any unknown error
+	// may contain request details, so neither is sent to the browser.
+	switch out.Error {
+	case "bad_refresh_token", "bad_verification_code", "invalid_grant", "unverified_user_email":
+		return tokenAnswer{Error: out.Error}, http.StatusBadRequest
+	case "incorrect_client_credentials", "redirect_uri_mismatch":
+		return tokenAnswer{Error: out.Error}, http.StatusBadGateway
+	}
+	if res.StatusCode != http.StatusOK || out.Error != "" || out.AccessToken == "" {
+		return tokenAnswer{}, http.StatusBadGateway
+	}
+	return out, http.StatusOK
 }
 
 func (a *AuthConfig) login(ctx context.Context, accessToken string) (string, bool) {
@@ -235,12 +249,12 @@ func (h *Handler) refresh(ctx context.Context, req events.APIGatewayV2HTTPReques
 	if err := json.Unmarshal([]byte(req.Body), &in); err != nil || in.RefreshToken == "" {
 		return authRespond(http.StatusBadRequest, map[string]string{"error": "bad request"}, cors)
 	}
-	tok, ok := h.Auth.tokens(ctx, url.Values{
+	tok, status := h.Auth.tokens(ctx, url.Values{
 		"grant_type":    {"refresh_token"},
 		"refresh_token": {in.RefreshToken},
 	})
-	if !ok {
-		return authRespond(http.StatusBadRequest, map[string]string{"error": "refresh failed"}, cors)
+	if status != http.StatusOK {
+		return authRespond(status, map[string]string{"error": "refresh failed"}, cors)
 	}
 	return authRespond(http.StatusOK, map[string]any{
 		"access_token":  tok.AccessToken,

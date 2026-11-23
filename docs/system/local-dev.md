@@ -20,6 +20,10 @@ Other platforms: see the [getting started guide](https://docs.aws.amazon.com/emu
 
 ## Run
 
+For a split terminal window, run `./run-server.sh` from the repo root. It starts the emulator, waits for DynamoDB, creates the table, loads `.env.backend.local` if present, and runs the Go server. It uses a tmux session named `raiden-server`; detach with `Ctrl-b d` and reattach with `tmux attach -t raiden-server`. Ctrl+C in the backend pane stops the backend and leaves the emulator running. The stopped pane stays visible; run `./run-server.sh` again to restart it. To stop both processes, run `tmux kill-session -t raiden-server`.
+
+To run each step manually:
+
     scripts/emulator.sh start          # terminal 1, foreground, https://127.0.0.1:9297
     scripts/emulator.sh setup          # terminal 2, creates the table from backend/local/table.json
     eval "$(scripts/emulator.sh env)"  # points the AWS CLI and Go SDK at the emulator
@@ -35,6 +39,37 @@ Other platforms: see the [getting started guide](https://docs.aws.amazon.com/emu
 Unit tests (`go test ./...`) use a fake DB and need no emulator.
 
 Change the port with `EMULATOR_PORT`.
+
+## GitHub App for local sign-in
+
+Register a GitHub App using the permissions and security settings in the [GitHub App setup guide](../setup/github-app.md). For the local web view, add `http://localhost:4210/` as a **Callback URL** and turn the webhook off. Install the App on the repositories you want to read. Copy its **client ID** and generate a **client secret**.
+
+Create `.env.backend.local` in the repo root with the backend settings:
+
+    GITHUB_CLIENT_ID='<app-client-id>'
+    GITHUB_CLIENT_SECRET='<app-client-secret>'
+    RAIDEN_ALLOWED_REDIRECTS='http://localhost:4210/'
+    RAIDEN_ALLOWED_ORIGINS='http://localhost:4210'
+
+Create `.env.frontend.local` in the repo root with the web build settings:
+
+    RAIDEN_GITHUB_CLIENT_ID='<app-client-id>'
+    RAIDEN_BACKEND_URL='http://127.0.0.1:8080'
+    RAIDEN_WEB_RETURN_URL='http://localhost:4210/'
+
+Both files are ignored by Git. With the emulator running and its table set up as above, load the backend file and start the handler from the repo root:
+
+    set -a; . ./.env.backend.local; set +a
+    scripts/emulator.sh serve
+
+In another shell, load the frontend file and build and serve the web view:
+
+    set -a; . ./.env.frontend.local; set +a
+    pnpm exec nx run raiden:dev --skip-nx-cache
+
+Open `http://localhost:4210/` and sign in. The callback URL must match `RAIDEN_WEB_RETURN_URL` and `RAIDEN_ALLOWED_REDIRECTS` exactly, including the trailing slash. `RAIDEN_ALLOWED_ORIGINS` uses the origin only, without that slash. The backend must be running for the code exchange.
+
+To test the unpacked extension too, [create its key](../setup/github-app.md#fix-the-extension-id) and add `RAIDEN_EXTENSION_KEY='<public-key>'` to `.env.frontend.local`. Load that file and run `pnpm exec nx run extension:build --skip-nx-cache`. Load `dist/apps/extension` through `chrome://extensions` and copy its ID. Add `https://<extension-id>.chromiumapp.org/` as another App callback URL. Add that URL to the comma-separated `RAIDEN_ALLOWED_REDIRECTS` and `chrome-extension://<extension-id>` to `RAIDEN_ALLOWED_ORIGINS` in `.env.backend.local`, then reload that file and restart the backend. Use `--skip-nx-cache` when changing build settings so the new values reach the web or extension bundle.
 
 ## Table
 

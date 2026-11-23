@@ -1,6 +1,6 @@
 ---
 concept: raiden-banner
-source_sha: 5f2a039e827647d63533398781eed4c6beba9f5d
+source_sha: 151359bf4263d56729cceae9e32e67bb11bd1ce2
 generated: 2026-11-22
 ---
 
@@ -9,7 +9,10 @@ generated: 2026-11-22
 
 # Code Anchors: Raiden Banner
 
-- `libs/app/src/banner.tsx` — banner and the repository drop-down (#56)
-- `libs/design-system/components/Banner.md` — design-system banner page, now allowing the drop-down (#56)
-- `libs/design-system/components.css` — banner and select styles (#56)
 - `libs/app/src/app.tsx` — draws the banner when the option is set (#56)
+- `libs/app/src/banner.tsx` — banner, repository drop-down and avatar (#63)
+- `libs/app/src/accountmenu.tsx` — avatar button and menu (#63)
+- `libs/app/src/accountmenu.test.tsx` — tests of the avatar menu (#63)
+- `libs/design-system/components/Banner.md` — design-system banner page, now allowing the avatar (#63)
+- `libs/design-system/components.css` — banner, select and avatar styles (#63)
+- `apps/web/index.html` — web view content policy allowing GitHub's avatar host (#63)

@@ -1,6 +1,6 @@
 ---
 concept: github-client
-source_sha: 5f2a039e827647d63533398781eed4c6beba9f5d
+source_sha: 151359bf4263d56729cceae9e32e67bb11bd1ce2
 generated: 2026-11-22
 ---
 

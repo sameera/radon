@@ -1,8 +1,8 @@
 ---
 title: GitHub Client
 aliases: [github gateway, shared github client, github requests]
-touches: [github-sign-in, raiden-app-shell, raiden-page-host, raiden-web-view, web-repository-picker]
-last_updated_by: "#50"
+touches: [github-sign-in, raiden-app-shell, raiden-page-host, raiden-web-view, web-repository-picker, web-view-sign-out]
+last_updated_by: "#58"
 status: active
 verification: verified
 ---
@@ -34,6 +34,7 @@ The client never throws. It returns plain data: a success with its status and bo
 - [raiden-page-host](raiden-page-host.md) — the extension host forwards gateway requests to its worker.
 - [raiden-web-view](raiden-web-view.md) — the web view runs the client in the page.
 - [web-repository-picker](web-repository-picker.md) — the picker's list requests go through the client as the signed-in person.
+- [web-view-sign-out](web-view-sign-out.md) — sign out takes the client's refresh lock so a renewal cannot sign the person back in.
 
 ## Decision Log
 
@@ -45,3 +46,6 @@ Sessions expired silently, and a person was left with a dead token. The client n
 
 ### 2026-11-22 — #50 — Reciprocal link from web-repository-picker
 The web view repository picker uses this page: the picker's list requests go through the client as the signed-in person.
+
+### 2026-11-22 — #58 — Reciprocal link from web-view-sign-out
+Sign out takes the same browser lock that the client takes around a token renewal. Recorded for the new page.

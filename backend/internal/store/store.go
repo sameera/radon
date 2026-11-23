@@ -3,6 +3,7 @@ package store
 
 import (
 	"context"
+	"log/slog"
 	"os"
 
 	"github.com/aws/aws-sdk-go-v2/config"
@@ -25,5 +26,6 @@ func NewClient(ctx context.Context) (*dynamodb.Client, error) {
 	if err != nil {
 		return nil, err
 	}
+	slog.DebugContext(ctx, "DynamoDB client configured", "region", cfg.Region, "table", TableName())
 	return dynamodb.NewFromConfig(cfg), nil
 }

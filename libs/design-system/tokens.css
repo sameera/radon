@@ -84,6 +84,7 @@
     --rd-header-height: 64px;
     --rd-header-padding: 32px;
     --rd-header-icon: 32px;
+    --rd-header-crumb-max: 280px;
     --rd-radius-sm: 4px;
     --rd-radius-md: 6px;
     --rd-radius-lg: 12px;

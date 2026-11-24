@@ -46,6 +46,7 @@ export const space = {
     headerHeight: "var(--rd-header-height)",
     headerPadding: "var(--rd-header-padding)",
     headerIcon: "var(--rd-header-icon)",
+    headerCrumbMax: "var(--rd-header-crumb-max)",
 } as const;
 
 export const radius = {

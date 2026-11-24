@@ -1,11 +1,13 @@
 // @vitest-environment jsdom
+import { render, type VNode } from "preact";
 import { act } from "preact/test-utils";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { GitHubRequest, GitHubResult } from "@raiden/shared";
 import type { GitHubGateway } from "./gateway.ts";
 import { mountApp } from "./mount.tsx";
-import { createRepoStore, type RepoStore } from "./repo.tsx";
-import { loadReachable } from "./repolist.ts";
+import { createRepoStore, type Repo, type RepoStore } from "./repo.tsx";
+import { loadReachable, useRepoList } from "./repolist.ts";
+import { pickRepository } from "./remember.ts";
 import { createSignInController, type SignInController, type SignInPort } from "./signin.ts";
 import { createSessionStore } from "./session.ts";
 
@@ -121,7 +123,7 @@ async function open(opts: { login: string | null; gateway?: GitHubGateway; repo?
     return signIn;
 }
 const select = (): HTMLSelectElement | null => root.querySelector<HTMLSelectElement>(".rd-banner select");
-const labels = (): string[] => Array.from(select()!.querySelectorAll("option")).map((o) => o.textContent!);
+const crumb = (): HTMLButtonElement | null => root.querySelector<HTMLButtonElement>(".rd-banner .rd-breadcrumb");
 
 beforeEach(() => {
     root = document.createElement("div");
@@ -135,7 +137,7 @@ afterEach(() => {
     vi.unstubAllGlobals();
 });
 
-describe("repository drop-down in the banner (D5, G6, G8)", () => {
+describe("repository breadcrumb in the banner (D1, D2, G1, G17)", () => {
     it("sits beside the Raiden mark and word for a signed-in person", async () => {
         const { gateway } = fakeGitHub({ 1: [["acme", "widgets"]] });
         await open({ login: "ada", gateway });
@@ -143,48 +145,74 @@ describe("repository drop-down in the banner (D5, G6, G8)", () => {
         const kids = Array.from(banner.children).map((e) => e.className);
         expect(kids[0]).toContain("rd-banner__mark");
         expect(kids[1]).toContain("rd-banner__word");
-        expect(select()).not.toBeNull();
-        expect(select()!.getAttribute("aria-label")).toBe("Repository");
+        expect(kids[2]).toContain("rd-breadcrumb");
+        expect(crumb()).not.toBeNull();
+        expect(select()).toBeNull();
     });
+
+    it("shows the repository the person picks, and the pages switch to it", async () => {
+        const { gateway } = fakeGitHub({ 1: [["acme", "widgets"], ["acme", "gadgets"]] });
+        const repo = createRepoStore(null);
+        const signIn = await open({ login: "ada", gateway, repo });
+        expect(root.querySelector(".rd-pick-prompt")).not.toBeNull();
+        expect(crumb()!.textContent).toBe("Pick a repository");
+        await act(() => {
+            pickRepository(repo, undefined, signIn.get().login!, { owner: "acme", name: "gadgets", url: "https://github.com/acme/gadgets" });
+        });
+        expect(repo.get()).toEqual({ owner: "acme", name: "gadgets", url: "https://github.com/acme/gadgets" });
+        expect(root.querySelector(".rd-groom")).not.toBeNull();
+        expect(crumb()!.textContent).toBe("acme/gadgets");
+    });
+
+    it("shows neither the banner nor its breadcrumb when signed out", async () => {
+        const { gateway } = fakeGitHub({ 1: [["acme", "widgets"]] });
+        await open({ login: null, gateway });
+        expect(root.querySelector(".rd-banner")).toBeNull();
+        expect(crumb()).toBeNull();
+    });
+
+    it("shows no repository control in a host with no banner, and makes no listing request", async () => {
+        const { gateway, calls } = fakeGitHub({ 1: [["acme", "widgets"]] });
+        await open({ login: "ada", gateway, banner: false, repo: createRepoStore({ owner: "acme", name: "widgets", url: "https://github.com/acme/widgets" }) });
+        expect(root.querySelector("select")).toBeNull();
+        expect(crumb()).toBeNull();
+        expect(calls.length).toBe(0);
+    });
+});
+
+// Renders the list holder alone, so its list can be read without a control that shows it.
+function ListProbe({ gateway, login }: { gateway: GitHubGateway; login: string }): VNode {
+    const repos: Repo[] = useRepoList(gateway, login);
+    return (
+        <ul class="probe">
+            {repos.map((r: Repo) => (
+                <li key={`${r.owner}/${r.name}`}>{`${r.owner}/${r.name}`}</li>
+            ))}
+        </ul>
+    );
+}
+
+describe("the loaded list (D4, G6)", () => {
+    const listed = (): string[] => Array.from(root.querySelectorAll(".probe li")).map((li) => li.textContent!);
+    async function probe(gateway: GitHubGateway): Promise<void> {
+        await act(async () => {
+            render(<ListProbe gateway={gateway} login="ada" />, root);
+        });
+        await flush();
+        await flush();
+    }
+    afterEach(() => render(null, root));
 
     it("lists the reachable repositories as owner/name", async () => {
         const { gateway } = fakeGitHub({ 1: [["acme", "widgets"]], 2: [["acme", "gadgets"]] });
-        await open({ login: "ada", gateway });
-        expect(labels().filter((l) => l.includes("/"))).toEqual(["acme/gadgets", "acme/widgets"]);
+        await probe(gateway);
+        expect(listed()).toEqual(["acme/gadgets", "acme/widgets"]);
     });
 
     it("lists all several hundred repositories", async () => {
         const many: [string, string][] = Array.from({ length: 420 }, (_, i) => ["acme", `r${i}`]);
         const { gateway } = fakeGitHub({ 1: many });
-        await open({ login: "ada", gateway });
-        expect(labels().filter((l) => l.includes("/")).length).toBe(420);
-    });
-
-    it("makes the picked repository the current repository", async () => {
-        const { gateway } = fakeGitHub({ 1: [["acme", "widgets"], ["acme", "gadgets"]] });
-        const repo = createRepoStore(null);
-        await open({ login: "ada", gateway, repo });
-        expect(root.querySelector(".rd-pick-prompt")).not.toBeNull();
-        await act(() => {
-            select()!.value = "acme/gadgets";
-            select()!.dispatchEvent(new Event("change", { bubbles: true }));
-        });
-        expect(repo.get()).toEqual({ owner: "acme", name: "gadgets", url: "https://github.com/acme/gadgets" });
-        expect(root.querySelector(".rd-groom")).not.toBeNull();
-        expect(select()!.value).toBe("acme/gadgets");
-    });
-
-    it("shows neither the banner nor its drop-down when signed out", async () => {
-        const { gateway } = fakeGitHub({ 1: [["acme", "widgets"]] });
-        await open({ login: null, gateway });
-        expect(root.querySelector(".rd-banner")).toBeNull();
-        expect(select()).toBeNull();
-    });
-
-    it("shows no drop-down in a host with no banner, and makes no listing request", async () => {
-        const { gateway, calls } = fakeGitHub({ 1: [["acme", "widgets"]] });
-        await open({ login: "ada", gateway, banner: false, repo: createRepoStore({ owner: "acme", name: "widgets", url: "https://github.com/acme/widgets" }) });
-        expect(root.querySelector("select")).toBeNull();
-        expect(calls.length).toBe(0);
+        await probe(gateway);
+        expect(listed().length).toBe(420);
     });
 });

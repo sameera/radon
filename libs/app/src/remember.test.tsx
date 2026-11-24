@@ -6,6 +6,7 @@ import { mountApp, type PreferenceStore } from "./mount.tsx";
 import { createRepoStore, type Repo, type RepoStore } from "./repo.tsx";
 import { createSignInController, type SignInPort } from "./signin.ts";
 import { createSessionStore } from "./session.ts";
+import { pickRepository } from "./remember.ts";
 
 const WIDGETS: Repo = { owner: "acme", name: "widgets", url: "https://github.com/acme/widgets" };
 const GADGETS: Repo = { owner: "acme", name: "gadgets", url: "https://github.com/acme/gadgets" };
@@ -68,13 +69,15 @@ async function open(o: {
     });
     await flush();
     await flush();
+    current = o.login ? { store: repo, prefs: o.prefs, login: o.login } : undefined;
     return repo;
 }
-const select = (): HTMLSelectElement => root.querySelector<HTMLSelectElement>(".rd-banner select")!;
+// Picks through the app's pick path, as the person's pick does.
+let current: { store: RepoStore; prefs: PreferenceStore; login: string } | undefined;
 async function pick(value: string): Promise<void> {
+    const [owner, name] = value.split("/");
     await act(() => {
-        select().value = value;
-        select().dispatchEvent(new Event("change", { bubbles: true }));
+        pickRepository(current!.store, current!.prefs, current!.login, { owner, name, url: `https://github.com/${value}` });
     });
 }
 

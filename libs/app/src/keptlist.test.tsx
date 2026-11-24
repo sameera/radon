@@ -1,4 +1,5 @@
 // @vitest-environment jsdom
+import { render, type VNode } from "preact";
 import { act } from "preact/test-utils";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { GitHubGateway } from "./gateway.ts";
@@ -6,6 +7,7 @@ import { mountApp, type PreferenceStore } from "./mount.tsx";
 import { createRepoStore, type Repo } from "./repo.tsx";
 import { createSignInController } from "./signin.ts";
 import { createSessionStore } from "./session.ts";
+import { useRepoList } from "./repolist.ts";
 
 const A: Repo = { owner: "acme", name: "alpha", url: "https://github.com/acme/alpha" };
 const B: Repo = { owner: "acme", name: "beta", url: "https://github.com/acme/beta" };
@@ -37,23 +39,38 @@ function memoryPrefs(initial: Record<string, unknown> = {}): PreferenceStore & {
 let root: HTMLElement;
 let unmount: (() => void) | undefined;
 const flush = (): Promise<void> => act(async () => void (await new Promise((r) => setTimeout(r, 0))));
+// Renders the list holder alone, so its list can be read without a control that shows it.
+function ListProbe({ login, prefs, gateway }: { login: string; prefs: PreferenceStore; gateway: GitHubGateway }): VNode {
+    const repos: Repo[] = useRepoList(gateway, login, undefined, prefs);
+    return (
+        <ul class="probe">
+            {repos.map((r: Repo) => (
+                <li key={`${r.owner}/${r.name}`}>{`${r.owner}/${r.name}`}</li>
+            ))}
+        </ul>
+    );
+}
+
+// With the banner, the list holder runs as the web view runs it; without, the whole app mounts as
+// the extension mounts it.
 async function open(login: string, prefs: PreferenceStore, gateway: GitHubGateway, banner = true): Promise<void> {
     await act(async () => {
+        if (banner) {
+            render(<ListProbe login={login} prefs={prefs} gateway={gateway} />, root);
+            unmount = () => render(null, root);
+            return;
+        }
         unmount = await mountApp(root, {
             session: createSessionStore(),
             signIn: createSignInController({ status: async () => login, signIn: async () => ({ login }) }),
             gateway,
             prefs,
             repo: createRepoStore(null),
-            banner: banner ? { icon: "i.png" } : undefined,
         });
     });
     await flush();
 }
-const labels = (): string[] =>
-    Array.from(root.querySelectorAll(".rd-banner select option"))
-        .map((o) => o.textContent!)
-        .filter((t) => t.includes("/"));
+const labels = (): string[] => Array.from(root.querySelectorAll(".probe li")).map((o) => o.textContent!);
 
 beforeEach(() => {
     root = document.createElement("div");
@@ -75,7 +92,7 @@ describe("the kept repository list (D6, D7, G11-G14)", () => {
         expect(JSON.stringify(prefs.data)).not.toMatch(/token/i);
     });
 
-    it("fills the drop-down before GitHub answers", async () => {
+    it("fills the loaded list before GitHub answers", async () => {
         const prefs = memoryPrefs({ repositories: { login: "ada", repos: [A, B] } });
         let release!: (rows: Repo[]) => void;
         const slow = new Promise<Repo[]>((r) => (release = r));
@@ -93,7 +110,7 @@ describe("the kept repository list (D6, D7, G11-G14)", () => {
         expect(prefs.data["repositories"]).toEqual({ login: "ada", repos: [C] });
     });
 
-    it("leaves the drop-down and storage unchanged when the fresh load fails", async () => {
+    it("leaves the loaded list and storage unchanged when the fresh load fails", async () => {
         const prefs = memoryPrefs({ repositories: { login: "ada", repos: [A, B] } });
         await open("ada", prefs, gatewayFor(() => "fail"));
         expect(labels()).toEqual(["acme/alpha", "acme/beta"]);

@@ -440,7 +440,7 @@ a.rd-ref:hover .rd-ref__title { color: var(--rd-accent); text-decoration: underl
 }
 .rd-banner__mark { width: var(--rd-header-icon); height: var(--rd-header-icon); }
 .rd-banner__word { color: var(--rd-brand-fg); }
-.rd-banner__repo { margin-left: var(--rd-space-3); max-width: 280px; }
+.rd-banner__repo { margin-left: var(--rd-space-3); }
 .rd-banner__account { margin-left: auto; }
 .rd-banner__avatar {
     display: inline-flex;
@@ -461,6 +461,31 @@ span.rd-banner__avatar { cursor: default; }
 .rd-banner__avatar svg { width: 16px; height: 16px; }
 .rd-banner__avatar:hover { border-color: var(--rd-border); }
 .rd-banner__avatar:focus-visible { outline: 2px solid var(--rd-accent); outline-offset: 2px; }
+
+/* ---------- Breadcrumb ---------- */
+/* The repository as owner / name, set like GitHub's header breadcrumb. One button opens its menu. */
+.rd-breadcrumb {
+    display: inline-flex;
+    align-items: baseline;
+    gap: var(--rd-space-1);
+    min-width: 0;
+    max-width: var(--rd-header-crumb-max);
+    padding: var(--rd-space-1) var(--rd-space-2);
+    overflow: hidden;
+    white-space: nowrap;
+    border: 0;
+    border-radius: var(--rd-radius-md);
+    background: transparent;
+    color: var(--rd-fg);
+    font-family: var(--font-sans);
+    cursor: pointer;
+}
+.rd-breadcrumb:hover { background: var(--rd-canvas-inset); }
+.rd-breadcrumb:focus-visible { outline: 2px solid var(--rd-accent); outline-offset: 2px; }
+.rd-breadcrumb__owner { flex: 0 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; font-weight: 400; }
+.rd-breadcrumb__sep { flex: none; color: var(--rd-fg-muted); }
+.rd-breadcrumb__name { flex: 0 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; font-weight: 600; }
+.rd-breadcrumb__prompt { overflow: hidden; text-overflow: ellipsis; color: var(--rd-fg-muted); }
 
 /* ---------- Select ---------- */
 .rd-select {

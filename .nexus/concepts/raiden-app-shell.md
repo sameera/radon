@@ -2,7 +2,7 @@
 title: Raiden App Shell
 aliases: [raiden app, raiden pages frame]
 touches: [raiden-banner, raiden-page-host, grooming-plan, grooming-backlog-view, raiden-web-view, raiden-sidebar, github-sign-in, github-client, repository-context, web-view-sign-out]
-last_updated_by: "#58"
+last_updated_by: "#66"
 status: active
 verification: verified
 ---
@@ -38,7 +38,7 @@ Reusable controls go into the design system, each with its own guideline page: s
 - [grooming-plan](grooming-plan.md) — Grooming is the first page the shell shows, and it is the page that opens on every load.
 - [grooming-backlog-view](grooming-backlog-view.md) — the shell reads the preferred backlog width before its first render and keeps it through the preference store.
 - [raiden-web-view](raiden-web-view.md) — the web view mounts the shell with the banner option set.
-- [raiden-banner](raiden-banner.md) — the shell draws the banner when the host sets the option, and the banner holds the repository drop-down and the avatar.
+- [raiden-banner](raiden-banner.md) — the shell draws the banner when the host sets the option, and the banner holds the repository breadcrumb and the avatar.
 - [raiden-sidebar](raiden-sidebar.md) — the shell draws the sidebar, keeps its collapsed choice through the preference store, and passes it the not-planned count.
 - [github-sign-in](github-sign-in.md) — the shell shows the sign-in control, and the username or, in the web view, the avatar and menu, and does not block pages.
 - [github-client](github-client.md) — the shell receives the GitHub gateway from the host and gives it to pages.
@@ -64,6 +64,8 @@ The shell shows the sign-in control, and the host supplies the GitHub gateway. R
 
 ### 2026-11-22 — #50 — The shell reads the repository from a shared context and handles "none" once
 The host no longer passes a repository address down through the shell. It supplies a repository context, and the shell shows a pick prompt in place of any page while it is "none". One check above every page means no page can forget it. The invariant that the shell makes no network request is restated, because the shell now loads the repository list in the web view through the gateway. The page passed the 400-word cap, so the banner's drawing, look and invariant moved to the new raiden-banner page, which also holds the drop-down. Refuted alternative: let each page render with "none" and show its own empty state. Every page would carry the same branch, and a page that forgot it would show broken data.
-
 ### 2026-11-22 — #58 — The shell shows the account menu from an optional host step
 In a banner host the shell shows the avatar and its menu in place of the sidebar username, and shows Sign out only when the host supplies a sign-out step. The shell must never import from a host, as invariant 1 requires, and only the host knows where its record lives. The extension keeps its sidebar username. Refuted alternative: none.
+
+### 2026-11-24 — #66 — The shell holds which banner menu is open, so at most one is open
+The shell keeps one value for the open banner menu, repository or account, and gives each menu its open state and a change handler. No menu listens for another menu's event, so at most one is open by construction. Refuted alternative: a document event that each menu fires on open and the other listens for, which needs both menus to agree on event names and still races on a fast double click.

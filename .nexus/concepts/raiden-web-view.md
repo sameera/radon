@@ -2,14 +2,14 @@
 title: Raiden Web View
 aliases: [web view, standalone web view, web host, raiden banner]
 touches: [raiden-banner, raiden-app-shell, raiden-page-host, github-sign-in, github-client, repository-context, web-repository-picker, web-view-sign-out]
-last_updated_by: "#58"
+last_updated_by: "#66"
 status: active
 verification: verified
 ---
 
 # Raiden Web View
 
-The web view is the Raiden pages on a web page of their own, with no GitHub page around them. It can be installed as an app. It shows a Raiden banner across the top, because no GitHub header sits above it. Beside the mark and word, the banner holds a repository drop-down and an avatar menu while a person is signed in.
+The web view is the Raiden pages on a web page of their own, with no GitHub page around them. It can be installed as an app. It shows a Raiden banner across the top, because no GitHub header sits above it. Beside the mark and word, the banner holds a repository breadcrumb and an avatar menu while a person is signed in.
 
 ## How It Works
 
@@ -38,8 +38,8 @@ An app manifest names the app Raiden, opens it in a standalone window and gives 
 - [github-sign-in](github-sign-in.md) — the web view signs in by full-page redirect and keeps its record in its own local storage.
 - [github-client](github-client.md) — the web view runs the client in the page.
 - [raiden-banner](raiden-banner.md) — the web view is the host that sets the banner option.
-- [repository-context](repository-context.md) — the web view fills the shared repository from its drop-down and its remembered repository.
-- [web-repository-picker](web-repository-picker.md) — the drop-down, the remembered repository and the kept list live in the web view's banner and storage.
+- [repository-context](repository-context.md) — the web view fills the shared repository from the repository menu and its remembered repository.
+- [web-repository-picker](web-repository-picker.md) — the menu's list, the remembered repository and the kept list live in the web view's banner and storage.
 - [web-view-sign-out](web-view-sign-out.md) — the web view supplies the sign-out step and reloads itself after it.
 
 ## Decision Log
@@ -55,3 +55,6 @@ The web view has no GitHub page to read a repository from, so the person picks o
 
 ### 2026-11-22 — #58 — The web view supplies sign-out and reloads itself
 The web view supplies the sign-out step, because only the host knows where its record lives, and it reloads at its own address afterwards. The page's memory holds the plan session, the repository list, the repository context and the open menu, and a reload clears all of it at once. The reload drops any query and fragment from the address. The content policy now also allows GitHub's avatar host for images, which the banner page records. Refuted alternative: reset the state in place with no reload, which avoids a flash but needs every piece of memory found and reset now and in later epics, and one missed piece shows the last person's data to the next person.
+
+### 2026-11-24 — #66 — The web view's repository choice opens a searchable menu from the breadcrumb
+The list the web view already keeps now sits behind a breadcrumb that opens a searchable menu, so a person with hundreds of repositories can type to narrow them. The list, the storage and the login tag stay as they were. The menu's behavior is on its own page. Refuted alternative: keep the browser's drop-down, which narrows only by its own rules and cannot show a no-match message.

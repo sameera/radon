@@ -1,23 +1,23 @@
 ---
 title: Web View Repository Picker
-aliases: [repository drop-down, repo picker, remembered repository, kept repository list, reachable list]
-touches: [raiden-banner, repository-context, raiden-web-view, github-client, github-sign-in, web-view-sign-out]
-last_updated_by: "#58"
+aliases: [repo picker, remembered repository, kept repository list, reachable list]
+touches: [raiden-banner, repository-context, raiden-web-view, github-client, github-sign-in, web-view-sign-out, repository-menu]
+last_updated_by: "#66"
 status: active
 verification: verified
 ---
 
 # Web View Repository Picker
 
-In the web view, a drop-down in the banner lets a signed-in person pick the repository. The web view remembers the last pick and the last repository list, so it opens ready on a repeat visit.
+In the web view, a breadcrumb in the banner opens a menu that lets a signed-in person pick the repository. The web view remembers the last pick and the last repository list, so it opens ready on a repeat visit.
 
 ## How It Works
 
-The drop-down is the browser's own list control, styled with the design system. It sits beside the Raiden mark and word, and only while a person is signed in. The extension has none.
+The repository menu opens from the banner's breadcrumb, beside the Raiden mark and word, and only while a person is signed in. Its search and keys are on the repository-menu page. The extension has none.
 
 The list is every repository the person can reach through the installations of Raiden's GitHub App, including organisation repositories. The web view reads every installation and every page until it reaches the total GitHub reports for that installation. It then sorts by owner and name. All requests go through the shared GitHub client, as the signed-in person.
 
-Picking a repository makes it the current repository and the remembered repository. The remembered repository and the kept list sit in the web view's local storage, each with the login of the person who wrote it. Sign-in resolves first. A value with another person's login is ignored and later overwritten. A value with the same login is used at once: the remembered repository becomes current and the kept list fills the drop-down, before GitHub answers.
+Picking a repository makes it the current repository and the remembered repository. The remembered repository and the kept list sit in the web view's local storage, each with the login of the person who wrote it. Sign-in resolves first. A value with another person's login is ignored and later overwritten. A value with the same login is used at once: the remembered repository becomes current and the kept list fills the menu, before GitHub answers.
 
 Sign out removes the remembered repository and the kept list.
 
@@ -25,7 +25,7 @@ Only a complete list counts, meaning every request succeeded. A complete list re
 
 ## Key Invariants
 
-1. The drop-down lists every repository reachable through Raiden's GitHub App, including accounts with several hundred.
+1. The repository menu lists every repository reachable through Raiden's GitHub App, including accounts with several hundred.
 2. A person never sees, or opens on, another person's kept list or remembered repository.
 3. Only a complete list replaces the kept list or clears the remembered repository.
 4. The stored values hold only a login and repository owners, names and addresses, never a token or sign-in data.
@@ -36,10 +36,11 @@ Only a complete list counts, meaning every request succeeded. A complete list re
 
 - [repository-context](repository-context.md) — a pick sets the shared current repository, and a complete list without it clears the repository.
 - [raiden-web-view](raiden-web-view.md) — the picker sits in the web view's banner and uses its preference store.
-- [raiden-banner](raiden-banner.md) — the drop-down is one of the banner's two controls, beside the avatar.
+- [raiden-banner](raiden-banner.md) — the breadcrumb opens the menu, one of the banner's two controls beside the avatar.
 - [github-client](github-client.md) — the list requests go through the shared client as the signed-in person.
 - [github-sign-in](github-sign-in.md) — the login from sign-in tags and checks the stored values.
 - [web-view-sign-out](web-view-sign-out.md) — sign out removes both stored values, because they hold private repository names.
+- [repository-menu](repository-menu.md) — the menu lists this list, and a pick from the menu becomes the remembered repository.
 
 ## Decision Log
 
@@ -48,3 +49,6 @@ Listing by installation gives exactly the repositories both the person and the A
 
 ### 2026-11-22 — #58 — Sign out removes the stored values, although the login tag already hides them
 The tag hides one person's values from the next person in Raiden, but the saved list still sits in the browser's plain storage with the person's private repository names. A shared computer is why sign out exists, so sign out removes the remembered repository and the kept list. The tag rule stays for the case of a new sign-in without a sign out. The drop-down is now one of the banner's two controls. Refuted alternative: keep both values and rely on the tag, so the same person opens ready on the next sign-in, which leaves private repository names on the shared computer.
+
+### 2026-11-24 — #66 — The searchable menu moves to its own page, and the picker keeps the list
+The picker page would pass the 400-word cap if the search rules stayed in it. The menu's search, keys and messages now sit on the repository-menu page. The list, the remembered repository, the complete-list rule and sign-out stay here, because they decide what a person may see and keep. The drop-down's wording becomes the breadcrumb's menu. Refuted alternative: keep the menu here and drop still-true text to fit under the cap, which would remove rules a reviewer checks. The same entry records the reciprocal link from repository-menu: the menu lists this list, and a pick from it becomes the remembered repository.

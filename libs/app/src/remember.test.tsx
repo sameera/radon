@@ -70,12 +70,11 @@ async function open(o: {
     await flush();
     return repo;
 }
-const select = (): HTMLSelectElement => root.querySelector<HTMLSelectElement>(".rd-banner select")!;
+// Picks as the person does: opens the repository menu from the breadcrumb and clicks the entry.
 async function pick(value: string): Promise<void> {
-    await act(() => {
-        select().value = value;
-        select().dispatchEvent(new Event("change", { bubbles: true }));
-    });
+    await act(() => root.querySelector<HTMLButtonElement>(".rd-banner .rd-breadcrumb")!.click());
+    const entry: HTMLElement = Array.from(root.querySelectorAll<HTMLElement>(".rd-search-menu [role=option]")).find((o) => o.textContent === value)!;
+    await act(() => entry.click());
 }
 
 beforeEach(() => {

@@ -31,6 +31,12 @@ export function writeRemembered(prefs: PreferenceStore | undefined, login: strin
     void prefs?.set(REMEMBERED, value);
 }
 
+// The pick path: the picked repository becomes current and is remembered for this person.
+export function pickRepository(store: RepoStore | undefined, prefs: PreferenceStore | undefined, login: string, repo: Repo): void {
+    store?.set(repo);
+    writeRemembered(prefs, login, repo);
+}
+
 // The web view's repository source, part one (D6): once sign-in resolves to a username, the
 // remembered repository, if that person wrote it, becomes current at once. A value another person
 // wrote is ignored. Signing out leaves the context at "none". Does nothing unless `enabled`.

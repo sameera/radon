@@ -1,6 +1,6 @@
 # Select
 
-The browser's own list control (`rd-select`), styled with design-system tokens. Use it to pick one item from a long list where search is not offered. The repository drop-down in the banner is its one use today.
+The browser's own list control (`rd-select`), styled with design-system tokens. Use it to pick one item from a long list where search is not offered. It has no use today.
 
 ## Structure
 
@@ -28,4 +28,4 @@ Hover darkens the edge to `rd-border`. Focus shows the system focus ring in `rd-
 ## Don't
 
 - Don't use it for a short list of actions. Use the [PopupMenu](PopupMenu.md).
-- Don't replace it with a custom list for hundreds of items.
+- Don't replace it with a custom list for hundreds of items, unless the list offers search; then use the searchable menu ([SearchMenu](SearchMenu.md)).

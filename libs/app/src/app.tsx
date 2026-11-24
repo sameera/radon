@@ -3,13 +3,14 @@ import { useMemo, useState } from "preact/hooks";
 import { GatewayContext, type GitHubGateway } from "./gateway.ts";
 import { Account } from "./account.tsx";
 import { useSignIn, type SignInController } from "./signin.ts";
-import { Banner, RepoPicker } from "./banner.tsx";
+import { Banner } from "./banner.tsx";
+import { RepoMenu } from "./repomenu.tsx";
 import { AccountMenu } from "./accountmenu.tsx";
 import { GroomingPage } from "./grooming.tsx";
 import { PlaceholderPage } from "./pages.tsx";
 import { RepoContext, useRepo, useRepoStore, type RepoStore } from "./repo.tsx";
 import { useRepoList } from "./repolist.ts";
-import { REMEMBERED, useRemembered, writeRemembered } from "./remember.ts";
+import { pickRepository, REMEMBERED, useRemembered } from "./remember.ts";
 import type { PreferenceStore } from "./mount.tsx";
 import { INITIATIVES } from "./sample.ts";
 import { unplannedEpicCount } from "./plan.ts";
@@ -54,6 +55,8 @@ function Shell({
     const [collapsed, setCollapsed] = useState<boolean>(sidebarCollapsed);
     const [page, setPage] = useState<PageId>("grooming");
     const [showIssues, setShowIssues] = useState<boolean>(initialShowIssues);
+    // The one banner menu open, if any: opening one closes the other (G16).
+    const [menu, setMenu] = useState<"repo" | "account" | null>(null);
     const state = useSession(session);
     const current = useRepo();
     const repoStore = useRepoStore();
@@ -78,7 +81,7 @@ function Shell({
     // Only a host with a banner lets the person pick a repository, and only while signed in (G5, G6).
     const pickable: boolean = banner !== undefined;
     useRemembered(pickable, auth?.login, prefs, repoStore);
-    const repos = useRepoList(pickable ? protectedGateway : undefined, auth?.login, (fresh) => {
+    const list = useRepoList(pickable ? protectedGateway : undefined, auth?.login, (fresh) => {
         // A complete list without the current repository means the person lost it (D7).
         const now = repoStore?.get();
         if (now && !fresh.some((r) => r.owner === now.owner && r.name === now.name)) {
@@ -142,13 +145,26 @@ function Shell({
                 icon={banner.icon}
                 picker={
                     auth?.login ? (
-                        <RepoPicker repos={repos} current={current} onPick={(repo) => {
-                                repoStore?.set(repo);
-                                writeRemembered(prefs, auth.login!, repo);
-                            }} />
+                        <RepoMenu
+                            current={current}
+                            repos={list.repos}
+                            loading={list.loading}
+                            open={menu === "repo"}
+                            onOpenChange={(o: boolean) => setMenu(o ? "repo" : null)}
+                            onPick={(repo) => pickRepository(repoStore, prefs, auth.login!, repo)}
+                        />
                     ) : undefined
                 }
-                account={auth?.login ? <AccountMenu login={auth.login} onSignOut={signIn?.signOut} /> : undefined}
+                account={
+                    auth?.login ? (
+                        <AccountMenu
+                            login={auth.login}
+                            onSignOut={signIn?.signOut}
+                            open={menu === "account"}
+                            onOpenChange={(o: boolean) => setMenu(o ? "account" : null)}
+                        />
+                    ) : undefined
+                }
             />
             {layout}
         </div>

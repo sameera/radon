@@ -11,13 +11,15 @@ interface AccountMenuProps {
     login: string;
     // Absent when the host has no sign-out step. The menu would be empty, so the avatar is only a picture.
     onSignOut?: () => void;
+    // The banner holds which of its menus is open, so at most one is (G16).
+    open: boolean;
+    onOpenChange: (open: boolean) => void;
 }
 
 // The signed-in person's avatar at the right end of the banner. It opens a menu that closes itself
 // on a click outside, on Escape, on Tab and when its item is chosen. The banner sits outside every
 // page, so no page closes it (D3).
-export function AccountMenu({ login, onSignOut }: AccountMenuProps): VNode {
-    const [open, setOpen] = useState<boolean>(false);
+export function AccountMenu({ login, onSignOut, open, onOpenChange: setOpen }: AccountMenuProps): VNode {
     const [broken, setBroken] = useState<boolean>(false);
     const wrap = useRef<HTMLDivElement>(null);
     const trigger = useRef<HTMLButtonElement>(null);

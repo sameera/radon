@@ -53,7 +53,7 @@ Compared to GitHub's palette, Raiden's hues are more saturated, and dark-mode ne
 - **Body:** GitHub's system stack (`--font-sans`) at 14/20, so Raiden text matches the page. Styles `title`, `body`, `body-strong`, `small`.
 - **Display:** Bricolage Grotesque (`--font-display`), only for `goal-lg` (the sprint goal) and `view-title`. Ship the font files inside the extension as web-accessible resources; github.com's CSP blocks Google Fonts.
 - **Axis:** `axis` style, 11px uppercase with 0.06em tracking, for timeline ticks and eyebrows.
-- **Mono:** `ref` style (`--font-mono`) for issue numbers and repo names.
+- **Mono:** `ref` style (`--font-mono`) for issue numbers and for repo names inside references and lists of references. The banner's repository breadcrumb is set in sans, like GitHub's header; see [Breadcrumb](components/Breadcrumb.md).
 
 ## Space, radius, elevation
 

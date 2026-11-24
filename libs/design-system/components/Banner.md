@@ -5,13 +5,15 @@ The bar across the top of a Raiden host that has no page of its own around Raide
 ## Structure
 
 - `div.rd-frame` holds the banner and the app below it.
-- `header.rd-banner` holds `img.rd-banner__mark`, `span.rd-banner__word.rd-text-wordmark`, and, only while someone is signed in, the repository drop-down `select.rd-select.rd-banner__repo` (see [Select](Select.md)) and, at the right end, `div.rd-menu-wrap.rd-banner__account` holding the avatar button `button.rd-banner__avatar` and its [PopupMenu](PopupMenu.md).
+- `header.rd-banner` holds `img.rd-banner__mark`, `span.rd-banner__word.rd-text-wordmark`, and, only while someone is signed in, `div.rd-menu-wrap.rd-banner__repo` holding the repository breadcrumb `button.rd-breadcrumb` (see [Breadcrumb](Breadcrumb.md)) and its searchable menu (see [SearchMenu](SearchMenu.md)) and, at the right end, `div.rd-menu-wrap.rd-banner__account` holding the avatar button `button.rd-banner__avatar` and its [PopupMenu](PopupMenu.md).
 - Put the app in `div.rd-app.rd-app--framed`, so it fills the window below the banner.
 
 ## Behaviour
 
 - The banner spans the full width and stays pinned to the top of the window. The document scrolls, not the frame.
-- It has no search or notifications. It allows two controls: the repository drop-down beside the mark and word, and the avatar menu at the top right, as GitHub's own banner shows them. Both are absent while signed out.
+- It has no search or notifications. It allows two controls: the repository breadcrumb beside the mark and word, and the avatar menu at the top right, as GitHub's own banner shows them. Both are absent while signed out.
+- The breadcrumb shows the current repository as owner / name, or "Pick a repository" while none is chosen. It opens the repository menu, a [SearchMenu](SearchMenu.md) under its left edge: type to narrow the loaded list, then pick. Escape, a click outside and Tab close it with no change.
+- Opening one banner menu closes the other.
 - The avatar button opens a menu with one item, Sign out. The menu closes on a click outside, on Escape (focus returns to the avatar), on Tab and when the item is chosen. If the picture fails to load, the button shows a neutral person mark.
 
 ## Consumer provides

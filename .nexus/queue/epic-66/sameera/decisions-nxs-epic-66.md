@@ -7,3 +7,8 @@
 - **Choice:** Add `rd-header-crumb-max` to tokens.json for the breadcrumb's max width.
 - **Why:** G3 requires every size from tokens; the old drop-down used a literal 280px.
 - **Refuted alternative:** Keep the literal width in components.css.
+
+## 2026-11-24 — One banner menu open: state lifted to the shell
+- **Choice:** The shell holds which banner menu is open ("repo", "account" or none); both menus take `open` and `onOpenChange` props.
+- **Why:** One owner of the open state makes G16 hold by construction, with no cross-menu events.
+- **Refuted alternative:** A document event each menu fires on open and the other listens for — two sources of truth that can drift.

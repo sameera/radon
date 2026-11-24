@@ -6,7 +6,6 @@ import { mountApp, type PreferenceStore } from "./mount.tsx";
 import { createRepoStore, type Repo, type RepoStore } from "./repo.tsx";
 import { createSignInController, type SignInPort } from "./signin.ts";
 import { createSessionStore } from "./session.ts";
-import { pickRepository } from "./remember.ts";
 
 const WIDGETS: Repo = { owner: "acme", name: "widgets", url: "https://github.com/acme/widgets" };
 const GADGETS: Repo = { owner: "acme", name: "gadgets", url: "https://github.com/acme/gadgets" };
@@ -69,16 +68,13 @@ async function open(o: {
     });
     await flush();
     await flush();
-    current = o.login ? { store: repo, prefs: o.prefs, login: o.login } : undefined;
     return repo;
 }
-// Picks through the app's pick path, as the person's pick does.
-let current: { store: RepoStore; prefs: PreferenceStore; login: string } | undefined;
+// Picks as the person does: opens the repository menu from the breadcrumb and clicks the entry.
 async function pick(value: string): Promise<void> {
-    const [owner, name] = value.split("/");
-    await act(() => {
-        pickRepository(current!.store, current!.prefs, current!.login, { owner, name, url: `https://github.com/${value}` });
-    });
+    await act(() => root.querySelector<HTMLButtonElement>(".rd-banner .rd-breadcrumb")!.click());
+    const entry: HTMLElement = Array.from(root.querySelectorAll<HTMLElement>(".rd-search-menu [role=option]")).find((o) => o.textContent === value)!;
+    await act(() => entry.click());
 }
 
 beforeEach(() => {

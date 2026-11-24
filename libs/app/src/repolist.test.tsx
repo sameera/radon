@@ -7,7 +7,6 @@ import type { GitHubGateway } from "./gateway.ts";
 import { mountApp } from "./mount.tsx";
 import { createRepoStore, type Repo, type RepoStore } from "./repo.tsx";
 import { loadReachable, useRepoList } from "./repolist.ts";
-import { pickRepository } from "./remember.ts";
 import { createSignInController, type SignInController, type SignInPort } from "./signin.ts";
 import { createSessionStore } from "./session.ts";
 
@@ -145,7 +144,8 @@ describe("repository breadcrumb in the banner (D1, D2, G1, G17)", () => {
         const kids = Array.from(banner.children).map((e) => e.className);
         expect(kids[0]).toContain("rd-banner__mark");
         expect(kids[1]).toContain("rd-banner__word");
-        expect(kids[2]).toContain("rd-breadcrumb");
+        expect(kids[2]).toContain("rd-banner__repo");
+        expect(banner.children[2].contains(crumb())).toBe(true);
         expect(crumb()).not.toBeNull();
         expect(select()).toBeNull();
     });
@@ -153,12 +153,12 @@ describe("repository breadcrumb in the banner (D1, D2, G1, G17)", () => {
     it("shows the repository the person picks, and the pages switch to it", async () => {
         const { gateway } = fakeGitHub({ 1: [["acme", "widgets"], ["acme", "gadgets"]] });
         const repo = createRepoStore(null);
-        const signIn = await open({ login: "ada", gateway, repo });
+        await open({ login: "ada", gateway, repo });
         expect(root.querySelector(".rd-pick-prompt")).not.toBeNull();
         expect(crumb()!.textContent).toBe("Pick a repository");
-        await act(() => {
-            pickRepository(repo, undefined, signIn.get().login!, { owner: "acme", name: "gadgets", url: "https://github.com/acme/gadgets" });
-        });
+        await act(() => crumb()!.click());
+        const entry: HTMLElement = Array.from(root.querySelectorAll<HTMLElement>(".rd-search-menu [role=option]")).find((o) => o.textContent === "acme/gadgets")!;
+        await act(() => entry.click());
         expect(repo.get()).toEqual({ owner: "acme", name: "gadgets", url: "https://github.com/acme/gadgets" });
         expect(root.querySelector(".rd-groom")).not.toBeNull();
         expect(crumb()!.textContent).toBe("acme/gadgets");
@@ -182,7 +182,7 @@ describe("repository breadcrumb in the banner (D1, D2, G1, G17)", () => {
 
 // Renders the list holder alone, so its list can be read without a control that shows it.
 function ListProbe({ gateway, login }: { gateway: GitHubGateway; login: string }): VNode {
-    const repos: Repo[] = useRepoList(gateway, login);
+    const { repos } = useRepoList(gateway, login);
     return (
         <ul class="probe">
             {repos.map((r: Repo) => (

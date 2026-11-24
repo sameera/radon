@@ -421,6 +421,48 @@ a.rd-ref:hover .rd-ref__title { color: var(--rd-accent); text-decoration: underl
 .rd-menu__item--danger { color: var(--rd-danger); }
 .rd-menu__item--danger:hover { background: var(--rd-danger-muted); }
 .rd-menu__sep { height: 1px; margin: var(--rd-space-1) 0; background: var(--rd-border-muted); }
+/* Opens under its trigger's left edge, for a trigger at the start of a bar. */
+.rd-menu--start {
+    left: 0;
+    right: auto;
+}
+
+/* ---------- Searchable menu ---------- */
+/* A search box over a single-choice list, opened from a trigger like a popup menu. */
+.rd-search-menu {
+    width: var(--rd-search-menu-width);
+    padding: var(--rd-space-2);
+}
+.rd-search-menu__list {
+    max-height: var(--rd-search-menu-height);
+    margin: var(--rd-space-2) 0 0;
+    padding: 0;
+    overflow-y: auto;
+    list-style: none;
+}
+.rd-search-menu__option {
+    padding: var(--rd-space-1) var(--rd-space-2);
+    border-radius: var(--rd-radius-md);
+    color: var(--rd-fg);
+    font-family: var(--font-sans);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    cursor: pointer;
+}
+.rd-search-menu__option:hover { background: var(--rd-canvas-subtle); }
+.rd-search-menu__option--active {
+    background: var(--rd-canvas-inset);
+    box-shadow: inset 2px 0 0 var(--rd-accent);
+}
+.rd-search-menu__option[aria-selected="true"] {
+    font-weight: 600;
+}
+.rd-search-menu__status {
+    margin: var(--rd-space-2) 0 0;
+    padding: var(--rd-space-1) var(--rd-space-2);
+    color: var(--rd-fg-muted);
+}
 
 /* ---------- Banner ---------- */
 .rd-frame { display: flex; flex-direction: column; }

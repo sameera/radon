@@ -41,7 +41,7 @@ let unmount: (() => void) | undefined;
 const flush = (): Promise<void> => act(async () => void (await new Promise((r) => setTimeout(r, 0))));
 // Renders the list holder alone, so its list can be read without a control that shows it.
 function ListProbe({ login, prefs, gateway }: { login: string; prefs: PreferenceStore; gateway: GitHubGateway }): VNode {
-    const repos: Repo[] = useRepoList(gateway, login, undefined, prefs);
+    const { repos } = useRepoList(gateway, login, undefined, prefs);
     return (
         <ul class="probe">
             {repos.map((r: Repo) => (

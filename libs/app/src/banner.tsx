@@ -1,4 +1,4 @@
-import type { VNode } from "preact";
+import type { RefObject, VNode } from "preact";
 import type { Repo } from "./repo.tsx";
 
 // The banner across the top of a host that has no page of its own around Raiden. It carries the
@@ -21,15 +21,17 @@ interface RepoBreadcrumbProps {
     current: Repo | null;
     expanded?: boolean;
     onOpen?: () => void;
+    buttonRef?: RefObject<HTMLButtonElement | null>;
 }
 
 // The current repository as owner, a slash, then name, like GitHub's header breadcrumb (D1). It is
 // one button: the owner is no separate target. With no repository it shows the prompt instead (D2).
-export function RepoBreadcrumb({ current, expanded = false, onOpen }: RepoBreadcrumbProps): VNode {
+export function RepoBreadcrumb({ current, expanded = false, onOpen, buttonRef }: RepoBreadcrumbProps): VNode {
     return (
         <button
+            ref={buttonRef}
             type="button"
-            class="rd-breadcrumb rd-text-body rd-banner__repo"
+            class="rd-breadcrumb rd-text-body"
             aria-label={current ? `Repository: ${current.owner}/${current.name}` : "Pick a repository"}
             aria-haspopup="listbox"
             aria-expanded={expanded}

@@ -107,6 +107,12 @@ export async function loadReachable(gateway: GitHubGateway): Promise<Reachable> 
     return { complete: true, repos };
 }
 
+// The loaded list and whether a load of the fresh list is running (D6).
+export interface RepoList {
+    repos: Repo[];
+    loading: boolean;
+}
+
 // Loads the reachable list while `login` is set. Only a complete load counts: `onComplete` runs
 // with it. A failed or partial load changes nothing (G12).
 export function useRepoList(
@@ -114,19 +120,22 @@ export function useRepoList(
     login: string | null | undefined,
     onComplete?: (repos: Repo[]) => void,
     prefs?: PreferenceStore,
-): Repo[] {
+): RepoList {
     const [repos, setRepos] = useState<Repo[]>([]);
+    const [loading, setLoading] = useState<boolean>(false);
     const latest = useRef(onComplete);
     latest.current = onComplete;
     useEffect(() => {
         if (!gateway || !login) {
             setRepos([]);
+            setLoading(false);
             return;
         }
         let live = true;
         let fresh = false;
         // The kept list shows at once, unless another person wrote it or a fresh list came first.
         setRepos([]);
+        setLoading(true);
         void prefs?.get(KEPT_LIST).then((value: unknown) => {
             const kept: Repo[] | null = readKept(value, login);
             if (live && !fresh && kept) {
@@ -134,7 +143,11 @@ export function useRepoList(
             }
         });
         void loadReachable(gateway).then((result: Reachable) => {
-            if (live && result.complete) {
+            if (!live) {
+                return;
+            }
+            setLoading(false);
+            if (result.complete) {
                 fresh = true;
                 setRepos(result.repos);
                 void prefs?.set(KEPT_LIST, { login, repos: result.repos.map((r) => ({ owner: r.owner, name: r.name, url: r.url })) });
@@ -145,5 +158,5 @@ export function useRepoList(
             live = false;
         };
     }, [gateway, login, prefs]);
-    return repos;
+    return { repos, loading };
 }

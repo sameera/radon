@@ -7,6 +7,7 @@ A short list of actions that opens from an icon button (`rd-menu`). Use it for t
 - A wrapper with `position: relative` holds the `rd-icon-btn` trigger and the menu.
 - `div.rd-menu[role="menu"]` holds `button.rd-menu__item[role="menuitem"]` entries and optional `.rd-menu__sep[role="separator"]`.
 - Put a destructive entry last, after a separator, with `rd-menu__item--danger`.
+- The menu opens under the trigger's right edge. Add `rd-menu--start` to open it under the left edge, for a trigger at the start of a bar.
 
 ## States
 

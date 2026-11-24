@@ -162,6 +162,25 @@
     </section>
 
     <section class="ds-section">
+        <h2 class="ds-h">SearchMenu <a href="components/SearchMenu.md">guidelines</a></h2>
+        <div class="rd-menu-wrap" style="height:260px">
+            <div class="rd-menu rd-menu--start rd-search-menu" style="top:0;margin:0">
+                <input class="rd-input rd-search-menu__input" type="text" role="combobox" aria-label="Search repositories" aria-expanded="true" aria-controls="ds-search-list" aria-activedescendant="ds-search-1" value="ac">
+                <ul class="rd-search-menu__list" id="ds-search-list" role="listbox" aria-label="Repositories">
+                    <li class="rd-search-menu__option rd-search-menu__option--active rd-text-body" id="ds-search-1" role="option" aria-selected="false">acme/gadgets</li>
+                    <li class="rd-search-menu__option rd-text-body" role="option" aria-selected="true">acme/widgets</li>
+                </ul>
+            </div>
+        </div>
+        <div class="rd-menu-wrap" style="height:120px">
+            <div class="rd-menu rd-menu--start rd-search-menu" style="top:0;margin:0">
+                <input class="rd-input rd-search-menu__input" type="text" role="combobox" aria-label="Search repositories" aria-expanded="true" value="zzz">
+                <p class="rd-search-menu__status rd-text-body" role="status">No repository matches</p>
+            </div>
+        </div>
+    </section>
+
+    <section class="ds-section">
         <h2 class="ds-h">Banner <a href="components/Banner.md">guidelines</a></h2>
         <header class="rd-banner" style="position:static">
             <img class="rd-banner__mark" src="../../docs/assets/raiden-128x.png" alt="">

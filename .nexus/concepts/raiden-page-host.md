@@ -2,7 +2,7 @@
 title: Raiden Page Host
 aliases: [raiden tab, raiden address, raiden host]
 touches: [raiden-app-shell, grooming-plan, raiden-web-view, grooming-github-links, github-sign-in, github-client, repository-context]
-last_updated_by: "#50"
+last_updated_by: "#66"
 status: active
 verification: verified
 ---
@@ -13,7 +13,7 @@ The Raiden tab on a repository page opens the Raiden page in place of GitHub's c
 
 ## How It Works
 
-The Raiden tab and its More-menu entry point at the repository main page with a Raiden marker in the address. At that address, GitHub's content below the tab bar is hidden. The Raiden host is placed next to that content, not inside it, so a GitHub re-render of its content does not remove the host. The Raiden tab is marked as the current tab. The host reads the repository's web address from GitHub's Code tab link, with no network request, and writes it into the repository context at mount. It writes it again whenever a sync finds a different repository while the Raiden tab is showing, because GitHub's in-page navigation can keep the host alive across a repository change. The web view fills the context from its own drop-down instead.
+The Raiden tab and its More-menu entry point at the repository main page with a Raiden marker in the address. At that address, GitHub's content below the tab bar is hidden. The Raiden host is placed next to that content, not inside it, so a GitHub re-render of its content does not remove the host. The Raiden tab is marked as the current tab. The host reads the repository's web address from GitHub's Code tab link, with no network request, and writes it into the repository context at mount. It writes it again whenever a sync finds a different repository while the Raiden tab is showing, because GitHub's in-page navigation can keep the host alive across a repository change. The web view fills the context from its own menu instead.
 
 At any other address, the host is removed, GitHub's content is shown again, and the previous current tab is restored.
 
@@ -55,3 +55,6 @@ The extension host's worker owns the sign-in record and runs the client. Recorde
 
 ### 2026-11-22 — #50 — The host rewrites the repository whenever the page's repository differs
 The host used to keep the address it mounted with and never compare it. The Raiden tab must always show the viewed page's repository, and in-page navigation can change that while the host stays. One comparison on each sync makes the guarantee hold in every case. Refuted alternative: none.
+
+### 2026-11-24 — #66 — The web view's context comes from its menu, not a drop-down
+The web view has no github.com page to read, so its repository comes from its own repository menu. This entry changes only the wording of that source, because the drop-down it named is gone. Refuted alternative: none.

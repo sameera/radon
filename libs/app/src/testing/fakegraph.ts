@@ -14,7 +14,7 @@ export interface FakeIssue {
     repo?: string;
     // Whether the search returns it. Defaults to true for an open issue in the current repository.
     inQuery?: boolean;
-    // The parent cannot be read: GitHub answers an error at this issue's parent field (R2).
+    // The parent cannot be read: GitHub answers no parent and no error at this issue (R2).
     hiddenParent?: boolean;
 }
 
@@ -68,8 +68,9 @@ export function fakeGitHub(o: FakeOptions): FakeGitHub {
         };
         const pid: string | null = parentId(issue);
         if (issue.hiddenParent) {
+            // What GitHub really answers for a parent the viewer cannot read: no parent and no
+            // error (seen on 2026-11-26 for elastic/kibana#307949, whose parent search reports).
             out.parent = null;
-            errors.push({ type: "FORBIDDEN", message: "Resource not accessible by integration", path: [...path, "parent"] });
         } else if (!pid || !byId.has(pid)) {
             out.parent = null;
         } else if (level < INLINE) {

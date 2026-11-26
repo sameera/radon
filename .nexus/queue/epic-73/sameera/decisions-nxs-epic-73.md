@@ -7,3 +7,13 @@
 - **Choice:** The loader returns a flat list of issues with parent identities, and the tree is built from it on render.
 - **Why:** Story #75 adds outside parents and batched rounds to the same list without changing the tree code's shape.
 - **Refuted alternative:** Build the nested tree while reading pages, which breaks when a parent arrives on a later page.
+
+## 2026-11-26 — A loop of parents is cut at its lowest-numbered issue
+- **Choice:** When GitHub reports a loop of parents, the tree drops the parent link of the loop's lowest-numbered issue, which then shows at the top.
+- **Why:** Every issue in a loop otherwise has a parent, so none is reachable from the top and the query issues under it would vanish (G4).
+- **Refuted alternative:** Fail the whole load on a loop, which leaves the lead with no backlog for a data error they cannot fix from Raiden.
+
+## 2026-11-26 — R2 fallback built ahead of the real test
+- **Choice:** A FORBIDDEN or NOT_FOUND error at a parent field, or at one node of an ancestor round, ends that chain at a grayed "Parent not visible" row; any other error still fails the load.
+- **Why:** The record's R2 names this as the outcome if GitHub errors for that parent only, and it cannot be tested against real GitHub from this checkout.
+- **Refuted alternative:** Treat every error as a failed load, which would blank the backlog for any repository with one private parent elsewhere.

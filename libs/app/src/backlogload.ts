@@ -28,6 +28,8 @@ export interface LiveIssue {
     parentId: string | null;
     // Whether the query returned it.
     inQuery: boolean;
+    // A parent GitHub would not show to the lead (R2). It has no number, title or link.
+    hidden?: boolean;
 }
 
 export type BacklogLoad =
@@ -42,6 +44,26 @@ function chain(levels: number): string {
     return levels === 0 ? "parent { id }" : `parent { ${FIELDS} ${chain(levels - 1)} }`;
 }
 export const ISSUE_SELECTION: string = `${FIELDS} ${chain(INLINE_DEPTH)}`;
+
+// Ancestors past the inline depth, read together by identity (D2).
+const ANCESTORS: string = `query Ancestors($ids: [ID!]!) {
+  nodes(ids: $ids) { ... on Issue { ${ISSUE_SELECTION} } }
+}`;
+const MAX_ROUNDS: number = 100;
+const HIDDEN: string = "hidden:";
+
+// An error GitHub reports for one parent the lead cannot read, and nothing else (R2). The load
+// does not fail on it: the chain ends at a "parent not visible" row.
+function parentOnly(error: Record<string, unknown>): boolean {
+    const path: unknown = error.path;
+    if ((error.type !== "FORBIDDEN" && error.type !== "NOT_FOUND") || !Array.isArray(path) || path.length === 0) {
+        return false;
+    }
+    return path[path.length - 1] === "parent" || (path.length === 2 && path[0] === "nodes");
+}
+function pathKey(path: unknown): string {
+    return Array.isArray(path) ? path.join("/") : "";
+}
 
 const SEARCH: string = `query Backlog($owner: String!, $name: String!, $q: String!, $cursor: String) {
   repository(owner: $owner, name: $name) { id }
@@ -116,9 +138,17 @@ export async function graphql(
     return { data: body.data, errors };
 }
 
-// Reads one issue node and the ancestors inside it into `into`. Returns the identity of the next
-// ancestor that came as an identity only, if any, so a later round can read it.
-export function readIssue(node: unknown, inQuery: boolean, into: Map<string, LiveIssue>, unknown: Set<string>): void {
+// Reads one issue node and the ancestors inside it into `into`. An ancestor that came as an
+// identity only goes into `unknown`, so a later round can read it. `hidden` holds the paths of
+// parents GitHub would not show; such a parent becomes a "parent not visible" row (R2).
+export function readIssue(
+    node: unknown,
+    inQuery: boolean,
+    into: Map<string, LiveIssue>,
+    unknown: Set<string>,
+    path: string = "",
+    hidden: Set<string> = new Set(),
+): void {
     if (!isRecord(node) || typeof node.id !== "string" || typeof node.number !== "number" || typeof node.title !== "string") {
         throw new LoadFailed("other");
     }
@@ -133,12 +163,14 @@ export function readIssue(node: unknown, inQuery: boolean, into: Map<string, Liv
         }
         parentId = parent.id;
         if (typeof parent.number === "number") {
-            readIssue(parent, false, into, unknown);
+            readIssue(parent, false, into, unknown, `${path}/parent`, hidden);
         } else if (!into.has(parentId)) {
             unknown.add(parentId);
         }
     } else if (parent !== null && parent !== undefined) {
         throw new LoadFailed("other");
+    } else if (hidden.has(`${path}/parent`)) {
+        parentId = `${HIDDEN}${node.id}`;
     }
     const known: LiveIssue | undefined = into.get(node.id);
     into.set(node.id, {
@@ -166,7 +198,8 @@ export async function loadBacklog(gateway: GitHubGateway, repo: Repo): Promise<B
         let read: number = 0;
         let total: number = 0;
         for (let page = 0; page < SEARCH_CAP / PAGE; page++) {
-            const { data } = await graphql(gateway, SEARCH, { owner: repo.owner, name: repo.name, q, cursor });
+            const { data, errors } = await graphql(gateway, SEARCH, { owner: repo.owner, name: repo.name, q, cursor }, parentOnly);
+            const hidden: Set<string> = new Set(errors.map((e) => pathKey(e.path)));
             if (data.repository === null) {
                 return { ok: false, cause: "cannot-read" };
             }
@@ -178,10 +211,10 @@ export async function loadBacklog(gateway: GitHubGateway, repo: Repo): Promise<B
                 return { ok: false, cause: "other" };
             }
             total = search.issueCount;
-            for (const node of search.nodes) {
-                readIssue(node, true, issues, unknown);
+            search.nodes.forEach((node: unknown, i: number) => {
+                readIssue(node, true, issues, unknown, `search/nodes/${i}`, hidden);
                 read++;
-            }
+            });
             const next: unknown = search.pageInfo.endCursor;
             if (search.pageInfo.hasNextPage !== true || read >= Math.min(total, SEARCH_CAP)) {
                 break;
@@ -191,10 +224,44 @@ export async function loadBacklog(gateway: GitHubGateway, repo: Repo): Promise<B
             }
             cursor = next;
         }
+        await readAncestors(gateway, issues, unknown);
         const shown: number = [...issues.values()].filter((i) => i.inQuery).length;
         return { ok: true, issues: [...issues.values()], hidden: total > SEARCH_CAP ? Math.max(0, total - shown) : 0 };
     } catch (error) {
         return { ok: false, cause: error instanceof LoadFailed ? error.cause : "other" };
+    }
+}
+
+// Reads every ancestor still unknown, all together, one level at a time, until every chain ends.
+// The visited set ends the rounds when GitHub reports a loop of parents (D2, G14).
+async function readAncestors(gateway: GitHubGateway, issues: Map<string, LiveIssue>, unknown: Set<string>): Promise<void> {
+    const visited: Set<string> = new Set();
+    for (let round = 0; unknown.size > 0; round++) {
+        if (round >= MAX_ROUNDS) {
+            throw new LoadFailed("other");
+        }
+        const ids: string[] = [...unknown].filter((id) => !visited.has(id) && !issues.has(id));
+        unknown.clear();
+        ids.forEach((id) => visited.add(id));
+        for (let at = 0; at < ids.length; at += PAGE) {
+            const batch: string[] = ids.slice(at, at + PAGE);
+            const { data, errors } = await graphql(gateway, ANCESTORS, { ids: batch }, parentOnly);
+            const hidden: Set<string> = new Set(errors.map((e) => pathKey(e.path)));
+            if (!Array.isArray(data.nodes) || data.nodes.length !== batch.length) {
+                throw new LoadFailed("other");
+            }
+            data.nodes.forEach((node: unknown, i: number) => {
+                // A null node is an ancestor GitHub would not show. Its row shows as not visible.
+                if (node !== null || !hidden.has(`nodes/${i}`)) {
+                    readIssue(node, false, issues, unknown, `nodes/${i}`, hidden);
+                }
+            });
+        }
+        for (const id of [...unknown]) {
+            if (visited.has(id) || issues.has(id)) {
+                unknown.delete(id);
+            }
+        }
     }
 }
 
@@ -208,14 +275,57 @@ function byNumber(a: TreeNode, b: TreeNode): number {
     return a.issue.number - b.issue.number || a.issue.repo.localeCompare(b.issue.repo);
 }
 
-// Builds the tree from the query issues, joined on identity. Each issue appears once. An issue
-// sits under its parent when that parent is in the tree, or at the top level (D3, G9).
+// Builds the tree from the query issues and every issue in their ancestor chains, joined on
+// identity. Nothing else enters it, so each issue appears once and an issue with no returned
+// descendant never appears (D3, G4, G7). A parent GitHub would not show becomes one "parent not
+// visible" row. A loop of parents is cut at its lowest-numbered issue, which goes to the top.
 export function buildTree(issues: LiveIssue[]): TreeNode[] {
-    const members: LiveIssue[] = issues.filter((i) => i.inQuery);
-    const nodes: Map<string, TreeNode> = new Map(members.map((i) => [i.id, { issue: i, children: [] }]));
+    const byId: Map<string, LiveIssue> = new Map(issues.map((i) => [i.id, i]));
+    const parentOf = (issue: LiveIssue): LiveIssue | null => {
+        if (!issue.parentId) {
+            return null;
+        }
+        let parent: LiveIssue | undefined = byId.get(issue.parentId);
+        if (!parent) {
+            parent = { id: issue.parentId, number: 0, title: "", state: "", repo: "", parentId: null, inQuery: false, hidden: true };
+            byId.set(parent.id, parent);
+        }
+        return parent;
+    };
+    const members: Map<string, LiveIssue> = new Map();
+    const up: Map<string, string | null> = new Map();
+    for (const issue of issues) {
+        let at: LiveIssue | null = issue.inQuery ? issue : null;
+        while (at && !members.has(at.id)) {
+            members.set(at.id, at);
+            const parent: LiveIssue | null = parentOf(at);
+            up.set(at.id, parent?.id ?? null);
+            at = parent;
+        }
+    }
+    // Each issue has at most one parent, so every loop is a cycle of parent links.
+    const done: Set<string> = new Set();
+    for (const id of members.keys()) {
+        const walk: string[] = [];
+        const onWalk: Set<string> = new Set();
+        let at: string | null = id;
+        while (at !== null && !done.has(at) && !onWalk.has(at)) {
+            walk.push(at);
+            onWalk.add(at);
+            at = up.get(at) ?? null;
+        }
+        if (at !== null && onWalk.has(at)) {
+            const loop: LiveIssue[] = walk.slice(walk.indexOf(at)).map((x) => members.get(x)!);
+            loop.sort((a, b) => a.number - b.number || a.repo.localeCompare(b.repo));
+            up.set(loop[0]!.id, null);
+        }
+        walk.forEach((x) => done.add(x));
+    }
+    const nodes: Map<string, TreeNode> = new Map([...members.values()].map((i) => [i.id, { issue: i, children: [] }]));
     const top: TreeNode[] = [];
     for (const node of nodes.values()) {
-        const parent: TreeNode | undefined = node.issue.parentId ? nodes.get(node.issue.parentId) : undefined;
+        const parentId: string | null = up.get(node.issue.id) ?? null;
+        const parent: TreeNode | undefined = parentId ? nodes.get(parentId) : undefined;
         (parent ? parent.children : top).push(node);
     }
     const sort = (list: TreeNode[]): TreeNode[] => {
@@ -227,6 +337,9 @@ export function buildTree(issues: LiveIssue[]): TreeNode[] {
 }
 
 function matches(issue: LiveIssue, text: string): boolean {
+    if (issue.hidden) {
+        return false;
+    }
     const num: string = text.startsWith("#") ? text.slice(1) : text;
     return (/^\d+$/.test(num) && Number(num) === issue.number) || issue.title.toLowerCase().includes(text);
 }

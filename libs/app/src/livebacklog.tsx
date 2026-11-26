@@ -58,10 +58,17 @@ function issueHref(repoUrl: string | undefined, issue: LiveIssue): string | null
     return repoPage(`${origin}/${issue.repo}`, `issues/${issue.number}`);
 }
 
+function sameRepoName(issue: LiveIssue, current: Repo | null): boolean {
+    return current !== null && issue.repo.toLowerCase() === `${current.owner}/${current.name}`.toLowerCase();
+}
+
+// An issue's number and title, linked to its page. An issue in another repository shows its
+// repository-qualified reference (D3).
 function LiveRef({ issue, current }: { issue: LiveIssue; current: Repo | null }): VNode {
+    const ref: string = sameRepoName(issue, current) ? `#${issue.number}` : `${issue.repo}#${issue.number}`;
     const body: VNode = (
         <>
-            <span class="rd-ref__num">#{issue.number}</span>
+            <span class="rd-ref__num">{ref}</span>
             <span class="rd-ref__title">{issue.title}</span>
         </>
     );
@@ -86,11 +93,14 @@ function Rows({ nodes, depth, collapsed, filtering, onToggle, current }: RowsPro
                 const parent: boolean = node.children.length > 0;
                 // While filtering, matches show open. Each row's own setting stays.
                 const open: boolean = filtering || !collapsed.has(issue.id);
+                // A parent the query did not return is grayed, with a text label, so color is not
+                // the only signal (D6, G8).
+                const outside: boolean = !issue.inQuery;
                 return (
                     <div class="rd-lb-group" key={issue.id}>
                         <div
-                            class="rd-bl-row rd-lb-row"
-                            data-num={issue.number}
+                            class={`rd-bl-row rd-lb-row${outside ? " is-outside" : ""}${issue.hidden ? " is-hidden" : ""}`}
+                            data-num={issue.hidden ? "" : issue.number}
                             data-depth={depth}
                             style={{ "--rd-lb-depth": depth }}
                         >
@@ -99,7 +109,7 @@ function Rows({ nodes, depth, collapsed, filtering, onToggle, current }: RowsPro
                                     type="button"
                                     class="rd-icon-btn rd-bl-chev"
                                     aria-expanded={open}
-                                    aria-label={`${open ? "Hide" : "Show"} issues under #${issue.number}`}
+                                    aria-label={`${open ? "Hide" : "Show"} issues under ${issue.hidden ? "the parent that is not visible" : `#${issue.number}`}`}
                                     onClick={() => onToggle(issue.id)}
                                 >
                                     <ChevronIcon open={open} />
@@ -107,7 +117,16 @@ function Rows({ nodes, depth, collapsed, filtering, onToggle, current }: RowsPro
                             ) : (
                                 <span class="rd-lb-spacer" aria-hidden="true" />
                             )}
-                            <LiveRef issue={issue} current={current} />
+                            {issue.hidden ? (
+                                <span class="rd-ref rd-lb-hidden">Parent not visible</span>
+                            ) : (
+                                <LiveRef issue={issue} current={current} />
+                            )}
+                            {outside && (
+                                <span class="rd-bl-meta rd-lb-outside">
+                                    {issue.hidden ? "Not in the backlog query" : `Not in the backlog query, ${issue.state.toLowerCase()}`}
+                                </span>
+                            )}
                         </div>
                         {parent && open && (
                             <Rows

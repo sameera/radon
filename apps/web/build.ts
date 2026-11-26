@@ -1,8 +1,13 @@
 // Run from the repo root: node apps/web/build.ts
 // Every address in the build is relative, so the files work at the root or under a sub-path.
 import { build } from "esbuild";
+import { loadFrontendEnv } from "../../scripts/env.ts";
 import { withBackend } from "./src/csp.ts";
 import { cp, mkdir, readFile, rm, writeFile } from "node:fs/promises";
+
+// The team settings come from .env.frontend.local, so a build run from a bare shell still gets
+// them. Values already exported win.
+loadFrontendEnv();
 
 const out: string = "dist/apps/web";
 

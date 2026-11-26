@@ -8,7 +8,16 @@
         "build": {
             "executor": "nx:run-commands",
             "options": { "command": "node apps/extension/build.ts", "cwd": "{workspaceRoot}" },
-            "inputs": ["default", "^default", "{workspaceRoot}/docs/assets/raiden-128x.png", { "runtime": "git rev-parse HEAD" }],
+            "inputs": [
+                "default",
+                "^default",
+                "{workspaceRoot}/docs/assets/raiden-128x.png",
+                { "runtime": "git rev-parse HEAD" },
+                "{workspaceRoot}/.env.frontend.local",
+                { "env": "RAIDEN_GITHUB_CLIENT_ID" },
+                { "env": "RAIDEN_BACKEND_URL" },
+                { "env": "RAIDEN_EXTENSION_KEY" }
+            ],
             "outputs": ["{workspaceRoot}/dist/apps/extension"]
         },
         "test": {

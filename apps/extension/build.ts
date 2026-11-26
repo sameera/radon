@@ -1,8 +1,13 @@
 // Run from the repo root: node apps/extension/build.ts
 import { build } from "esbuild";
 import { execSync } from "node:child_process";
+import { loadFrontendEnv } from "../../scripts/env.ts";
 import { teamManifest } from "./src/team.ts";
 import { cp, mkdir, readFile, rm, writeFile } from "node:fs/promises";
+
+// The team settings come from .env.frontend.local, so a build run from a bare shell still gets
+// them. Values already exported win.
+loadFrontendEnv();
 
 const out: string = "dist/apps/extension";
 

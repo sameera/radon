@@ -3,5 +3,10 @@ packages:
     - libs/*
 
 allowBuilds:
+    '@pnpm/pnpr': true
     esbuild: true
     nx: true
+
+permissions:
+  '@pnpm/pnpr':
+    skills: true

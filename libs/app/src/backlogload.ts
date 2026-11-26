@@ -50,20 +50,9 @@ const ANCESTORS: string = `query Ancestors($ids: [ID!]!) {
   nodes(ids: $ids) { ... on Issue { ${ISSUE_SELECTION} } }
 }`;
 const MAX_ROUNDS: number = 100;
-const HIDDEN: string = "hidden:";
-
-// An error GitHub reports for one parent the lead cannot read, and nothing else (R2). The load
-// does not fail on it: the chain ends at a "parent not visible" row.
-function parentOnly(error: Record<string, unknown>): boolean {
-    const path: unknown = error.path;
-    if ((error.type !== "FORBIDDEN" && error.type !== "NOT_FOUND") || !Array.isArray(path) || path.length === 0) {
-        return false;
-    }
-    return path[path.length - 1] === "parent" || (path.length === 2 && path[0] === "nodes");
-}
-function pathKey(path: unknown): string {
-    return Array.isArray(path) ? path.join("/") : "";
-}
+// A parent the lead cannot read comes back from GitHub as no parent, with no error (R2, seen on
+// real GitHub on 2026-11-26). So the chain simply ends at the last issue the lead can read, and
+// any error, at a parent or anywhere else, is a failed request (G13).
 
 const SEARCH: string = `query Backlog($owner: String!, $name: String!, $q: String!, $cursor: String) {
   repository(owner: $owner, name: $name) { id }
@@ -139,16 +128,8 @@ export async function graphql(
 }
 
 // Reads one issue node and the ancestors inside it into `into`. An ancestor that came as an
-// identity only goes into `unknown`, so a later round can read it. `hidden` holds the paths of
-// parents GitHub would not show; such a parent becomes a "parent not visible" row (R2).
-export function readIssue(
-    node: unknown,
-    inQuery: boolean,
-    into: Map<string, LiveIssue>,
-    unknown: Set<string>,
-    path: string = "",
-    hidden: Set<string> = new Set(),
-): void {
+// identity only goes into `unknown`, so a later round can read it.
+export function readIssue(node: unknown, inQuery: boolean, into: Map<string, LiveIssue>, unknown: Set<string>): void {
     if (!isRecord(node) || typeof node.id !== "string" || typeof node.number !== "number" || typeof node.title !== "string") {
         throw new LoadFailed("other");
     }
@@ -163,14 +144,12 @@ export function readIssue(
         }
         parentId = parent.id;
         if (typeof parent.number === "number") {
-            readIssue(parent, false, into, unknown, `${path}/parent`, hidden);
+            readIssue(parent, false, into, unknown);
         } else if (!into.has(parentId)) {
             unknown.add(parentId);
         }
     } else if (parent !== null && parent !== undefined) {
         throw new LoadFailed("other");
-    } else if (hidden.has(`${path}/parent`)) {
-        parentId = `${HIDDEN}${node.id}`;
     }
     const known: LiveIssue | undefined = into.get(node.id);
     into.set(node.id, {
@@ -198,8 +177,7 @@ export async function loadBacklog(gateway: GitHubGateway, repo: Repo): Promise<B
         let read: number = 0;
         let total: number = 0;
         for (let page = 0; page < SEARCH_CAP / PAGE; page++) {
-            const { data, errors } = await graphql(gateway, SEARCH, { owner: repo.owner, name: repo.name, q, cursor }, parentOnly);
-            const hidden: Set<string> = new Set(errors.map((e) => pathKey(e.path)));
+            const { data } = await graphql(gateway, SEARCH, { owner: repo.owner, name: repo.name, q, cursor });
             if (data.repository === null) {
                 return { ok: false, cause: "cannot-read" };
             }
@@ -211,8 +189,8 @@ export async function loadBacklog(gateway: GitHubGateway, repo: Repo): Promise<B
                 return { ok: false, cause: "other" };
             }
             total = search.issueCount;
-            search.nodes.forEach((node: unknown, i: number) => {
-                readIssue(node, true, issues, unknown, `search/nodes/${i}`, hidden);
+            search.nodes.forEach((node: unknown) => {
+                readIssue(node, true, issues, unknown);
                 read++;
             });
             const next: unknown = search.pageInfo.endCursor;
@@ -245,17 +223,11 @@ async function readAncestors(gateway: GitHubGateway, issues: Map<string, LiveIss
         ids.forEach((id) => visited.add(id));
         for (let at = 0; at < ids.length; at += PAGE) {
             const batch: string[] = ids.slice(at, at + PAGE);
-            const { data, errors } = await graphql(gateway, ANCESTORS, { ids: batch }, parentOnly);
-            const hidden: Set<string> = new Set(errors.map((e) => pathKey(e.path)));
+            const { data } = await graphql(gateway, ANCESTORS, { ids: batch });
             if (!Array.isArray(data.nodes) || data.nodes.length !== batch.length) {
                 throw new LoadFailed("other");
             }
-            data.nodes.forEach((node: unknown, i: number) => {
-                // A null node is an ancestor GitHub would not show. Its row shows as not visible.
-                if (node !== null || !hidden.has(`nodes/${i}`)) {
-                    readIssue(node, false, issues, unknown, `nodes/${i}`, hidden);
-                }
-            });
+            data.nodes.forEach((node: unknown) => readIssue(node, false, issues, unknown));
         }
         for (const id of [...unknown]) {
             if (visited.has(id) || issues.has(id)) {

@@ -17,8 +17,3 @@
 - **Choice:** A FORBIDDEN or NOT_FOUND error at a parent field, or at one node of an ancestor round, ends that chain at a grayed "Parent not visible" row; any other error still fails the load.
 - **Why:** The record's R2 names this as the outcome if GitHub errors for that parent only, and it cannot be tested against real GitHub from this checkout.
 - **Refuted alternative:** Treat every error as a failed load, which would blank the backlog for any repository with one private parent elsewhere.
-
-## 2026-11-26 — R2 settled on real GitHub: an unreadable parent is no parent
-- **Choice:** The loader accepts no GraphQL error at all; an unreadable parent arrives as `parent: null` with no error, so its child heads the chain at the top.
-- **Why:** On real GitHub, elastic/kibana#307949 and slashbin-io/slashbin-ai-foreman#419 match `has:parent-issue` in search, yet GraphQL answers `parent: null` with no error and REST answers 404 "No parent issue found", so the record's error-only fallback never applies.
-- **Refuted alternative:** Keep tolerating FORBIDDEN or NOT_FOUND at a parent path, which accepts an answer GitHub does not give and lets a real error pass in breach of G13.

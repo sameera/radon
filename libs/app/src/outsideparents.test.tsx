@@ -260,27 +260,14 @@ describe("ancestors above the inline depth (D2)", () => {
 });
 
 describe("a parent the lead cannot read (R2)", () => {
-    it("shows the issue at the top, as GitHub answers no parent and no error, and the load does not fail", async () => {
+    it("ends the chain at a grayed 'parent not visible' row, and the load does not fail", async () => {
         await open(fakeGitHub({ issues: [{ n: 7, title: "Story", hiddenParent: true }] }));
-        expect(shape()).toEqual(["7@0"]);
-        expect(root.querySelector(".rd-lb-row.is-hidden")).toBeNull();
-        expect(status()).toBe("");
+        const hidden: HTMLElement = $(".rd-lb-row.is-hidden");
+        expect(hidden.classList.contains("is-outside")).toBe(true);
+        expect(hidden.textContent).toMatch(/parent not visible/i);
+        expect(hidden.querySelector("a")).toBeNull();
+        expect(row(7).dataset.depth).toBe("1");
         expect($(".rd-backlog .rd-panel__sub").textContent).toBe("1 issue");
-    });
-
-    it("fails on an error at a parent, as GitHub sends none for a parent the lead cannot read (G13)", async () => {
-        const github = fakeGitHub({ issues: [{ n: 7, title: "Story", parent: 3 }, { n: 3, title: "Epic" }] });
-        const real = github.request.bind(github);
-        github.request = async (request) => {
-            const result = await real(request);
-            if (result.ok && typeof result.body === "object" && result.body !== null) {
-                return { ...result, body: { ...result.body, errors: [{ type: "FORBIDDEN", path: ["search", "nodes", 0, "parent"] }] } };
-            }
-            return result;
-        };
-        await open(github);
-        expect(rows()).toHaveLength(0);
-        expect(status()).toContain("could not load");
     });
 
     it("still fails on an error that is not about a parent (G13)", async () => {

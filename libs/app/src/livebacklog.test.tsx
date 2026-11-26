@@ -1,5 +1,6 @@
 // @vitest-environment jsdom
 // Story #74: the backlog shows the current repository's open issues as a tree.
+import { options, type VNode } from "preact";
 import { act } from "preact/test-utils";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { GitHubResult } from "@raiden/shared";
@@ -8,6 +9,7 @@ import { createRepoStore, type Repo, type RepoStore } from "./repo.tsx";
 import { createSignInController } from "./signin.ts";
 import { createSessionStore } from "./session.ts";
 import { fakeGitHub, type FakeGitHub, type FakeIssue } from "./testing/fakegraph.ts";
+import { LiveBacklog } from "./livebacklog.tsx";
 
 const WIDGETS: Repo = { owner: "acme", name: "widgets", url: "https://github.com/acme/widgets" };
 const GADGETS: Repo = { owner: "acme", name: "gadgets", url: "https://github.com/acme/gadgets" };
@@ -340,6 +342,40 @@ describe("loading and failure (D4)", () => {
         await settle();
         expect(rows().map((r) => r.dataset.num)).toEqual(["7"]);
         expect($(".rd-backlog").textContent).not.toContain("Widget issue");
+    });
+
+    it("never paints the earlier repository's backlog, even for one render, after a repository change (G12)", async () => {
+        let held = false;
+        const github = fakeGitHub({
+            issues: [{ n: 1, title: "Widget issue" }],
+            // The new repository's answer never arrives, so every render after the change is before it.
+            override: (_i, request) =>
+                (request.body as { variables: Record<string, unknown> }).variables.name === "gadgets"
+                    ? new Promise<GitHubResult>(() => (held = true))
+                    : undefined,
+        });
+        const repo = await open(github);
+        expect($(".rd-backlog").textContent).toContain("Widget issue");
+        // What the backlog shows each time it finishes a render, including the first one after the
+        // change, which Preact paints before it runs any effect.
+        const painted: string[] = [];
+        const before = options.diffed;
+        options.diffed = (vnode: VNode) => {
+            if (vnode.type === LiveBacklog) {
+                painted.push($(".rd-backlog").textContent ?? "");
+            }
+            before?.(vnode);
+        };
+        try {
+            await act(() => repo.set(GADGETS));
+            await settle();
+        } finally {
+            options.diffed = before;
+        }
+        expect(held).toBe(true);
+        expect(painted.length).toBeGreaterThan(0);
+        expect(painted.filter((text) => text.includes("Widget issue"))).toEqual([]);
+        expect(status()).toContain("Loading");
     });
 
     it("keeps titles and repository names in page memory only (G16)", async () => {

@@ -16,25 +16,27 @@ export interface LiveSource {
 type LoadState = BacklogLoad | null;
 
 // Runs a backlog load for the current repository and person. A new load starts when either
-// changes, or on Try again. An answer for an earlier repository or person is dropped (G12).
+// changes, or on Try again. Each answer is stored with the repository, person and attempt it was
+// read for, and an answer stored for anything else reads as loading. So no render, not even the
+// first one after a change, shows an answer for an earlier repository or person (G12).
 function useBacklogLoad(source: LiveSource, repo: Repo | null, attempt: number): LoadState {
-    const [state, setState] = useState<LoadState>(null);
+    const key: string = JSON.stringify([source.login, repo?.owner, repo?.name, repo?.url, attempt]);
+    const [state, setState] = useState<{ key: string; load: BacklogLoad } | null>(null);
     useEffect(() => {
-        setState(null);
         if (!repo) {
             return;
         }
         let live = true;
         void loadBacklog(source.gateway, repo).then((result: BacklogLoad) => {
             if (live) {
-                setState(result);
+                setState({ key, load: result });
             }
         });
         return () => {
             live = false;
         };
-    }, [source.gateway, source.login, repo?.owner, repo?.name, repo?.url, attempt]);
-    return state;
+    }, [source.gateway, key]);
+    return state !== null && state.key === key ? state.load : null;
 }
 
 const MESSAGES: Record<BacklogCause, string> = {

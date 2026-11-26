@@ -32,6 +32,7 @@ import {
 import { ExternalLink, IssueRef, repoPage } from "./links.tsx";
 import { useRepo } from "./repo.tsx";
 import { GROOMING_SPRINT, INITIATIVES } from "./sample.ts";
+import { LiveBacklog, type LiveSource } from "./livebacklog.tsx";
 import type { SessionStore } from "./session.ts";
 
 // What is being dragged. It is tracked here, never in the drag data, so only drags that started
@@ -190,25 +191,30 @@ function ItemMenu({ state, session, menu, kind, num }: ItemMenuProps): VNode {
     );
 }
 
+// The backlog as a drop target: only an item dragged out of a goal, with a plan of its own, can be
+// dropped here, and the drop takes it out of the plan.
+function takeOutZone(dnd: DragApi, state: SessionState, session: SessionStore): Record<string, unknown> {
+    const d: Drag | null = dnd.drag;
+    const accepts: boolean = d !== null && d.type === "item" && d.from !== null && canTakeOut(state, d.kind, d.num);
+    return dnd.zone("backlog", accepts, () => {
+        if (d?.type === "item") {
+            session.change((s) => unplanItem(s, d.kind, d.num));
+        }
+    });
+}
+
 function Backlog({ state, session, dnd, filter, onFilter, width, menu }: BacklogProps): VNode {
     const shown: Initiative[] = filterBacklog(INITIATIVES, filter);
     const filtering: boolean = filter.trim() !== "";
     const total: number = totalEpics(INITIATIVES);
     const newInitiative: string | null = repoPage(useRepo()?.url, "issues/new");
     const d: Drag | null = dnd.drag;
-    // Only an item dragged out of a goal, with a plan of its own, can be dropped here.
-    const accepts: boolean =
-        d !== null && d.type === "item" && d.from !== null && canTakeOut(state, d.kind, d.num);
     return (
         <section
             class={`rd-panel rd-backlog${dnd.over?.target === "backlog" ? " is-over" : ""}`}
             style={{ flexBasis: `${width}px` }}
             aria-labelledby="rd-backlog-title"
-            {...dnd.zone("backlog", accepts, () => {
-                if (d?.type === "item") {
-                    session.change((s) => unplanItem(s, d.kind, d.num));
-                }
-            })}
+            {...takeOutZone(dnd, state, session)}
         >
             <div class="rd-panel__head">
                 <h2 class="rd-text-axis" id="rd-backlog-title">
@@ -528,6 +534,9 @@ interface GroomingProps {
     onShowIssues: (value: boolean) => void;
     backlogWidth?: number;
     onBacklogWidth?: (value: number, final: boolean) => void;
+    // Set when the host can read GitHub as a signed-in person. The backlog then shows the current
+    // repository's open issues, and the plan counts are hidden while the plan is on sample data (D5).
+    live?: LiveSource;
 }
 
 export const DEFAULT_BACKLOG_WIDTH: number = 360;
@@ -615,6 +624,7 @@ export function GroomingPage({
     onShowIssues,
     backlogWidth = DEFAULT_BACKLOG_WIDTH,
     onBacklogWidth,
+    live,
 }: GroomingProps): VNode {
     const [filter, setFilter] = useState<string>("");
     const panelsRef = useRef<HTMLDivElement>(null);
@@ -699,7 +709,7 @@ export function GroomingPage({
                 </div>
                 <div class="rd-groom__actions">
                     <div class="rd-groom__sum">
-                        <b class="rd-groom__summary">{`${planned} of ${totalEpics(INITIATIVES)} epics planned`}</b>
+                        {!live && <b class="rd-groom__summary">{`${planned} of ${totalEpics(INITIATIVES)} epics planned`}</b>}
                         <span class="rd-groom__save-state" role="status">
                             {unsaved ? "Unsaved changes" : "All changes saved"}
                         </span>
@@ -724,15 +734,26 @@ export function GroomingPage({
                 </div>
             </header>
             <div class="rd-groom__panels" ref={panelsRef}>
-                <Backlog
-                    state={state}
-                    session={session}
-                    dnd={dnd}
-                    filter={filter}
-                    onFilter={setFilter}
-                    width={shownWidth}
-                    menu={menu}
-                />
+                {live ? (
+                    <LiveBacklog
+                        source={live}
+                        width={shownWidth}
+                        filter={filter}
+                        onFilter={setFilter}
+                        over={dnd.over?.target === "backlog"}
+                        zone={takeOutZone(dnd, state, session)}
+                    />
+                ) : (
+                    <Backlog
+                        state={state}
+                        session={session}
+                        dnd={dnd}
+                        filter={filter}
+                        onFilter={setFilter}
+                        width={shownWidth}
+                        menu={menu}
+                    />
+                )}
                 <Divider
                     width={shownWidth}
                     min={minWidth}

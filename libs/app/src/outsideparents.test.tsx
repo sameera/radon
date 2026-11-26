@@ -54,8 +54,9 @@ beforeEach(() => {
     document.body.append(root);
     vi.stubGlobal("fetch", vi.fn());
 });
-afterEach(() => {
-    unmount?.();
+afterEach(async () => {
+    // Unmount inside act, so Preact runs its effects now and leaves no timer for after teardown.
+    await act(() => unmount?.());
     unmount = undefined;
     root.remove();
     vi.unstubAllGlobals();

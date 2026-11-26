@@ -176,7 +176,9 @@ describe("repository breadcrumb in the banner (D1, D2, G1, G17)", () => {
         await open({ login: "ada", gateway, banner: false, repo: createRepoStore({ owner: "acme", name: "widgets", url: "https://github.com/acme/widgets" }) });
         expect(root.querySelector("select")).toBeNull();
         expect(crumb()).toBeNull();
-        expect(calls.length).toBe(0);
+        // The live backlog reads the repository's issues; the repository list is never read.
+        expect(calls.filter((c) => c.path.startsWith("/user/")).length).toBe(0);
+        expect(calls.every((c) => c.path === "/graphql")).toBe(true);
     });
 });
 

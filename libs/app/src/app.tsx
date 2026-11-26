@@ -89,6 +89,11 @@ function Shell({
             void prefs?.set(REMEMBERED, null);
         }
     }, prefs);
+    // The live backlog reads GitHub as the signed-in person, through the shell's gateway (G1).
+    const live = useMemo(
+        () => (protectedGateway && signIn && auth?.login ? { gateway: protectedGateway, login: auth.login } : undefined),
+        [protectedGateway, signIn, auth?.login],
+    );
     const account = signIn && auth ? <Account signIn={signIn} state={auth} showUser={!banner} /> : undefined;
     if (signIn && !auth?.login) {
         return (
@@ -104,7 +109,7 @@ function Shell({
         <div class={banner ? "rd-app rd-app--framed" : "rd-app"}>
             <Sidebar
                 current={page}
-                unplanned={unplannedEpicCount(INITIATIVES, state)}
+                unplanned={live ? undefined : unplannedEpicCount(INITIATIVES, state)}
                 onSelect={setPage}
                 account={account}
                 collapsed={collapsed}
@@ -121,6 +126,7 @@ function Shell({
                         session={session}
                         state={state}
                         showIssues={showIssues}
+                        live={live}
                         backlogWidth={backlogWidth}
                         onBacklogWidth={(value: number, final: boolean) => {
                             setBacklogWidth(value);

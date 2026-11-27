@@ -26,6 +26,9 @@ type Handler struct {
 	DB DB
 	// Auth turns on the sign-in endpoints. When nil they answer 404.
 	Auth *AuthConfig
+	// Store holds the repository partitions. The data routes need it and Auth; without either
+	// they answer 404.
+	Store store.Records
 }
 
 // Handle serves one request.
@@ -56,6 +59,12 @@ func (h *Handler) Handle(ctx context.Context, req events.APIGatewayV2HTTPRequest
 		route = routeKey
 		if h.Auth != nil {
 			return h.refresh(ctx, req), nil
+		}
+		return respond(http.StatusNotFound, map[string]string{"error": "not found"}), nil
+	case "POST /grooming/sync", "OPTIONS /grooming/sync":
+		route = routeKey
+		if h.Auth != nil && h.Store != nil {
+			return h.groomingSync(ctx, req), nil
 		}
 		return respond(http.StatusNotFound, map[string]string{"error": "not found"}), nil
 	default:

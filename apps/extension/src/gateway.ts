@@ -1,17 +1,25 @@
 import type { GitHubGateway } from "@raiden/app";
-import type { GitHubFailureKind, GitHubResult } from "@raiden/shared";
+import { BACKEND_REASONS, type BackendReason, type GitHubFailureKind, type GitHubResult } from "@raiden/shared";
 
 type Send = (message: { type: string; request: unknown }) => Promise<unknown>;
 
 const KINDS: GitHubFailureKind[] = ["sign-in-needed", "network", "rate-limit", "permission", "other"];
 
 function readResult(answer: unknown): GitHubResult {
-    const a = (typeof answer === "object" && answer !== null ? answer : {}) as { ok?: unknown; status?: unknown; kind?: unknown; body?: unknown };
+    const a = (typeof answer === "object" && answer !== null ? answer : {}) as {
+        ok?: unknown;
+        status?: unknown;
+        kind?: unknown;
+        body?: unknown;
+        reason?: unknown;
+    };
     if (a.ok === true && typeof a.status === "number") {
         return { ok: true, status: a.status, body: a.body };
     }
     if (a.ok === false && KINDS.includes(a.kind as GitHubFailureKind)) {
-        return { ok: false, kind: a.kind as GitHubFailureKind };
+        return BACKEND_REASONS.includes(a.reason as BackendReason)
+            ? { ok: false, kind: a.kind as GitHubFailureKind, reason: a.reason as BackendReason }
+            : { ok: false, kind: a.kind as GitHubFailureKind };
     }
     return { ok: false, kind: "other" };
 }

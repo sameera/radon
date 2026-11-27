@@ -27,10 +27,21 @@ export interface FakeOptions {
     override?: (index: number, request: GitHubRequest) => GitHubResult | undefined | Promise<GitHubResult | undefined>;
     // The repository is unreadable: GitHub answers NOT_FOUND on the repository field.
     cannotRead?: boolean;
+    // What Raiden's backend answers to the Grooming sync. Defaults to an empty partition.
+    sync?: FakeSync | ((request: GitHubRequest) => GitHubResult | Promise<GitHubResult>);
+}
+
+export interface FakeSync {
+    source?: { project: string; field: string } | null;
+    sprints?: Record<string, unknown>[];
+    milestones?: Record<string, unknown>[];
 }
 
 export interface FakeGitHub extends GitHubGateway {
+    // Requests to GitHub's API.
     requests: GitHubRequest[];
+    // Requests to Raiden's backend, kept apart so GitHub request indexes stay as they were.
+    backend: GitHubRequest[];
 }
 
 const INLINE: number = 3;
@@ -85,7 +96,20 @@ export function fakeGitHub(o: FakeOptions): FakeGitHub {
 
     const gateway: FakeGitHub = {
         requests: [],
+        backend: [],
         async request(request: GitHubRequest): Promise<GitHubResult> {
+            if (request.to === "backend") {
+                gateway.backend.push(request);
+                if (typeof o.sync === "function") {
+                    return o.sync(request);
+                }
+                const sync: FakeSync = o.sync ?? {};
+                return {
+                    ok: true,
+                    status: 200,
+                    body: { repository: 1, source: sync.source ?? null, sprints: sync.sprints ?? [], milestones: sync.milestones ?? [] },
+                };
+            }
             const index: number = gateway.requests.length;
             gateway.requests.push(request);
             const forced = await o.override?.(index, request);

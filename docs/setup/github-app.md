@@ -6,18 +6,24 @@ permission. The permissions come from this registration (D8, G11).
 ## Register the App
 
 1. In GitHub, go to **Settings → Developer settings → GitHub Apps → New GitHub App**.
-2. Set these **repository permissions**, and nothing else:
+2. Set these **repository permissions**:
    - **Issues:** Read-only
    - **Projects:** Read-only
    - **Metadata:** Read-only
-3. Do **not** grant any write permission. Raiden never writes to issues.
-4. Keep **Expire user authorization tokens** turned **on**. Raiden renews tokens itself. A token that never expires is
+3. Set this one **Organization permissions** entry, and nothing else:
+   - **Projects:** Read-only
+
+   Grooming reads sprints from the iterations of a repository's linked project. The repository-level Projects
+   permission does not reach a project that an organization owns, so without this one no organization repository
+   gets sprints. A project owned by a person stays unreadable to the App.
+4. Do **not** grant any write permission. Raiden never writes to GitHub.
+5. Keep **Expire user authorization tokens** turned **on**. Raiden renews tokens itself. A token that never expires is
    worth more to anyone who steals it (R3).
-5. Under **Callback URL**, add both return addresses:
+6. Under **Callback URL**, add both return addresses:
    - The web view's return address, for example `https://raiden.your-team.example/`.
    - The extension's return address, `https://<extension-id>.chromiumapp.org/`.
-6. Turn **Webhook** off. Raiden does not use it here.
-7. Generate a **client secret**. Give it only to the backend (see below). Never put it in a host build.
+7. Turn **Webhook** off. Raiden does not use it here.
+8. Generate a **client secret**. Give it only to the backend (see below). Never put it in a host build.
 
 ## Fix the extension ID
 
@@ -36,6 +42,9 @@ A user token reaches only repositories where the App is **installed**. On any ot
 1. Open the App's page and choose **Install App**.
 2. Select the organization and the repositories Raiden should read.
 3. Users who can see a repository in GitHub then see it in Raiden. Users never see more than GitHub shows them.
+
+When you add the organization Projects permission to an App that is already installed, GitHub asks each
+organization's owner to approve the new permission. Sprints do not sync for an organization until its owner approves.
 
 ## Give the backend its settings
 
@@ -60,6 +69,31 @@ If `/auth/exchange` fails, its `reason` field identifies GitHub's safe error cat
 | `unverified_user_email` | Verify the primary email address on the GitHub account. |
 
 A 502 without a `reason` means GitHub could not be reached or gave an unrecognized response. The backend never returns GitHub's free-form error description, authorization codes, or secrets.
+
+## Deploy the backend's data path
+
+Grooming sends one data request when it opens: `POST /grooming/sync`. The backend reads the repository's sprints and
+milestones from GitHub as the signed-in user, updates Raiden's records, and returns them.
+
+**The table.** The backend keeps Raiden's records in one DynamoDB table. Name it in `RAIDEN_TABLE` (default `raiden`).
+It has a string partition key `pk` and a string sort key `sk`, as in `backend/local/table.json`. Each repository's
+records share one partition, keyed by GitHub's permanent identity for the repository.
+
+**The backend's permission on the table.** Give the Lambda's role these actions on the table, and no others:
+
+| Action | Why |
+|---|---|
+| `dynamodb:DescribeTable` | The `/health` check |
+| `dynamodb:Query` | Reads a repository's records |
+| `dynamodb:PutItem` | Writes a synced sprint or milestone |
+| `dynamodb:DeleteItem` | Deletes a sprint or milestone that GitHub no longer has |
+
+**The request header.** The browser sends the signed-in user's GitHub token on the data request, in the
+`authorization` header. The backend answers the cross-origin preflight for `/grooming/sync` itself, and allows the
+`content-type` and `authorization` headers for the origins in `RAIDEN_ALLOWED_ORIGINS` only. If API Gateway handles
+CORS for you instead, allow the `authorization` header there too. The backend never stores, logs or returns the token.
+
+**The App's permission.** The organization-level **Projects** permission, read-only, from the registration steps above.
 
 ## Build settings for each host
 

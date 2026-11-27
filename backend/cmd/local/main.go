@@ -26,7 +26,7 @@ func main() {
 		slog.Error("failed to initialize DynamoDB client", "error", err)
 		os.Exit(1)
 	}
-	h := &handler.Handler{DB: db, Auth: handler.AuthFromEnv()}
+	h := &handler.Handler{DB: db, Auth: handler.AuthFromEnv(), Store: store.Dynamo{Client: db}}
 
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		body, readErr := io.ReadAll(r.Body)

@@ -33,6 +33,8 @@ import { ExternalLink, IssueRef, repoPage } from "./links.tsx";
 import { useRepo } from "./repo.tsx";
 import { GROOMING_SPRINT, INITIATIVES } from "./sample.ts";
 import { LiveBacklog, type LiveSource } from "./livebacklog.tsx";
+import { syncGrooming, type SyncLoad } from "./groomingsync.ts";
+import type { Repo } from "./repo.tsx";
 import type { SessionStore } from "./session.ts";
 
 // What is being dragged. It is tracked here, never in the drag data, so only drags that started
@@ -617,6 +619,28 @@ function Divider({ width, min, max, onChange }: DividerProps): VNode {
     );
 }
 
+// Runs the Grooming sync when Grooming opens for a signed-in lead with a current repository, and
+// again when either changes. Each answer is kept with the repository and person it was read for.
+function useGroomingSync(live: LiveSource | undefined, repo: Repo | null, attempt: number): SyncLoad | null {
+    const key: string = JSON.stringify([live?.login, repo?.owner, repo?.name, attempt]);
+    const [state, setState] = useState<{ key: string; load: SyncLoad } | null>(null);
+    useEffect(() => {
+        if (!live || !repo) {
+            return;
+        }
+        let current = true;
+        void syncGrooming(live.gateway, repo).then((load: SyncLoad) => {
+            if (current) {
+                setState({ key, load });
+            }
+        });
+        return () => {
+            current = false;
+        };
+    }, [live?.gateway, key]);
+    return state !== null && state.key === key ? state.load : null;
+}
+
 export function GroomingPage({
     session,
     state,
@@ -627,6 +651,8 @@ export function GroomingPage({
     live,
 }: GroomingProps): VNode {
     const [filter, setFilter] = useState<string>("");
+    const repo: Repo | null = useRepo();
+    useGroomingSync(live, repo, 0);
     const panelsRef = useRef<HTMLDivElement>(null);
     const [space, setSpace] = useState<number>(0);
     useEffect(() => {

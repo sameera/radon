@@ -38,7 +38,10 @@ function shapedRequest(value: unknown): GitHubRequest | null {
     if (typeof value !== "object" || value === null) {
         return null;
     }
-    const r = value as { path?: unknown; method?: unknown; query?: unknown };
+    const r = value as { path?: unknown; method?: unknown; query?: unknown; to?: unknown };
+    if (r.to !== undefined && r.to !== "github" && r.to !== "backend") {
+        return null;
+    }
     const queryOk: boolean =
         r.query === undefined ||
         (typeof r.query === "object" && r.query !== null && Object.values(r.query).every((v: unknown) => typeof v === "string"));

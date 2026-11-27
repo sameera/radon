@@ -20,7 +20,7 @@ func main() {
 		slog.Error("failed to initialize DynamoDB client", "error", err)
 		os.Exit(1)
 	}
-	h := &handler.Handler{DB: db, Auth: handler.AuthFromEnv()}
+	h := &handler.Handler{DB: db, Auth: handler.AuthFromEnv(), Store: store.Dynamo{Client: db}}
 	slog.Info("Lambda handler ready", "github_auth_enabled", h.Auth != nil)
 	lambda.Start(h.Handle)
 }

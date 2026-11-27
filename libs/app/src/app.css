@@ -191,3 +191,13 @@
 .rd-bands--stacked .rd-band--none .rd-band__goal { display: none; }
 .rd-bands--stacked .rd-bands__col--goals { display: none; }
 .rd-bands--stacked > .rd-backlog { flex-basis: auto !important; max-width: 100%; }
+
+/* Below 760px the expanded sidebar overlays the page instead of taking its width (G34). The page
+   keeps only the collapsed rail's 56px beside it, so a 360px window never scrolls sideways with the
+   sidebar in either state. The main area's padding narrows too. */
+@media (max-width: 759.98px) {
+    .rd-app { position: relative; }
+    .rd-app > .rd-nav:not(.rd-nav--collapsed) { position: absolute; top: 0; bottom: 0; left: 0; z-index: 20; box-shadow: var(--rd-shadow-overlay); }
+    .rd-app > .rd-nav:not(.rd-nav--collapsed) + .rd-main { margin-left: 56px; }
+    .rd-main { padding: var(--rd-space-3); }
+}

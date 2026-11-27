@@ -12,3 +12,8 @@
 - **Choice:** A separator labelled "No milestone" before the first sprint with no placing milestone, shown only when a milestone header comes before it.
 - **Why:** A loose sprint right after the last milestone read as sitting under that milestone; a labelled rule says it does not, and it is not a milestone header, so AC5 still holds.
 - **Refuted alternative:** A plain unlabelled gap, which a reader can miss and a screen reader does not announce.
+
+## 2026-11-27 — Below 760px the expanded sidebar overlays the page
+- **Choice:** A CSS media query under 760px takes the expanded sidebar out of the flow (absolute, over the page) and keeps a 56px rail-width margin on the main area.
+- **Why:** The page then fits a 360px window in both sidebar states, and the user's stored collapse choice and the toggle's `aria-expanded` stay true.
+- **Refuted alternative:** Force the sidebar collapsed below 760px; that overrides the stored preference and still lets an expand bring the sideways scroll back.

@@ -85,4 +85,16 @@ describe("stacking (story #92)", () => {
         expect(CSS_TEXT).toMatch(/\.rd-bands \.rd-lb-head[^{]*\{[^}]*flex-wrap: wrap/);
         expect(band().style.getPropertyValue("width")).toBe("");
     });
+
+    it("keeps the expanded sidebar out of the page's width below 760px: it overlays the page (G34)", async () => {
+        await openAt(360);
+        // The sidebar is expanded by default.
+        expect(root.querySelector(".rd-nav")!.classList.contains("rd-nav--collapsed")).toBe(false);
+        const narrow: string | undefined = CSS_TEXT.match(/@media \(max-width: 759\.98px\) \{([\s\S]*?)\n\}/)?.[1];
+        expect(narrow).toBeDefined();
+        // The expanded sidebar leaves the flow and floats over the page.
+        expect(narrow).toMatch(/\.rd-nav:not\(\.rd-nav--collapsed\)[^{]*\{[^}]*position: absolute/);
+        // The page keeps only the collapsed rail's width beside it, the same in both states.
+        expect(narrow).toMatch(/\.rd-nav:not\(\.rd-nav--collapsed\) \+ \.rd-main[^{]*\{[^}]*margin-left: 56px/);
+    });
 });

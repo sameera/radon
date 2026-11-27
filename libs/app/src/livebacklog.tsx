@@ -211,11 +211,15 @@ interface LiveBacklogProps {
     // reorder the backlog, never onto a goal (G18).
     zone: Record<string, unknown>;
     over: boolean;
+    // In the band view: the no-sprint band's rows, shown as the last band in place of the list
+    // (story #90), and the page-wide empty text.
+    rows?: VNode | null;
+    emptyText?: string | null;
 }
 
 // The backlog read from GitHub: the current repository's open issues as a list, each item under
 // a header of its ancestors (D3, D4).
-export function LiveBacklog({ source, state, onRetry, width, filter, onFilter, zone, over }: LiveBacklogProps): VNode {
+export function LiveBacklog({ source, state, onRetry, width, filter, onFilter, zone, over, rows, emptyText }: LiveBacklogProps): VNode {
     const current: Repo | null = useRepo();
     // The lead's order, in page memory only, kept with the repository and person it was made for.
     // A change of either starts again from tree order.
@@ -292,12 +296,30 @@ export function LiveBacklog({ source, state, onRetry, width, filter, onFilter, z
                                 {`${state.hidden} ${state.hidden === 1 ? "issue is" : "issues are"} not shown. GitHub search returns at most 1,000 issues. A later Settings page will let you narrow the query.`}
                             </p>
                         )}
-                        {shown.length === 0 && (
-                            <p class="rd-backlog__empty rd-text-small">
-                                {filtering ? "No issues match. Clear the filter to show them all." : "This repository has no open issues."}
-                            </p>
+                        {rows !== undefined ? (
+                            <>
+                                {emptyText && <p class="rd-backlog__empty rd-text-small">{emptyText}</p>}
+                                <div class="rd-band rd-band--none" data-band="none" role="group" aria-label="Issues with no sprint">
+                                    <div class="rd-band__rows">
+                                        <div class="rd-band__label">
+                                            <b class="rd-band__name">No sprint</b>
+                                            <span class="rd-band__dates rd-text-small">Issues with no sprint in GitHub</span>
+                                        </div>
+                                        {rows}
+                                    </div>
+                                    <div class="rd-band__goal" aria-hidden="true" />
+                                </div>
+                            </>
+                        ) : (
+                            <>
+                                {shown.length === 0 && (
+                                    <p class="rd-backlog__empty rd-text-small">
+                                        {filtering ? "No issues match. Clear the filter to show them all." : "This repository has no open issues."}
+                                    </p>
+                                )}
+                                {groups.length > 0 && <List groups={groups} current={current} onMove={move} onStep={step} />}
+                            </>
                         )}
-                        {groups.length > 0 && <List groups={groups} current={current} onMove={move} onStep={step} />}
                     </>
                 )}
             </div>

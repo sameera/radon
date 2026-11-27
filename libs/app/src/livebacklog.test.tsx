@@ -23,6 +23,11 @@ const TREE: FakeIssue[] = [
     { n: 5, title: "Loose issue" },
 ];
 
+// TREE with its two parents outside the query, so they show as crumbs. Since story #90 (G21, D7)
+// a parent the query returns is a row of its band; only a parent outside the query, or in
+// another band, is a crumb. The list-form tests below use these outside parents.
+const CRUMB_TREE: FakeIssue[] = TREE.map((i) => (i.n === 10 || i.n === 20 ? { ...i, inQuery: false } : i));
+
 let root: HTMLElement;
 let unmount: (() => void) | undefined;
 let stored: Record<string, unknown>;
@@ -170,7 +175,7 @@ describe("reading the backlog from GitHub (D1)", () => {
 
 describe("the list (D3)", () => {
     it("shows each issue at the end of a chain as an item, under a header of its ancestors", async () => {
-        await open(fakeGitHub({ issues: TREE }));
+        await open(fakeGitHub({ issues: CRUMB_TREE }));
         expect(shape()).toEqual(["5", "10>20: 25 30"]);
         expect(rows().map((r) => r.dataset.num)).toEqual(["5", "25", "30"]);
         // The header is set in the design system's small style, not a literal font size.
@@ -188,8 +193,8 @@ describe("the list (D3)", () => {
         await open(
             fakeGitHub({
                 issues: [
-                    { n: 1, title: "I1" },
-                    { n: 11, parent: 1 },
+                    { n: 1, title: "I1", inQuery: false },
+                    { n: 11, parent: 1, inQuery: false },
                     { n: 111, parent: 11 },
                     { n: 112, parent: 11 },
                     { n: 21, parent: 1 },
@@ -223,12 +228,12 @@ describe("the list (D3)", () => {
     });
 
     it("links each header ancestor to its issue", async () => {
-        await open(fakeGitHub({ issues: TREE }));
+        await open(fakeGitHub({ issues: CRUMB_TREE }));
         expect($<HTMLAnchorElement>('.rd-lb-crumb[data-num="20"] a.rd-ref').href).toBe("https://github.com/acme/widgets/issues/20");
     });
 
     it("filters at every level: a match shows under its chain, with its descendants", async () => {
-        await open(fakeGitHub({ issues: TREE }));
+        await open(fakeGitHub({ issues: CRUMB_TREE }));
         await type("story ELEVEN");
         expect(shape()).toEqual(["10>20: 25"]);
         await type("#20");
@@ -249,7 +254,7 @@ describe("the list (D3)", () => {
     });
 
     it("moves an item by drag and drop", async () => {
-        await open(fakeGitHub({ issues: TREE }));
+        await open(fakeGitHub({ issues: CRUMB_TREE }));
         await reorder(5, 30, "after");
         expect(shape()).toEqual(["10>20: 25 30", "5"]);
         await reorder(5, 25, "before");
@@ -257,7 +262,7 @@ describe("the list (D3)", () => {
     });
 
     it("gives an item moved away from its siblings its own header, and joins them again when moved back", async () => {
-        await open(fakeGitHub({ issues: TREE }));
+        await open(fakeGitHub({ issues: CRUMB_TREE }));
         await reorder(25, 5, "before");
         expect(shape()).toEqual(["10>20: 25", "5", "10>20: 30"]);
         await reorder(25, 30, "before");
@@ -265,7 +270,7 @@ describe("the list (D3)", () => {
     });
 
     it("moves an item one place with Alt+Up and Alt+Down, and keeps focus on it", async () => {
-        await open(fakeGitHub({ issues: TREE }));
+        await open(fakeGitHub({ issues: CRUMB_TREE }));
         await key(row(30).querySelector("a.rd-ref")!, "ArrowUp");
         expect(shape()).toEqual(["5", "10>20: 30 25"]);
         await key(row(5).querySelector("a.rd-ref")!, "ArrowDown");
@@ -277,7 +282,7 @@ describe("the list (D3)", () => {
     });
 
     it("keeps hidden items in place when an item moves while filtering", async () => {
-        await open(fakeGitHub({ issues: TREE }));
+        await open(fakeGitHub({ issues: CRUMB_TREE }));
         await type("story");
         await reorder(30, 25, "before");
         await type("");

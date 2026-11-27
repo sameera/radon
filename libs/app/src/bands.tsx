@@ -9,7 +9,7 @@ import { LiveBacklog, useBacklogLoad, type LiveSource, type LoadState } from "./
 import { syncGrooming, type Milestone, type Sprint, type SyncLoad } from "./groomingsync.ts";
 import { Divider, fit, limits } from "./grooming.tsx";
 import { assignBands, BandRows } from "./bandrows.tsx";
-import type { LiveIssue } from "./backlogload.ts";
+import { buildTree, filterTree, type LiveIssue } from "./backlogload.ts";
 
 export type BandEntry =
     | { kind: "milestone"; milestone: Milestone; sprints: Sprint[]; start: string | null }
@@ -189,8 +189,13 @@ export function BandPage({ live, backlogWidth, onBacklogWidth }: BandPageProps):
     const bandOrder = (band: string): string[] | null => (orders.key === orderKey ? (orders.bands[band] ?? null) : null);
     const setBandOrder = (band: string, ids: string[]): void =>
         setOrders({ key: orderKey, bands: { ...(orders.key === orderKey ? orders.bands : {}), [band]: ids } });
-    // Issues placed in a sprint band leave the list below the bands (D7).
-    const rest: LoadState = state?.ok ? { ...state, issues: issues.map((i) => (i.inQuery && assigned.get(i.id) ? { ...i, inQuery: false, elsewhere: true } : i)) } : state;
+    const anyQuery: boolean = issues.some((i) => i.inQuery);
+    const anyMatch: boolean = useMemo(() => filterTree(buildTree(issues), filter).length > 0, [issues, filter]);
+    const emptyText: string | null = !anyQuery
+        ? "This repository has no open issues."
+        : !anyMatch
+          ? "No issues match. Clear the filter to show them all."
+          : null;
     return (
         <section class="rd-groom rd-groom--bands" aria-labelledby="rd-groom-title">
             <header class="rd-groom__header">
@@ -227,7 +232,19 @@ export function BandPage({ live, backlogWidth, onBacklogWidth }: BandPageProps):
                     )}
                 <LiveBacklog
                     source={live}
-                    state={rest}
+                    state={state}
+                    rows={
+                        <BandRows
+                            issues={issues}
+                            band={null}
+                            assigned={assigned}
+                            filter={filter}
+                            order={bandOrder("")}
+                            onOrder={(ids: string[]) => setBandOrder("", ids)}
+                            current={repo}
+                        />
+                    }
+                    emptyText={emptyText}
                     onRetry={() => setAttempt(attempt + 1)}
                     width={shownWidth}
                     filter={filter}

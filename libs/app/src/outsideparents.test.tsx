@@ -83,9 +83,10 @@ const CLOSED_EPIC: FakeIssue[] = [
 ];
 
 describe("outside parents in their places (D3)", () => {
+    // Story #90, G21: I1 is in the query, so it is a row of its band; the closed E1 stays a crumb.
     it("shows a closed E1 under I1, grayed out, with S11 and S12 under it", async () => {
         await open(fakeGitHub({ issues: CLOSED_EPIC }));
-        expect(shape()).toEqual(["10>20~: 25 30"]);
+        expect(shape()).toEqual(["10", "20~: 25 30"]);
     });
 
     it("shows a parent and a grandparent that were not returned, both grayed out", async () => {
@@ -158,7 +159,8 @@ describe("how an outside parent looks (D6, G8)", () => {
     it("keeps the chain of outside parents above a filtered match", async () => {
         await open(fakeGitHub({ issues: CLOSED_EPIC }));
         await type("twelve");
-        expect(shape()).toEqual(["10>20~: 30"]);
+        // Story #90, G21: the open I1 above the match is a row; the outside E1 is its crumb.
+        expect(shape()).toEqual(["10", "20~: 30"]);
     });
 });
 

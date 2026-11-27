@@ -1,6 +1,6 @@
 // Places each backlog issue in its sprint's band (D6, D7, story #89).
 import type { VNode } from "preact";
-import { useMemo } from "preact/hooks";
+import { useEffect, useMemo, useRef, useState } from "preact/hooks";
 import { buildTree, filterTree, type LiveIssue, type TreeNode } from "./backlogload.ts";
 import { flattenBand, groupItems, moveItem, orderItems, type ListItem } from "./backloglist.ts";
 import { List, type Side } from "./livebacklog.tsx";
@@ -49,6 +49,15 @@ export function BandRows({ issues, band, assigned, filter, order, onOrder, curre
     );
     const all: ListItem[] = useMemo(() => orderItems(flattenBand(tree, inBand), order), [tree, order]);
     const shown: ListItem[] = useMemo(() => orderItems(flattenBand(filterTree(tree, filter), inBand), order), [tree, filter, order]);
+    // After a keyboard move, focus returns to the moved row, which may now sit in a new group.
+    const ref = useRef<HTMLDivElement>(null);
+    const [refocus, setRefocus] = useState<string | null>(null);
+    useEffect(() => {
+        if (refocus !== null) {
+            ref.current?.querySelector<HTMLElement>(`.rd-lb-row[data-id="${CSS.escape(refocus)}"] .rd-ref`)?.focus();
+            setRefocus(null);
+        }
+    }, [refocus, shown]);
     if (shown.length === 0) {
         return null;
     }
@@ -58,7 +67,12 @@ export function BandRows({ issues, band, assigned, filter, order, onOrder, curre
         const target: ListItem | undefined = shown[at + by];
         if (at >= 0 && target) {
             move(id, target.issue.id, by < 0 ? "before" : "after");
+            setRefocus(id);
         }
     };
-    return <List groups={groupItems(shown)} current={current} onMove={move} onStep={step} />;
+    return (
+        <div class="rd-band__list" ref={ref}>
+            <List groups={groupItems(shown)} current={current} onMove={move} onStep={step} />
+        </div>
+    );
 }

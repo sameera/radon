@@ -1,10 +1,11 @@
-import type { VNode } from "preact";
-import { useEffect, useMemo, useState } from "preact/hooks";
-import { ChevronIcon } from "./icons.tsx";
+import { Fragment, type VNode } from "preact";
+import { useEffect, useMemo, useRef, useState } from "preact/hooks";
+import { GripIcon } from "./icons.tsx";
 import { ExternalLink, repoPage } from "./links.tsx";
 import type { GitHubGateway } from "./gateway.ts";
 import { useRepo, type Repo } from "./repo.tsx";
 import { buildTree, filterTree, loadBacklog, type BacklogCause, type BacklogLoad, type LiveIssue, type TreeNode } from "./backlogload.ts";
+import { flattenTree, groupItems, moveItem, orderItems, type ListGroup, type ListItem } from "./backloglist.ts";
 
 // What a page needs to read the live backlog: the gateway and the signed-in person (D1, G12).
 export interface LiveSource {
@@ -78,72 +79,118 @@ function LiveRef({ issue, current }: { issue: LiveIssue; current: Repo | null })
     return href === null ? <span class="rd-ref">{body}</span> : <ExternalLink class="rd-ref" href={href}>{body}</ExternalLink>;
 }
 
-interface RowsProps {
-    nodes: TreeNode[];
-    depth: number;
-    collapsed: Set<string>;
-    filtering: boolean;
-    onToggle: (id: string) => void;
-    current: Repo | null;
+// One ancestor on a header row. A parent the query did not return is muted and carries a text
+// label for screen readers, so color is not the only signal (D6, G8).
+function Crumb({ issue, current }: { issue: LiveIssue; current: Repo | null }): VNode {
+    const outside: boolean = !issue.inQuery;
+    const label: string = issue.hidden ? "Not in the backlog query" : `Not in the backlog query, ${issue.state.toLowerCase()}`;
+    return (
+        <span
+            class={`rd-lb-crumb${outside ? " is-outside" : ""}${issue.hidden ? " is-hidden" : ""}`}
+            data-num={issue.hidden ? "" : issue.number}
+            title={outside ? label : undefined}
+        >
+            {issue.hidden ? <span class="rd-ref rd-lb-hidden">Parent not visible</span> : <LiveRef issue={issue} current={current} />}
+            {outside && <span class="rd-lb-outside">{` (${label})`}</span>}
+        </span>
+    );
 }
 
-function Rows({ nodes, depth, collapsed, filtering, onToggle, current }: RowsProps): VNode {
+type Side = "before" | "after";
+
+interface ListProps {
+    groups: ListGroup[];
+    current: Repo | null;
+    onMove: (id: string, target: string, side: Side) => void;
+    // Moves an item one place up (-1) or down (1) in the shown list.
+    onStep: (id: string, by: -1 | 1) => void;
+}
+
+// The backlog list. Each item can be dragged to a new place. This drag is the backlog's own: it
+// never plans an item, and the page's drop zones ignore it (G18).
+function List({ groups, current, onMove, onStep }: ListProps): VNode {
+    const [dragging, setDragging] = useState<string | null>(null);
+    const [over, setOver] = useState<{ id: string; side: Side } | null>(null);
+    const end = (): void => {
+        setDragging(null);
+        setOver(null);
+    };
+    const sideOf = (e: DragEvent): Side => {
+        const rect: DOMRect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+        return e.clientY < rect.top + rect.height / 2 ? "before" : "after";
+    };
     return (
-        <>
-            {nodes.map((node: TreeNode) => {
-                const { issue } = node;
-                const parent: boolean = node.children.length > 0;
-                // While filtering, matches show open. Each row's own setting stays.
-                const open: boolean = filtering || !collapsed.has(issue.id);
-                // A parent the query did not return is grayed, with a text label, so color is not
-                // the only signal (D6, G8).
-                const outside: boolean = !issue.inQuery;
-                return (
-                    <div class="rd-lb-group" key={issue.id}>
-                        <div
-                            class={`rd-bl-row rd-lb-row${outside ? " is-outside" : ""}${issue.hidden ? " is-hidden" : ""}`}
-                            data-num={issue.hidden ? "" : issue.number}
-                            data-depth={depth}
-                            style={{ "--rd-lb-depth": depth }}
-                        >
-                            {parent ? (
-                                <button
-                                    type="button"
-                                    class="rd-icon-btn rd-bl-chev"
-                                    aria-expanded={open}
-                                    aria-label={`${open ? "Hide" : "Show"} issues under ${issue.hidden ? "the parent that is not visible" : `#${issue.number}`}`}
-                                    onClick={() => onToggle(issue.id)}
-                                >
-                                    <ChevronIcon open={open} />
-                                </button>
-                            ) : (
-                                <span class="rd-lb-spacer" aria-hidden="true" />
-                            )}
-                            {issue.hidden ? (
-                                <span class="rd-ref rd-lb-hidden">Parent not visible</span>
-                            ) : (
-                                <LiveRef issue={issue} current={current} />
-                            )}
-                            {outside && (
-                                <span class="rd-bl-meta rd-lb-outside">
-                                    {issue.hidden ? "Not in the backlog query" : `Not in the backlog query, ${issue.state.toLowerCase()}`}
-                                </span>
-                            )}
+        <ul class="rd-lb-list">
+            {groups.map((group: ListGroup) => (
+                <li class="rd-lb-group" key={group.items[0]!.issue.id}>
+                    {group.chain.length > 0 && (
+                        <div class="rd-lb-head">
+                            {group.chain.map((issue: LiveIssue, i: number) => (
+                                <Fragment key={issue.id}>
+                                    {i > 0 && (
+                                        <span class="rd-lb-sep" aria-hidden="true">
+                                            {">"}
+                                        </span>
+                                    )}
+                                    <Crumb issue={issue} current={current} />
+                                </Fragment>
+                            ))}
                         </div>
-                        {parent && open && (
-                            <Rows
-                                nodes={node.children}
-                                depth={depth + 1}
-                                collapsed={collapsed}
-                                filtering={filtering}
-                                onToggle={onToggle}
-                                current={current}
-                            />
-                        )}
-                    </div>
-                );
-            })}
-        </>
+                    )}
+                    {group.items.map(({ issue }) => {
+                        const side: Side | null = over?.id === issue.id && dragging !== issue.id ? over.side : null;
+                        return (
+                            <div
+                                class={`rd-bl-row rd-lb-row${dragging === issue.id ? " is-dragged" : ""}${side ? ` insert-${side}` : ""}`}
+                                data-num={issue.number}
+                                data-id={issue.id}
+                                key={issue.id}
+                                draggable={true}
+                                aria-keyshortcuts="Alt+ArrowUp Alt+ArrowDown"
+                                onDragStart={(e: DragEvent) => {
+                                    e.stopPropagation();
+                                    setDragging(issue.id);
+                                    if (e.dataTransfer) {
+                                        e.dataTransfer.effectAllowed = "move";
+                                        e.dataTransfer.setData("application/x-raiden-backlog", issue.id);
+                                    }
+                                }}
+                                onDragEnd={end}
+                                onDragOver={(e: DragEvent) => {
+                                    if (dragging === null) {
+                                        return;
+                                    }
+                                    e.preventDefault();
+                                    e.stopPropagation();
+                                    const next: Side = sideOf(e);
+                                    setOver((c) => (c?.id === issue.id && c.side === next ? c : { id: issue.id, side: next }));
+                                }}
+                                onDrop={(e: DragEvent) => {
+                                    if (dragging === null) {
+                                        return;
+                                    }
+                                    e.preventDefault();
+                                    e.stopPropagation();
+                                    onMove(dragging, issue.id, sideOf(e));
+                                    end();
+                                }}
+                                onKeyDown={(e: KeyboardEvent) => {
+                                    if (e.altKey && (e.key === "ArrowUp" || e.key === "ArrowDown")) {
+                                        e.preventDefault();
+                                        onStep(issue.id, e.key === "ArrowUp" ? -1 : 1);
+                                    }
+                                }}
+                            >
+                                <span class="rd-lb-grip" aria-hidden="true">
+                                    <GripIcon />
+                                </span>
+                                <LiveRef issue={issue} current={current} />
+                            </div>
+                        );
+                    })}
+                </li>
+            ))}
+        </ul>
     );
 }
 
@@ -152,28 +199,48 @@ interface LiveBacklogProps {
     width: number;
     filter: string;
     onFilter: (text: string) => void;
-    // The drop zone that takes a planned row out of the plan (G20). Rows here are never dragged (G18).
+    // The drop zone that takes a planned row out of the plan (G20). Rows here are dragged only to
+    // reorder the backlog, never onto a goal (G18).
     zone: Record<string, unknown>;
     over: boolean;
 }
 
-// The backlog read from GitHub: the current repository's open issues as a tree (D3, D4).
+// The backlog read from GitHub: the current repository's open issues as a list, each item under
+// a header of its ancestors (D3, D4).
 export function LiveBacklog({ source, width, filter, onFilter, zone, over }: LiveBacklogProps): VNode {
     const current: Repo | null = useRepo();
     const [attempt, setAttempt] = useState<number>(0);
-    const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
     const state: LoadState = useBacklogLoad(source, current, attempt);
+    // The lead's order, in page memory only, kept with the repository and person it was made for.
+    // A change of either starts again from tree order.
+    const orderKey: string = JSON.stringify([source.login, current?.owner, current?.name]);
+    const [order, setOrder] = useState<{ key: string; ids: string[] } | null>(null);
+    const ids: string[] | null = order !== null && order.key === orderKey ? order.ids : null;
     const tree: TreeNode[] = useMemo(() => (state?.ok ? buildTree(state.issues) : []), [state]);
-    const shown: TreeNode[] = useMemo(() => filterTree(tree, filter), [tree, filter]);
+    const all: ListItem[] = useMemo(() => orderItems(flattenTree(tree), ids), [tree, ids]);
+    const shown: ListItem[] = useMemo(() => orderItems(flattenTree(filterTree(tree, filter)), ids), [tree, filter, ids]);
+    const groups: ListGroup[] = useMemo(() => groupItems(shown), [shown]);
     const filtering: boolean = filter.trim() !== "";
     const count: number = state?.ok ? state.issues.filter((i) => i.inQuery).length : 0;
     const newInitiative: string | null = repoPage(current?.url, "issues/new");
-    const toggle = (id: string): void => {
-        const next: Set<string> = new Set(collapsed);
-        if (!next.delete(id)) {
-            next.add(id);
+    // After a keyboard move, focus returns to the moved item, which may now sit in a new group.
+    const listRef = useRef<HTMLDivElement>(null);
+    const [refocus, setRefocus] = useState<string | null>(null);
+    useEffect(() => {
+        if (refocus !== null) {
+            listRef.current?.querySelector<HTMLElement>(`.rd-lb-row[data-id="${CSS.escape(refocus)}"] .rd-ref`)?.focus();
+            setRefocus(null);
         }
-        setCollapsed(next);
+    }, [refocus, groups]);
+    const move = (id: string, target: string, side: "before" | "after"): void =>
+        setOrder({ key: orderKey, ids: moveItem(all, id, target, side) });
+    const step = (id: string, by: -1 | 1): void => {
+        const at: number = shown.findIndex((i) => i.issue.id === id);
+        const target: ListItem | undefined = shown[at + by];
+        if (at >= 0 && target) {
+            move(id, target.issue.id, by < 0 ? "before" : "after");
+            setRefocus(id);
+        }
     };
     return (
         <section
@@ -198,7 +265,7 @@ export function LiveBacklog({ source, width, filter, onFilter, zone, over }: Liv
                     onInput={(e) => onFilter((e.currentTarget as HTMLInputElement).value)}
                 />
             </div>
-            <div class="rd-backlog__list">
+            <div class="rd-backlog__list" ref={listRef}>
                 {state === null ? (
                     <p class="rd-backlog__empty rd-lb-status rd-text-small" role="status">
                         Loading the backlog from GitHub…
@@ -224,7 +291,7 @@ export function LiveBacklog({ source, width, filter, onFilter, zone, over }: Liv
                                 {filtering ? "No issues match. Clear the filter to show them all." : "This repository has no open issues."}
                             </p>
                         )}
-                        <Rows nodes={shown} depth={0} collapsed={collapsed} filtering={filtering} onToggle={toggle} current={current} />
+                        {groups.length > 0 && <List groups={groups} current={current} onMove={move} onStep={step} />}
                     </>
                 )}
             </div>

@@ -35,8 +35,19 @@ async function open(gateway: FakeGitHub): Promise<void> {
 const $ = <T extends Element>(sel: string): T => root.querySelector<T>(sel)!;
 const $$ = <T extends Element>(sel: string): T[] => Array.from(root.querySelectorAll<T>(sel));
 const rows = (): HTMLElement[] => $$<HTMLElement>(".rd-backlog .rd-lb-row");
-const shape = (): string[] => rows().map((r) => `${r.dataset.num}@${r.dataset.depth}${r.classList.contains("is-outside") ? "~" : ""}`);
-const row = (num: number | string): HTMLElement => $(`.rd-lb-row[data-num="${num}"]`);
+// Each list item as "<header numbers>: <item numbers>". "~" marks a parent the query did not return.
+const shape = (): string[] =>
+    $$<HTMLElement>(".rd-backlog .rd-lb-group").map((g) => {
+        const head: string = Array.from(
+            g.querySelectorAll<HTMLElement>(".rd-lb-crumb"),
+            (c) => `${c.dataset.num}${c.classList.contains("is-outside") ? "~" : ""}`,
+        ).join(">");
+        const items: string = Array.from(g.querySelectorAll<HTMLElement>(".rd-lb-row"), (r) => r.dataset.num).join(" ");
+        return head ? `${head}: ${items}` : items;
+    });
+// An issue on screen: an item, or an ancestor on a header.
+const row = (num: number | string): HTMLElement => $(`.rd-lb-row[data-num="${num}"], .rd-lb-crumb[data-num="${num}"]`);
+const shown = (): string[] => $$<HTMLElement>(".rd-backlog .rd-lb-crumb, .rd-backlog .rd-lb-row").map((r) => r.dataset.num!);
 const status = (): string => $(".rd-backlog .rd-lb-status")?.textContent ?? "";
 async function type(value: string): Promise<void> {
     const input: HTMLInputElement = $('input[aria-label="Filter backlog"]');
@@ -74,7 +85,7 @@ const CLOSED_EPIC: FakeIssue[] = [
 describe("outside parents in their places (D3)", () => {
     it("shows a closed E1 under I1, grayed out, with S11 and S12 under it", async () => {
         await open(fakeGitHub({ issues: CLOSED_EPIC }));
-        expect(shape()).toEqual(["10@0", "20@1~", "25@2", "30@2"]);
+        expect(shape()).toEqual(["10>20~: 25 30"]);
     });
 
     it("shows a parent and a grandparent that were not returned, both grayed out", async () => {
@@ -87,7 +98,7 @@ describe("outside parents in their places (D3)", () => {
                 ],
             }),
         );
-        expect(shape()).toEqual(["1@0~", "2@1~", "3@2"]);
+        expect(shape()).toEqual(["1~>2~: 3"]);
     });
 
     it("shows a parent once, however many returned issues sit under it (G6)", async () => {
@@ -102,7 +113,7 @@ describe("outside parents in their places (D3)", () => {
                 ],
             }),
         );
-        expect(shape()).toEqual(["1@0~", "2@1~", "3@2", "4@2", "5@1"]);
+        expect(shape()).toEqual(["1~>2~: 3 4", "1~: 5"]);
     });
 
     it("never shows an issue that was not returned and has no returned descendant (G7)", async () => {
@@ -111,8 +122,8 @@ describe("outside parents in their places (D3)", () => {
                 issues: [...CLOSED_EPIC, { n: 40, title: "Closed sibling", parent: 10, state: "CLOSED" }, { n: 41, parent: 40, state: "CLOSED" }],
             }),
         );
-        expect(rows().map((r) => r.dataset.num)).not.toContain("40");
-        expect(rows().map((r) => r.dataset.num)).not.toContain("41");
+        expect(shown()).not.toContain("40");
+        expect(shown()).not.toContain("41");
     });
 
     it("does not count outside parents in the backlog's count", async () => {
@@ -140,26 +151,20 @@ describe("how an outside parent looks (D6, G8)", () => {
 
     it("grays outside parents with the muted foreground", () => {
         const css: string = readFileSync(resolve(__dirname, "app.css"), "utf8");
-        expect(css).toMatch(/\.rd-lb-row\.is-outside[^{]*\{[^}]*var\(--rd-fg-muted\)/);
-    });
-
-    it("collapses like any other row", async () => {
-        await open(fakeGitHub({ issues: CLOSED_EPIC }));
-        await act(() => row(20).querySelector<HTMLButtonElement>("button[aria-expanded]")!.click());
-        expect(shape()).toEqual(["10@0", "20@1~"]);
+        expect(css).toMatch(/\.rd-lb-crumb\.is-outside[^{]*\{[^}]*var\(--rd-fg-subtle\)/);
     });
 
     it("keeps the chain of outside parents above a filtered match", async () => {
         await open(fakeGitHub({ issues: CLOSED_EPIC }));
         await type("twelve");
-        expect(shape()).toEqual(["10@0", "20@1~", "30@2"]);
+        expect(shape()).toEqual(["10>20~: 30"]);
     });
 });
 
 describe("parents in another repository (D3)", () => {
     it("shows the parent with its repository and links to that repository's issue", async () => {
         await open(fakeGitHub({ issues: [{ n: 3, repo: "acme/planning", title: "Planning initiative" }, { n: 7, parent: "acme/planning#3" }] }));
-        expect(shape()).toEqual(["3@0~", "7@1"]);
+        expect(shape()).toEqual(["3~: 7"]);
         expect(row(3).textContent).toContain("acme/planning#3");
         expect(row(3).querySelector<HTMLAnchorElement>("a.rd-ref")!.href).toBe("https://github.com/acme/planning/issues/3");
         expect(row(3).querySelector(".rd-lb-outside")!.textContent).toMatch(/open/);
@@ -167,8 +172,8 @@ describe("parents in another repository (D3)", () => {
 
     it("never merges a parent in another repository with a same-numbered local issue", async () => {
         await open(fakeGitHub({ issues: [{ n: 3, repo: "acme/planning" }, { n: 3, title: "Local three" }, { n: 7, parent: "acme/planning#3" }] }));
-        expect(rows().filter((r) => r.dataset.num === "3")).toHaveLength(2);
-        expect(shape()).toEqual(["3@0~", "7@1", "3@0"]);
+        expect(shown().filter((n) => n === "3")).toHaveLength(2);
+        expect(shape()).toEqual(["3~: 7", "3"]);
     });
 
     it("builds links on the current repository's GitHub server", async () => {
@@ -200,10 +205,7 @@ describe("ancestors above the inline depth (D2)", () => {
     it("reads every missing ancestor together, one level at a time, until every chain ends (G5)", async () => {
         const github = fakeGitHub({ issues: [...chain(101, 6, 1), ...chain(201, 5, 2)] });
         await open(github);
-        expect(shape()).toEqual([
-            "101@0~", "102@1~", "103@2~", "104@3~", "105@4~", "106@5~", "1@6",
-            "201@0~", "202@1~", "203@2~", "204@3~", "205@4~", "2@5",
-        ]);
+        expect(shape()).toEqual(["101~>102~>103~>104~>105~>106~: 1", "201~>202~>203~>204~>205~: 2"]);
         const rounds: string[][] = idRounds(github);
         expect(rounds).toHaveLength(1);
         expect([...rounds[0]!].sort()).toEqual([idOf("acme/widgets", 103), idOf("acme/widgets", 202)].sort());
@@ -217,13 +219,13 @@ describe("ancestors above the inline depth (D2)", () => {
         const github = fakeGitHub({ issues: chain(101, 3, 1) });
         await open(github);
         expect(idRounds(github)).toHaveLength(0);
-        expect(shape()).toEqual(["101@0~", "102@1~", "103@2~", "1@3"]);
+        expect(shape()).toEqual(["101~>102~>103~: 1"]);
     });
 
     it("runs further rounds for taller chains, and asks for each ancestor once", async () => {
         const github = fakeGitHub({ issues: chain(101, 10, 1) });
         await open(github);
-        expect(rows()).toHaveLength(11);
+        expect(shown()).toHaveLength(11);
         const asked: string[] = idRounds(github).flat();
         expect(asked).toHaveLength(new Set(asked).size);
         expect(idRounds(github).length).toBe(2);
@@ -245,6 +247,10 @@ describe("ancestors above the inline depth (D2)", () => {
         const nums: string[] = rows().map((r) => r.dataset.num!);
         expect(nums.filter((n) => n === "9")).toHaveLength(1);
         expect(new Set(nums).size).toBe(nums.length);
+        for (const head of $$(".rd-lb-head")) {
+            const crumbs: string[] = Array.from(head.querySelectorAll<HTMLElement>(".rd-lb-crumb"), (c) => c.dataset.num!);
+            expect(new Set(crumbs).size).toBe(crumbs.length);
+        }
         expect(idRounds(github).length).toBeLessThanOrEqual(3);
     });
 
@@ -262,8 +268,8 @@ describe("ancestors above the inline depth (D2)", () => {
 describe("a parent the lead cannot read (R2)", () => {
     it("shows the issue at the top, as GitHub answers no parent and no error, and the load does not fail", async () => {
         await open(fakeGitHub({ issues: [{ n: 7, title: "Story", hiddenParent: true }] }));
-        expect(shape()).toEqual(["7@0"]);
-        expect(root.querySelector(".rd-lb-row.is-hidden")).toBeNull();
+        expect(shape()).toEqual(["7"]);
+        expect(root.querySelector(".rd-lb-crumb.is-hidden")).toBeNull();
         expect(status()).toBe("");
         expect($(".rd-backlog .rd-panel__sub").textContent).toBe("1 issue");
     });

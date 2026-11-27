@@ -51,8 +51,34 @@ async function open(gateway: FakeGitHub, repo: RepoStore = createRepoStore(WIDGE
 const $ = <T extends Element>(sel: string): T => root.querySelector<T>(sel)!;
 const $$ = <T extends Element>(sel: string): T[] => Array.from(root.querySelectorAll<T>(sel));
 const rows = (): HTMLElement[] => $$<HTMLElement>(".rd-backlog .rd-lb-row");
-// Each row as "<number>@<depth>", in display order.
-const shape = (): string[] => rows().map((r) => `${r.dataset.num}@${r.dataset.depth}`);
+// Each list item as "<header numbers>: <item numbers>", or the item numbers alone with no header.
+const shape = (): string[] =>
+    $$<HTMLElement>(".rd-backlog .rd-lb-group").map((g) => {
+        const head: string = Array.from(g.querySelectorAll<HTMLElement>(".rd-lb-crumb"), (c) => c.dataset.num).join(">");
+        const items: string = Array.from(g.querySelectorAll<HTMLElement>(".rd-lb-row"), (r) => r.dataset.num).join(" ");
+        return head ? `${head}: ${items}` : items;
+    });
+const row = (num: number): HTMLElement => $(`.rd-lb-row[data-num="${num}"]`);
+// Drags one backlog item onto another, to the given half of it.
+async function reorder(from: number, to: number, side: "before" | "after"): Promise<void> {
+    const target: HTMLElement = row(to);
+    target.getBoundingClientRect = () => ({ top: 0, height: 20, bottom: 20, left: 0, right: 100, width: 100, x: 0, y: 0, toJSON: () => ({}) });
+    const at = (type: string, el: Element): void => {
+        const event: Event = new Event(type, { bubbles: true, cancelable: true });
+        Object.defineProperty(event, "dataTransfer", { value: { setData: vi.fn(), getData: () => "", effectAllowed: "", dropEffect: "" } });
+        Object.defineProperty(event, "clientY", { value: side === "before" ? 2 : 18 });
+        el.dispatchEvent(event);
+    };
+    await act(() => at("dragstart", row(from)));
+    await act(() => at("dragover", target));
+    await act(() => at("drop", target));
+    await act(() => at("dragend", row(from)));
+}
+async function key(el: Element, k: string): Promise<void> {
+    await act(() => {
+        el.dispatchEvent(new KeyboardEvent("keydown", { key: k, altKey: true, bubbles: true, cancelable: true }));
+    });
+}
 const status = (): string => $(".rd-backlog .rd-lb-status")?.textContent ?? "";
 const retry = (): HTMLButtonElement | null => root.querySelector<HTMLButtonElement>(".rd-backlog .rd-lb-retry");
 const filter = (): HTMLInputElement => $('input[aria-label="Filter backlog"]');
@@ -101,7 +127,8 @@ describe("reading the backlog from GitHub (D1)", () => {
     it("lists the issues the fixed query returns for the current repository", async () => {
         const github = fakeGitHub({ issues: TREE });
         await open(github);
-        expect(rows().map((r) => r.dataset.num).sort()).toEqual(["10", "20", "25", "30", "5"]);
+        const nums: string[] = $$<HTMLElement>(".rd-backlog [data-num]").map((r) => r.dataset.num!);
+        expect([...new Set(nums)].sort()).toEqual(["10", "20", "25", "30", "5"]);
         expect($(".rd-backlog").textContent).toContain("Story eleven");
     });
 
@@ -139,22 +166,41 @@ describe("reading the backlog from GitHub (D1)", () => {
     });
 });
 
-describe("the tree (D3)", () => {
-    it("nests E1 under I1, and S11 and S12 under E1", async () => {
+describe("the list (D3)", () => {
+    it("shows each issue at the end of a chain as an item, under a header of its ancestors", async () => {
         await open(fakeGitHub({ issues: TREE }));
-        expect(shape()).toEqual(["5@0", "10@0", "20@1", "25@2", "30@2"]);
+        expect(shape()).toEqual(["5", "10>20: 25 30"]);
+        expect(rows().map((r) => r.dataset.num)).toEqual(["5", "25", "30"]);
     });
 
     it("shows each returned issue exactly once (G4)", async () => {
         await open(fakeGitHub({ issues: TREE }));
-        const nums: string[] = rows().map((r) => r.dataset.num!);
+        const nums: string[] = $$<HTMLElement>(".rd-backlog .rd-lb-crumb, .rd-backlog .rd-lb-row").map((r) => r.dataset.num!);
         expect(new Set(nums).size).toBe(nums.length);
         expect(nums).toHaveLength(5);
     });
 
-    it("shows an issue with no parent as a top-level row, ordered by number (G9)", async () => {
+    it("gives siblings one shared header, and children of another parent their own", async () => {
+        await open(
+            fakeGitHub({
+                issues: [
+                    { n: 1, title: "I1" },
+                    { n: 11, parent: 1 },
+                    { n: 111, parent: 11 },
+                    { n: 112, parent: 11 },
+                    { n: 21, parent: 1 },
+                    { n: 3 },
+                    { n: 4 },
+                ],
+            }),
+        );
+        expect(shape()).toEqual(["1>11: 111 112", "1: 21", "3", "4"]);
+    });
+
+    it("shows an issue with no parent as its own item, ordered by number, with no header (G9)", async () => {
         await open(fakeGitHub({ issues: [{ n: 9 }, { n: 3 }, { n: 7 }] }));
-        expect(shape()).toEqual(["3@0", "7@0", "9@0"]);
+        expect(shape()).toEqual(["3", "7", "9"]);
+        expect(root.querySelector(".rd-lb-head")).toBeNull();
     });
 
     it("links every row to its issue in a new tab with no handle back, and the link never drags (G22, G24)", async () => {
@@ -172,23 +218,17 @@ describe("the tree (D3)", () => {
         expect($('.rd-lb-row[data-num="1"]').textContent).toContain("<b>bold</b>");
     });
 
-    it("collapses and expands a row with children", async () => {
+    it("links each header ancestor to its issue", async () => {
         await open(fakeGitHub({ issues: TREE }));
-        const chevron: HTMLButtonElement = $('.rd-lb-row[data-num="10"] button[aria-expanded]');
-        expect(chevron.getAttribute("aria-expanded")).toBe("true");
-        await click(chevron);
-        expect(shape()).toEqual(["5@0", "10@0"]);
-        await click($('.rd-lb-row[data-num="10"] button[aria-expanded]'));
-        expect(shape()).toEqual(["5@0", "10@0", "20@1", "25@2", "30@2"]);
-        expect($('.rd-lb-row[data-num="25"] button[aria-expanded]')).toBeFalsy();
+        expect($<HTMLAnchorElement>('.rd-lb-crumb[data-num="20"] a.rd-ref').href).toBe("https://github.com/acme/widgets/issues/20");
     });
 
     it("filters at every level: a match shows under its chain, with its descendants", async () => {
         await open(fakeGitHub({ issues: TREE }));
         await type("story ELEVEN");
-        expect(shape()).toEqual(["10@0", "20@1", "25@2"]);
+        expect(shape()).toEqual(["10>20: 25"]);
         await type("#20");
-        expect(shape()).toEqual(["10@0", "20@1", "25@2", "30@2"]);
+        expect(shape()).toEqual(["10>20: 25 30"]);
         await type("nothing matches this");
         expect(rows()).toHaveLength(0);
         expect($(".rd-backlog").textContent).toContain("No issues match");
@@ -203,6 +243,54 @@ describe("the tree (D3)", () => {
         expect($(".rd-goals").textContent).toBe(plan);
         expect($(".rd-groom__save-state").textContent).toBe(save);
         expect($$<HTMLButtonElement>(".rd-btn").find((b) => b.textContent === "Undo")!.getAttribute("aria-disabled")).toBe("true");
+    });
+
+    it("moves an item by drag and drop", async () => {
+        await open(fakeGitHub({ issues: TREE }));
+        await reorder(5, 30, "after");
+        expect(shape()).toEqual(["10>20: 25 30", "5"]);
+        await reorder(5, 25, "before");
+        expect(shape()).toEqual(["5", "10>20: 25 30"]);
+    });
+
+    it("gives an item moved away from its siblings its own header, and joins them again when moved back", async () => {
+        await open(fakeGitHub({ issues: TREE }));
+        await reorder(25, 5, "before");
+        expect(shape()).toEqual(["10>20: 25", "5", "10>20: 30"]);
+        await reorder(25, 30, "before");
+        expect(shape()).toEqual(["5", "10>20: 25 30"]);
+    });
+
+    it("moves an item one place with Alt+Up and Alt+Down, and keeps focus on it", async () => {
+        await open(fakeGitHub({ issues: TREE }));
+        await key(row(30).querySelector("a.rd-ref")!, "ArrowUp");
+        expect(shape()).toEqual(["5", "10>20: 30 25"]);
+        await key(row(5).querySelector("a.rd-ref")!, "ArrowDown");
+        await settle();
+        expect(shape()).toEqual(["10>20: 30", "5", "10>20: 25"]);
+        expect(document.activeElement).toBe(row(5).querySelector("a.rd-ref"));
+        await key(row(25).querySelector("a.rd-ref")!, "ArrowDown");
+        expect(shape()).toEqual(["10>20: 30", "5", "10>20: 25"]);
+    });
+
+    it("keeps hidden items in place when an item moves while filtering", async () => {
+        await open(fakeGitHub({ issues: TREE }));
+        await type("story");
+        await reorder(30, 25, "before");
+        await type("");
+        expect(shape()).toEqual(["5", "10>20: 30 25"]);
+    });
+
+    it("reordering never changes the plan, the save state or Undo, and sends no request", async () => {
+        const github = fakeGitHub({ issues: TREE });
+        await open(github);
+        const plan: string = $(".rd-goals").textContent!;
+        const sent: number = github.requests.length;
+        await reorder(5, 30, "after");
+        expect($(".rd-goals").textContent).toBe(plan);
+        expect($(".rd-groom__save-state").textContent).toBe("All changes saved");
+        expect(github.requests).toHaveLength(sent);
+        expect(JSON.stringify(stored)).not.toMatch(/I_|order/);
     });
 
     it("counts the returned issues", async () => {
@@ -386,10 +474,17 @@ describe("loading and failure (D4)", () => {
 });
 
 describe("live rows beside the sample plan (D5)", () => {
-    it("live rows cannot be dragged, have no item menu and show no goal label (G18)", async () => {
+    it("live rows have no item menu, show no goal label, and dropping one on a goal plans nothing (G18)", async () => {
         await open(fakeGitHub({ issues: [{ n: 31, title: "Same number as a sample epic" }, { n: 12, title: "Same as a sample initiative" }] }));
+        const goal: HTMLElement = $(".rd-goal-card");
+        const plan: string = $(".rd-goals").textContent!;
+        await act(() => drag(row(31), "dragstart"));
+        await act(() => drag(goal, "dragover"));
+        await act(() => drag(goal, "drop"));
+        await act(() => drag(row(31), "dragend"));
+        expect($(".rd-goals").textContent).toBe(plan);
+        expect($(".rd-groom__save-state").textContent).toBe("All changes saved");
         for (const row of rows()) {
-            expect(row.getAttribute("draggable")).not.toBe("true");
             expect(row.querySelector('[aria-haspopup="menu"]')).toBeNull();
             expect(row.textContent).not.toMatch(/Goal \d/);
             expect(row.querySelector(".rd-glyph")).toBeNull();

@@ -1,10 +1,10 @@
 import { Fragment, type VNode } from "preact";
-import { useEffect, useMemo, useRef, useState } from "preact/hooks";
+import { useEffect, useState } from "preact/hooks";
 import { ExternalLink, repoPage } from "./links.tsx";
 import type { GitHubGateway } from "./gateway.ts";
-import { useRepo, type Repo } from "./repo.tsx";
-import { buildTree, filterTree, loadBacklog, type BacklogCause, type BacklogLoad, type LiveIssue, type TreeNode } from "./backlogload.ts";
-import { flattenTree, groupItems, moveItem, orderItems, type ListGroup, type ListItem } from "./backloglist.ts";
+import type { Repo } from "./repo.tsx";
+import { loadBacklog, type BacklogCause, type BacklogLoad, type LiveIssue } from "./backlogload.ts";
+import type { ListGroup } from "./backloglist.ts";
 
 // What a page needs to read the live backlog: the gateway and the signed-in person (D1, G12).
 export interface LiveSource {
@@ -153,137 +153,31 @@ export function List({ groups, current, onStep }: ListProps): VNode {
     );
 }
 
-interface LiveBacklogProps {
-    source: LiveSource;
-    // The page's load, and the one Try again that reruns it.
+interface LoadStatusProps {
     state: LoadState;
     onRetry: () => void;
-    width: number;
-    filter: string;
-    onFilter: (text: string) => void;
-    // The drop zone that takes a planned row out of the plan (G20). Live rows here are never
-    // dragged (live-backlog invariant 7).
-    zone: Record<string, unknown>;
-    over: boolean;
-    // In the band view: the no-sprint band's rows, shown as the last band in place of the list
-    // (story #90), and the page-wide empty text.
-    rows?: VNode | null;
-    emptyText?: string | null;
 }
 
-// The backlog read from GitHub: the current repository's open issues as a list, each item under
-// a header of its ancestors (D3, D4).
-export function LiveBacklog({ source, state, onRetry, width, filter, onFilter, zone, over, rows, emptyText }: LiveBacklogProps): VNode {
-    const current: Repo | null = useRepo();
-    // The lead's order, in page memory only, kept with the repository and person it was made for.
-    // A change of either starts again from tree order.
-    const orderKey: string = JSON.stringify([source.login, current?.owner, current?.name]);
-    const [order, setOrder] = useState<{ key: string; ids: string[] } | null>(null);
-    const ids: string[] | null = order !== null && order.key === orderKey ? order.ids : null;
-    const tree: TreeNode[] = useMemo(() => (state?.ok ? buildTree(state.issues) : []), [state]);
-    const all: ListItem[] = useMemo(() => orderItems(flattenTree(tree), ids), [tree, ids]);
-    const shown: ListItem[] = useMemo(() => orderItems(flattenTree(filterTree(tree, filter)), ids), [tree, filter, ids]);
-    const groups: ListGroup[] = useMemo(() => groupItems(shown), [shown]);
-    const filtering: boolean = filter.trim() !== "";
-    const count: number = state?.ok ? state.issues.filter((i) => i.inQuery).length : 0;
-    const newInitiative: string | null = repoPage(current?.url, "issues/new");
-    // After a keyboard move, focus returns to the moved item, which may now sit in a new group.
-    const listRef = useRef<HTMLDivElement>(null);
-    const [refocus, setRefocus] = useState<string | null>(null);
-    useEffect(() => {
-        if (refocus !== null) {
-            listRef.current?.querySelector<HTMLElement>(`.rd-lb-row[data-id="${CSS.escape(refocus)}"] .rd-ref`)?.focus();
-            setRefocus(null);
-        }
-    }, [refocus, groups]);
-    const move = (id: string, target: string, side: "before" | "after"): void =>
-        setOrder({ key: orderKey, ids: moveItem(all, id, target, side) });
-    const step = (id: string, by: -1 | 1): void => {
-        const at: number = shown.findIndex((i) => i.issue.id === id);
-        const target: ListItem | undefined = shown[at + by];
-        if (at >= 0 && target) {
-            move(id, target.issue.id, by < 0 ? "before" : "after");
-            setRefocus(id);
-        }
-    };
+// The page's load while it runs, or its named failure and the one Try again that reruns it (D5).
+export function LoadStatus({ state, onRetry }: LoadStatusProps): VNode | null {
+    if (state === null) {
+        return (
+            <p class="rd-backlog__empty rd-lb-status rd-text-small" role="status">
+                Loading the backlog from GitHub…
+            </p>
+        );
+    }
+    if (state.ok) {
+        return null;
+    }
     return (
-        <section
-            class={`rd-panel rd-backlog${over ? " is-over" : ""}`}
-            style={{ flexBasis: `${width}px` }}
-            aria-labelledby="rd-backlog-title"
-            {...zone}
-        >
-            <div class="rd-panel__head">
-                <h2 class="rd-text-axis" id="rd-backlog-title">
-                    Backlog
-                </h2>
-                {state?.ok && <span class="rd-panel__sub">{`${count} ${count === 1 ? "issue" : "issues"}`}</span>}
-            </div>
-            <div class="rd-backlog__filter">
-                <input
-                    class="rd-input"
-                    type="search"
-                    aria-label="Filter backlog"
-                    placeholder="Filter by title or number"
-                    value={filter}
-                    onInput={(e) => onFilter((e.currentTarget as HTMLInputElement).value)}
-                />
-            </div>
-            <div class="rd-backlog__list" ref={listRef}>
-                {state === null ? (
-                    <p class="rd-backlog__empty rd-lb-status rd-text-small" role="status">
-                        Loading the backlog from GitHub…
-                    </p>
-                ) : !state.ok ? (
-                    <div class="rd-backlog__empty rd-lb-failed">
-                        <p class="rd-lb-status rd-text-small" role="status">
-                            {MESSAGES[state.cause]}
-                        </p>
-                        <button type="button" class="rd-btn rd-lb-retry" onClick={onRetry}>
-                            Try again
-                        </button>
-                    </div>
-                ) : (
-                    <>
-                        {state.hidden > 0 && (
-                            <p class="rd-lb-capped rd-text-small" role="note">
-                                {`${state.hidden} ${state.hidden === 1 ? "issue is" : "issues are"} not shown. GitHub search returns at most 1,000 issues. A later Settings page will let you narrow the query.`}
-                            </p>
-                        )}
-                        {rows !== undefined ? (
-                            <>
-                                {emptyText && <p class="rd-backlog__empty rd-text-small">{emptyText}</p>}
-                                <div class="rd-band rd-band--none" data-band="none" role="group" aria-label="Issues with no sprint">
-                                    <div class="rd-band__rows">
-                                        <div class="rd-band__label">
-                                            <b class="rd-band__name">No sprint</b>
-                                            <span class="rd-band__dates rd-text-small">Issues with no sprint in GitHub</span>
-                                        </div>
-                                        {rows}
-                                    </div>
-                                    <div class="rd-band__goal" aria-hidden="true" />
-                                </div>
-                            </>
-                        ) : (
-                            <>
-                                {shown.length === 0 && (
-                                    <p class="rd-backlog__empty rd-text-small">
-                                        {filtering ? "No issues match. Clear the filter to show them all." : "This repository has no open issues."}
-                                    </p>
-                                )}
-                                {groups.length > 0 && <List groups={groups} current={current} onStep={step} />}
-                            </>
-                        )}
-                    </>
-                )}
-            </div>
-            {newInitiative !== null && (
-                <div class="rd-backlog__foot">
-                    <ExternalLink class="rd-backlog__new rd-text-small" href={newInitiative}>
-                        New initiative in GitHub
-                    </ExternalLink>
-                </div>
-            )}
-        </section>
+        <div class="rd-backlog__empty rd-lb-failed">
+            <p class="rd-lb-status rd-text-small" role="status">
+                {MESSAGES[state.cause]}
+            </p>
+            <button type="button" class="rd-btn rd-lb-retry" onClick={onRetry}>
+                Try again
+            </button>
+        </div>
     );
 }

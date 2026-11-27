@@ -34,10 +34,10 @@ async function open(gateway: FakeGitHub): Promise<void> {
 
 const $ = <T extends Element>(sel: string): T => root.querySelector<T>(sel)!;
 const $$ = <T extends Element>(sel: string): T[] => Array.from(root.querySelectorAll<T>(sel));
-const rows = (): HTMLElement[] => $$<HTMLElement>(".rd-backlog .rd-lb-row");
+const rows = (): HTMLElement[] => $$<HTMLElement>(".rd-bands .rd-lb-row");
 // Each list item as "<header numbers>: <item numbers>". "~" marks a parent the query did not return.
 const shape = (): string[] =>
-    $$<HTMLElement>(".rd-backlog .rd-lb-group").map((g) => {
+    $$<HTMLElement>(".rd-bands .rd-lb-group").map((g) => {
         const head: string = Array.from(
             g.querySelectorAll<HTMLElement>(".rd-lb-crumb"),
             (c) => `${c.dataset.num}${c.classList.contains("is-outside") ? "~" : ""}`,
@@ -47,8 +47,8 @@ const shape = (): string[] =>
     });
 // An issue on screen: an item, or an ancestor on a header.
 const row = (num: number | string): HTMLElement => $(`.rd-lb-row[data-num="${num}"], .rd-lb-crumb[data-num="${num}"]`);
-const shown = (): string[] => $$<HTMLElement>(".rd-backlog .rd-lb-crumb, .rd-backlog .rd-lb-row").map((r) => r.dataset.num!);
-const status = (): string => $(".rd-backlog .rd-lb-status")?.textContent ?? "";
+const shown = (): string[] => $$<HTMLElement>(".rd-bands .rd-lb-crumb, .rd-bands .rd-lb-row").map((r) => r.dataset.num!);
+const status = (): string => $(".rd-bands .rd-lb-status")?.textContent ?? "";
 async function type(value: string): Promise<void> {
     const input: HTMLInputElement = $('input[aria-label="Filter backlog"]');
     await act(() => {
@@ -129,7 +129,7 @@ describe("outside parents in their places (D3)", () => {
 
     it("does not count outside parents in the backlog's count", async () => {
         await open(fakeGitHub({ issues: CLOSED_EPIC }));
-        expect($(".rd-backlog .rd-panel__sub").textContent).toBe("3 issues");
+        expect($(".rd-bands__tools .rd-panel__sub").textContent).toBe("3 issues");
     });
 });
 
@@ -274,7 +274,7 @@ describe("a parent the lead cannot read (R2)", () => {
         expect(shape()).toEqual(["7"]);
         expect(root.querySelector(".rd-lb-crumb.is-hidden")).toBeNull();
         expect(status()).toBe("");
-        expect($(".rd-backlog .rd-panel__sub").textContent).toBe("1 issue");
+        expect($(".rd-bands__tools .rd-panel__sub").textContent).toBe("1 issue");
     });
 
     it("fails on an error at a parent, as GitHub sends none for a parent the lead cannot read (G13)", async () => {

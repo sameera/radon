@@ -9,6 +9,10 @@ import { createSignInController } from "./signin.ts";
 import { createSessionStore } from "./session.ts";
 import { fakeGitHub, type FakeGitHub, type FakeOptions } from "./testing/fakegraph.ts";
 import { placeSprints } from "./bands.tsx";
+import { readFileSync } from "node:fs";
+import { fileURLToPath, URL as NodeURL } from "node:url";
+
+const CSS_TEXT: string = readFileSync(fileURLToPath(new NodeURL("./app.css", import.meta.url)), "utf8");
 
 const WIDGETS: Repo = { owner: "acme", name: "widgets", url: "https://github.com/acme/widgets" };
 const sprint = (id: string, start: string, end: string) => ({ id, field: "F", iteration: id, name: `Sprint ${id}`, start, end, origin: "github" });
@@ -75,11 +79,11 @@ describe("band view (story #88)", () => {
         const gateway = live({ sync: { sprints: [sprint("b", "2026-11-16", "2026-11-29"), sprint("a", "2026-11-02", "2026-11-15"), sprint("c", "2026-11-16", "2026-11-22")] } });
         await open(gateway);
         const heads = $$<HTMLElement>(".rd-bands__head h2").map((h) => h.textContent);
-        expect(heads).toEqual(["Backlog", "Goals"]);
+        // D15: the goal column is on the left, so it comes first in the page's order.
+        expect(heads).toEqual(["Goals", "Backlog"]);
         expect(sequence()).toEqual(["S:a", "S:c", "S:b"]);
         for (const band of $$<HTMLElement>(".rd-band[data-sprint]")) {
-            expect(band.querySelector(".rd-band__rows")).not.toBeNull();
-            expect(band.querySelector(".rd-band__goal")).not.toBeNull();
+            expect(Array.from(band.children, (c) => c.className.split(" ")[0])).toEqual(["rd-band__card", "rd-band__rows"]);
         }
     });
 
@@ -186,9 +190,26 @@ describe("band view (story #88)", () => {
         expect($(".rd-goals")).not.toBeNull();
     });
 
-    it("keeps today's single list below the last band (story note)", async () => {
+    it("puts the name and dates on the card in the goal column, and only rows in the backlog column (AC2, G41, G46)", async () => {
         await open(live({ sync: { sprints: [sprint("s1", "2026-11-02", "2026-11-15")] } }));
-        expect($$(".rd-backlog .rd-lb-row").map((r) => (r as HTMLElement).dataset.num)).toEqual(["1"]);
+        const band = $<HTMLElement>('.rd-band[data-sprint="s1"]')!;
+        const card = band.querySelector<HTMLElement>(".rd-band__card")!;
+        expect(card.querySelector(".rd-band__name")!.textContent).toBe("Sprint s1");
+        expect(card.querySelector(".rd-band__dates")!.textContent).toBe("Nov 2, 2026 – Nov 15, 2026");
+        const rows = band.querySelector<HTMLElement>(".rd-band__rows")!;
+        expect(rows.querySelector(".rd-band__name, .rd-band__dates, .rd-progress, .is-current")).toBeNull();
+        expect(rows.textContent).not.toContain("Sprint s1");
+        // G46: no goal field, sample goal, met or missed pill, or prompt to drag issues.
+        expect(card.querySelector("input, textarea, [contenteditable], .rd-pill, .rd-goal-card__drop")).toBeNull();
+        expect(card.textContent).not.toMatch(/drag|met|missed/i);
+    });
+
+    it("keeps every milestone header in the goal column, and the backlog column empty beside it (G42, D17)", async () => {
+        await open(live({ sync: { sprints: [sprint("s1", "2026-11-02", "2026-11-15")], milestones: [milestone(1, "One", "2026-11-20T00:00:00Z")] } }));
+        const header = $<HTMLElement>(".rd-milestone")!;
+        expect(header.parentElement!.classList.contains("rd-bands")).toBe(true);
+        expect($(".rd-milestone .rd-lb-row")).toBeNull();
+        expect(CSS_TEXT).toMatch(/\.rd-milestone > \*[^{]*\{[^}]*grid-column: 1/);
     });
 });
 

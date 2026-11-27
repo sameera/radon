@@ -64,27 +64,33 @@ function sprintB(): FakeIssue[] {
     return out;
 }
 
-const glowing = (): HTMLElement[] => Array.from(root.querySelectorAll<HTMLElement>(".is-current, .rd-glow"));
+// The sprint of each element that carries the glow. Only a sprint's card may (D10, D17).
+const glowing = (): (string | undefined)[] =>
+    Array.from(root.querySelectorAll<HTMLElement>(".is-current, .rd-glow")).map((el) => {
+        expect(el.classList.contains("rd-band__card")).toBe(true);
+        return el.closest<HTMLElement>(".rd-band")!.dataset.sprint;
+    });
 
 describe("the current sprint (story #91)", () => {
-    it("gives the band of the sprint containing today the only glow (AC1, G31)", async () => {
+    it("gives the card of the sprint containing today the only glow (AC1, G31)", async () => {
         await open(sprintB());
-        expect(glowing().map((el) => el.dataset.sprint)).toEqual(["F#b"]);
+        expect(glowing()).toEqual(["F#b"]);
         expect(root.querySelectorAll(".rd-btn--primary")).toHaveLength(0);
     });
 
     it("shows the closed share of all its issues in GitHub, open and closed: 3 of 12 is 25% (AC2, G32)", async () => {
         await open(sprintB());
-        const bar = root.querySelector<HTMLElement>('.rd-band[data-sprint="F#b"] .rd-progress')!;
+        const bar = root.querySelector<HTMLElement>('.rd-band[data-sprint="F#b"] .rd-band__card .rd-progress')!;
         expect(bar.getAttribute("aria-label")).toBe("3 of 12 issues closed, 25%");
         expect(bar.querySelector<HTMLElement>(".rd-progress__seg--done")!.style.width).toBe("25%");
         expect(root.querySelector('.rd-band[data-sprint="F#b"] .rd-progress__legend')!.textContent).toContain("3 of 12 closed");
         expect(root.querySelectorAll(".rd-progress")).toHaveLength(1);
+        expect(root.querySelector(".rd-band__rows .rd-progress")).toBeNull();
     });
 
     it("picks the earliest start when several sprints contain today (D10)", async () => {
         await open(sprintB(), { ...SYNC, sprints: [...SYNC.sprints!, sprint("z", "2026-11-10", "2026-11-25")] });
-        expect(glowing().map((el) => el.dataset.sprint)).toEqual(["F#z"]);
+        expect(glowing()).toEqual(["F#z"]);
     });
 
     it("shows no glow and no progress bar when no sprint contains today (AC3)", async () => {

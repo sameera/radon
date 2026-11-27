@@ -32,19 +32,6 @@ export interface ListGroup {
     items: ListItem[];
 }
 
-// The items in tree order: depth first, each level in the tree's own order.
-export function flattenTree(tree: TreeNode[], chain: LiveIssue[] = []): ListItem[] {
-    const out: ListItem[] = [];
-    for (const node of tree) {
-        if (node.children.length === 0) {
-            out.push({ issue: node.issue, chain });
-        } else {
-            out.push(...flattenTree(node.children, [...chain, node.issue]));
-        }
-    }
-    return out;
-}
-
 // The items in the lead's order. Items the order does not name keep their tree order, after the
 // named ones.
 export function orderItems(items: ListItem[], order: string[] | null): ListItem[] {

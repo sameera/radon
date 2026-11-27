@@ -9,6 +9,7 @@ import { LiveBacklog, useBacklogLoad, type LiveSource, type LoadState } from "./
 import { syncGrooming, type Milestone, type Sprint, type SyncLoad } from "./groomingsync.ts";
 import { Divider, fit, limits } from "./grooming.tsx";
 import { assignBands, BandRows } from "./bandrows.tsx";
+import { currentSprint, loadProgress, localToday, type Progress } from "./progress.ts";
 import { buildTree, filterTree, type LiveIssue } from "./backlogload.ts";
 
 export type BandEntry =
@@ -91,18 +92,43 @@ function MilestoneHeader({ entry, repo }: { entry: BandEntry & { kind: "mileston
 
 export interface BandProps {
     sprint: Sprint;
+    // Set for the current sprint only: its band alone carries the glow and the bar (G31, G32).
+    progress?: Progress | null;
     children?: VNode | null;
 }
 
-// One sprint band. The goal area stays empty until the sprint-goals epic fills it.
-function Band({ sprint, children }: BandProps): VNode {
+function ProgressBar({ progress }: { progress: Progress }): VNode {
+    const share: number = progress.total === 0 ? 0 : Math.round((progress.closed / progress.total) * 100);
     return (
-        <div class="rd-band" data-sprint={sprint.id} role="group" aria-label={sprint.name}>
+        <div class="rd-band__progress">
+            <div class="rd-progress" role="img" aria-label={`${progress.closed} of ${progress.total} issues closed, ${share}%`}>
+                <div class="rd-progress__seg rd-progress__seg--done" style={{ width: `${share}%` }} />
+            </div>
+            <div class="rd-progress__legend">
+                <span>
+                    <b>{`${progress.closed} of ${progress.total} closed`}</b>
+                    {` · ${share}%`}
+                </span>
+            </div>
+        </div>
+    );
+}
+
+// One sprint band. The goal area stays empty until the sprint-goals epic fills it.
+function Band({ sprint, progress, children }: BandProps): VNode {
+    return (
+        <div
+            class={`rd-band${progress ? " is-current" : ""}`}
+            data-sprint={sprint.id}
+            role="group"
+            aria-label={progress ? `${sprint.name}, current sprint` : sprint.name}
+        >
             <div class="rd-band__rows">
                 <div class="rd-band__label">
                     <b class="rd-band__name">{sprint.name}</b>
                     <span class="rd-band__dates rd-text-small">{`${formatDate(sprint.start)} – ${formatDate(sprint.end)}`}</span>
                 </div>
+                {progress && <ProgressBar progress={progress} />}
                 {children}
             </div>
             <div class="rd-band__goal" aria-label={`Goal for ${sprint.name}`} />
@@ -112,15 +138,33 @@ function Band({ sprint, children }: BandProps): VNode {
 
 // Runs the Grooming sync for the current repository and person. An answer kept for an earlier
 // repository, person or attempt reads as loading (G20).
-function useGroomingSync(live: LiveSource, repo: Repo | null, attempt: number): SyncLoad | null {
+type SyncWithProgress = (SyncLoad & { ok: false }) | (SyncLoad & { ok: true; current: Sprint | null; progress: Progress | null });
+
+async function syncAndProgress(live: LiveSource, repo: Repo): Promise<SyncWithProgress> {
+    const sync: SyncLoad = await syncGrooming(live.gateway, repo);
+    if (!sync.ok) {
+        return sync;
+    }
+    const current: Sprint | null = currentSprint(sync.sprints, localToday());
+    if (!current) {
+        return { ...sync, current, progress: null };
+    }
+    if (!current.synced || !sync.source || current.field !== sync.source.field) {
+        return { ...sync, current, progress: { sprint: current.id, closed: 0, total: 0 } };
+    }
+    const read = await loadProgress(live.gateway, repo, sync.source, current);
+    return read.ok ? { ...sync, current, progress: read.progress } : { ok: false, cause: read.cause };
+}
+
+function useGroomingSync(live: LiveSource, repo: Repo | null, attempt: number): SyncWithProgress | null {
     const key: string = JSON.stringify([live.login, repo?.owner, repo?.name, repo?.url, attempt]);
-    const [state, setState] = useState<{ key: string; load: SyncLoad } | null>(null);
+    const [state, setState] = useState<{ key: string; load: SyncWithProgress } | null>(null);
     useEffect(() => {
         if (!repo) {
             return;
         }
         let current = true;
-        void syncGrooming(live.gateway, repo).then((load: SyncLoad) => {
+        void syncAndProgress(live, repo).then((load: SyncWithProgress) => {
             if (current) {
                 setState({ key, load });
             }
@@ -134,8 +178,8 @@ function useGroomingSync(live: LiveSource, repo: Repo | null, attempt: number): 
 
 // The two reads of a Grooming load, started together, as one state: loading until both answered,
 // then the first failure, else the backlog (D5, G18).
-function useGroomingLoad(live: LiveSource, repo: Repo | null, attempt: number): { state: LoadState; sync: SyncLoad | null } {
-    const sync: SyncLoad | null = useGroomingSync(live, repo, attempt);
+function useGroomingLoad(live: LiveSource, repo: Repo | null, attempt: number): { state: LoadState; sync: SyncWithProgress | null } {
+    const sync: SyncWithProgress | null = useGroomingSync(live, repo, attempt);
     const backlog = useBacklogLoad(live, repo, attempt);
     if (sync === null || backlog === null) {
         return { state: null, sync: null };
@@ -217,7 +261,11 @@ export function BandPage({ live, backlogWidth, onBacklogWidth }: BandPageProps):
                         entry.kind === "milestone" ? (
                             <MilestoneHeader entry={entry} repo={repo} key={`m:${entry.milestone.id}`} />
                         ) : (
-                            <Band sprint={entry.sprint} key={`s:${entry.sprint.id}`}>
+                            <Band
+                                sprint={entry.sprint}
+                                progress={sync?.ok && sync.progress?.sprint === entry.sprint.id ? sync.progress : null}
+                                key={`s:${entry.sprint.id}`}
+                            >
                                 <BandRows
                                     issues={issues}
                                     band={entry.sprint.id}

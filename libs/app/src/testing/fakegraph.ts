@@ -132,6 +132,25 @@ export function fakeGitHub(o: FakeOptions): FakeGitHub {
             errors.length = 0;
             const body = request.body as { query: string; variables: Record<string, unknown> };
             const vars = body.variables;
+            if (body.query.startsWith("query Progress")) {
+                // Every item of the project: one per issue that has a value on it, open or closed.
+                const items = [...byId.values()].flatMap((issue) =>
+                    (issue.sprints ?? [])
+                        .filter(([project]) => project === vars.project)
+                        .map(([, field, iteration]) => ({
+                            content: { state: issue.state ?? "OPEN", repository: { nameWithOwner: issue.repo } },
+                            fieldValues: { pageInfo: { hasNextPage: issue.moreValues === true }, nodes: [{}, { iterationId: iteration, field: { id: field } }] },
+                        })),
+                );
+                const start: number = vars.cursor ? Number(vars.cursor) : 0;
+                const page = items.slice(start, start + 100);
+                const end: number = start + page.length;
+                return {
+                    ok: true,
+                    status: 200,
+                    body: { data: { node: { items: { pageInfo: { hasNextPage: end < items.length, endCursor: String(end) }, nodes: page } } } },
+                };
+            }
             if (Array.isArray(vars.ids)) {
                 const nodes = (vars.ids as string[]).map((id, i) => (byId.has(id) ? node(byId.get(id)!, 0, ["nodes", i]) : null));
                 return { ok: true, status: 200, body: { data: { nodes }, ...(errors.length ? { errors: [...errors] } : {}) } };

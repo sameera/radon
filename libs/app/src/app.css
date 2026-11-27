@@ -174,3 +174,6 @@
 .rd-milestone__start, .rd-milestone__due { color: var(--rd-fg-muted); font-variant-numeric: tabular-nums; }
 .rd-milestone__desc { margin: var(--rd-space-1) 0 0; color: var(--rd-fg-muted); white-space: pre-wrap; overflow-wrap: anywhere; }
 .rd-bands > .rd-backlog { width: auto; }
+/* The current sprint (story #91): the page's one glow, and its progress bar. */
+.rd-band.is-current .rd-band__rows { border-color: var(--rd-brand); box-shadow: var(--rd-shadow-glow); }
+.rd-band__progress { margin: var(--rd-space-2) 0; }

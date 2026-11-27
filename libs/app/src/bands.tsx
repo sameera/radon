@@ -92,6 +92,8 @@ function MilestoneHeader({ entry, repo }: { entry: BandEntry & { kind: "mileston
 
 export interface BandProps {
     sprint: Sprint;
+    // Below 760 pixels the goal area sits above the rows (D11).
+    stacked?: boolean;
     // Set for the current sprint only: its band alone carries the glow and the bar (G31, G32).
     progress?: Progress | null;
     children?: VNode | null;
@@ -115,7 +117,8 @@ function ProgressBar({ progress }: { progress: Progress }): VNode {
 }
 
 // One sprint band. The goal area stays empty until the sprint-goals epic fills it.
-function Band({ sprint, progress, children }: BandProps): VNode {
+function Band({ sprint, progress, stacked, children }: BandProps): VNode {
+    const goal: VNode = <div class="rd-band__goal" aria-label={`Goal for ${sprint.name}`} />;
     return (
         <div
             class={`rd-band${progress ? " is-current" : ""}`}
@@ -123,6 +126,7 @@ function Band({ sprint, progress, children }: BandProps): VNode {
             role="group"
             aria-label={progress ? `${sprint.name}, current sprint` : sprint.name}
         >
+            {stacked && goal}
             <div class="rd-band__rows">
                 <div class="rd-band__label">
                     <b class="rd-band__name">{sprint.name}</b>
@@ -131,7 +135,7 @@ function Band({ sprint, progress, children }: BandProps): VNode {
                 {progress && <ProgressBar progress={progress} />}
                 {children}
             </div>
-            <div class="rd-band__goal" aria-label={`Goal for ${sprint.name}`} />
+            {!stacked && goal}
         </div>
     );
 }
@@ -199,6 +203,9 @@ interface BandPageProps {
     onBacklogWidth?: (value: number, final: boolean) => void;
 }
 
+// Below this page width the two columns stack (D11).
+export const STACK_BELOW: number = 760;
+
 export function BandPage({ live, backlogWidth, onBacklogWidth }: BandPageProps): VNode {
     const repo: Repo | null = useRepo();
     const [attempt, setAttempt] = useState<number>(0);
@@ -206,8 +213,12 @@ export function BandPage({ live, backlogWidth, onBacklogWidth }: BandPageProps):
     const { state, sync } = useGroomingLoad(live, repo, attempt);
     const bandsRef = useRef<HTMLDivElement>(null);
     const [space, setSpace] = useState<number>(0);
+    const [stacked, setStacked] = useState<boolean>(window.innerWidth < STACK_BELOW);
     useEffect(() => {
-        const measure = (): void => setSpace(bandsRef.current?.getBoundingClientRect().width ?? 0);
+        const measure = (): void => {
+            setSpace(bandsRef.current?.getBoundingClientRect().width ?? 0);
+            setStacked(window.innerWidth < STACK_BELOW);
+        };
         measure();
         window.addEventListener("resize", measure);
         const observer: ResizeObserver | null = typeof ResizeObserver === "function" && bandsRef.current ? new ResizeObserver(measure) : null;
@@ -250,10 +261,16 @@ export function BandPage({ live, backlogWidth, onBacklogWidth }: BandPageProps):
                     </h1>
                 </div>
             </header>
-            <div class="rd-bands" ref={bandsRef} style={{ "--rd-backlog-w": `${shownWidth}px` }}>
+            <div
+                class={`rd-bands${stacked ? " rd-bands--stacked" : ""}`}
+                ref={bandsRef}
+                style={stacked ? undefined : { "--rd-backlog-w": `${shownWidth}px` }}
+            >
                 <div class="rd-bands__head">
                     <h2 class="rd-text-axis rd-bands__col rd-bands__col--backlog">Backlog</h2>
-                    <Divider width={shownWidth} min={min} max={max} onChange={(value: number, final: boolean) => onBacklogWidth?.(value, final)} />
+                    {!stacked && (
+                        <Divider width={shownWidth} min={min} max={max} onChange={(value: number, final: boolean) => onBacklogWidth?.(value, final)} />
+                    )}
                     <h2 class="rd-text-axis rd-bands__col rd-bands__col--goals">Goals</h2>
                 </div>
                 {state?.ok &&
@@ -263,6 +280,7 @@ export function BandPage({ live, backlogWidth, onBacklogWidth }: BandPageProps):
                         ) : (
                             <Band
                                 sprint={entry.sprint}
+                                stacked={stacked}
                                 progress={sync?.ok && sync.progress?.sprint === entry.sprint.id ? sync.progress : null}
                                 key={`s:${entry.sprint.id}`}
                             >

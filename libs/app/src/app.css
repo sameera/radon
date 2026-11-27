@@ -177,3 +177,15 @@
 /* The current sprint (story #91): the page's one glow, and its progress bar. */
 .rd-band.is-current .rd-band__rows { border-color: var(--rd-brand); box-shadow: var(--rd-shadow-glow); }
 .rd-band__progress { margin: var(--rd-space-2) 0; }
+
+/* Below 760px the columns stack (story #92, D11): each band puts its goal area above its rows, the
+   divider hides, and long titles and crumbs wrap, so a 360px page never scrolls sideways. */
+.rd-bands, .rd-band, .rd-band__rows, .rd-band__list, .rd-lb-row, .rd-lb-head { min-width: 0; max-width: 100%; }
+.rd-bands .rd-ref__title, .rd-bands .rd-lb-crumb, .rd-bands .rd-ref { overflow-wrap: anywhere; white-space: normal; }
+.rd-bands .rd-lb-head { display: flex; flex-wrap: wrap; }
+.rd-bands--stacked .rd-band { flex-direction: column; }
+.rd-bands--stacked .rd-band__rows, .rd-bands--stacked .rd-bands__col--backlog { flex: 1 1 auto; width: auto; }
+.rd-bands--stacked .rd-band__goal { margin: 0 0 var(--rd-space-2); }
+.rd-bands--stacked .rd-band--none .rd-band__goal { display: none; }
+.rd-bands--stacked .rd-bands__col--goals { display: none; }
+.rd-bands--stacked > .rd-backlog { flex-basis: auto !important; max-width: 100%; }

@@ -1,8 +1,8 @@
 ---
 title: Grooming Backlog View
 aliases: [backlog filter, backlog width, backlog divider, resize backlog]
-touches: [grooming-plan, raiden-app-shell]
-last_updated_by: "#8"
+touches: [grooming-plan, raiden-app-shell, live-backlog]
+last_updated_by: "#73"
 status: active
 verification: verified
 ---
@@ -29,8 +29,12 @@ The lead's preferred width is kept through the shell's preference store. The sho
 
 - [grooming-plan](grooming-plan.md) — the filter and width change only how the backlog of the plan is shown.
 - [raiden-app-shell](raiden-app-shell.md) — the shell reads the preferred backlog width before its first render and keeps it through the preference store.
+- [live-backlog](live-backlog.md) — the same filter and width apply to the live backlog, where a matching row shows with its descendants under its full chain.
 
 ## Decision Log
 
 ### 2026-11-22 — #8 — The filter keeps the hierarchy, and the divider is an accessible separator over a fitted width
 Leads search by issue number as often as by title, so the filter matches both. A matching epic shows under its initiative, because labels such as "2 of 3 epics planned" depend on the initiative. The divider is a focusable separator so the width has a keyboard path. The shown width is fitted again whenever the space changes, because collapsing the sidebar or resizing the window changes the space under a stored width. Refuted alternative: the browser's built-in resize handle on the backlog panel. It needs almost no code, but it has no keyboard path and its grip sits at the panel's corner, not between the panels.
+
+### 2026-11-26 — #73 — Reciprocal link from live-backlog
+The live-backlog page names this page as a neighbour, so this page names it back.

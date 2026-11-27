@@ -1,8 +1,8 @@
 ---
 title: Repository Context
 aliases: [current repository, repo context, pick prompt]
-touches: [raiden-app-shell, raiden-page-host, raiden-web-view, grooming-github-links, web-repository-picker, repository-menu]
-last_updated_by: "#66"
+touches: [raiden-app-shell, raiden-page-host, raiden-web-view, grooming-github-links, web-repository-picker, repository-menu, live-backlog]
+last_updated_by: "#73"
 status: active
 verification: verified
 ---
@@ -39,6 +39,7 @@ A host that sets a fixed repository address at mount, such as a test, needs no s
 - [grooming-github-links](grooming-github-links.md) — the Grooming links read the repository from it when they render.
 - [web-repository-picker](web-repository-picker.md) — the picker writes it when the person picks, and clears it when the list shows the repository is gone.
 - [repository-menu](repository-menu.md) — a pick from the menu sets it, and the menu marks it as the selected repository.
+- [live-backlog](live-backlog.md) — the live backlog starts a new load when the current repository changes, and drops an answer for the previous one.
 
 ## Decision Log
 
@@ -47,3 +48,6 @@ Both hosts need the same answer, and the web view's answer changes during a visi
 
 ### 2026-11-24 — #66 — The breadcrumb reads the shared repository, and the extension shows no control
 The breadcrumb reads the shared repository directly and not the kept list. A current repository that a stale kept list lacks still shows, and the breadcrumb shows "Pick a repository" while the place is "none". The extension shows no breadcrumb or menu and stores nothing for this, as before. Refuted alternative: none. The same entry records the reciprocal link from repository-menu: the menu marks the shared repository as selected, and a pick from the menu writes it here.
+
+### 2026-11-26 — #73 — Reciprocal link from live-backlog
+The live-backlog page names this page as a neighbour, so this page names it back.

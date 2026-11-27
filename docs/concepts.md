@@ -4,25 +4,26 @@
 
 # Concept Atlas
 
-Orientation map of the concept store — 16 active concepts. Each links to its full page
+Orientation map of the concept store — 17 active concepts. Each links to its full page
 (behavior, invariants, decision history); code locations live in the matching
 `.nexus/anchors/<slug>.md` sidecar.
 
 ## Raiden App Shell
 
 - [Raiden App Shell](../.nexus/concepts/raiden-app-shell.md) — The shell is the frame shared by every Raiden page.
+- [Grooming Plan](../.nexus/concepts/grooming-plan.md) — The Grooming page lets a lead plan the next sprint.
 - [Raiden Web View](../.nexus/concepts/raiden-web-view.md) — The web view is the Raiden pages on a web page of their own, with no GitHub page around them.
-- [Grooming Plan](../.nexus/concepts/grooming-plan.md) — The Grooming page lets a lead plan the next sprint on sample data.
-- [Raiden Page Host](../.nexus/concepts/raiden-page-host.md) — The Raiden tab on a repository page opens the Raiden page in place of GitHub's content.
-- [Web View Repository Picker](../.nexus/concepts/web-repository-picker.md) — In the web view, a breadcrumb in the banner opens a menu that lets a signed-in person pick the repository.
 - [GitHub Client](../.nexus/concepts/github-client.md) — Every GitHub request Raiden makes in either host goes through one shared client.
-- [GitHub Sign-In](../.nexus/concepts/github-sign-in.md) — A person signs in with GitHub from the Raiden tab in the extension or from the web view.
+- [Raiden Page Host](../.nexus/concepts/raiden-page-host.md) — The Raiden tab on a repository page opens the Raiden page in place of GitHub's content.
 - [Repository Context](../.nexus/concepts/repository-context.md) — Every Raiden page reads the repository it works on from one shared place.
+- [Web View Repository Picker](../.nexus/concepts/web-repository-picker.md) — In the web view, a breadcrumb in the banner opens a menu that lets a signed-in person pick the repository.
+- [GitHub Sign-In](../.nexus/concepts/github-sign-in.md) — A person signs in with GitHub from the Raiden tab in the extension or from the web view.
+- [Live Backlog](../.nexus/concepts/live-backlog.md) — For a signed-in person, the Grooming backlog shows the current repository's open issues from GitHub, each nested under its full chain of parent issues.
 - [Web View Sign-Out](../.nexus/concepts/web-view-sign-out.md) — A signed-in person can choose Sign out in the avatar menu of the web view's banner.
 - [Raiden Banner](../.nexus/concepts/raiden-banner.md) — The banner is the bar across the top of a host that has no GitHub page around Raiden.
 - [Grooming GitHub Links](../.nexus/concepts/grooming-github-links.md) — On the Grooming page, each initiative and epic issue reference opens that issue on GitHub in a new tab.
-- [Repository Menu](../.nexus/concepts/repository-menu.md) — The repository menu is the searchable list a person opens from the repository breadcrumb in the web view's banner.
 - [Grooming Backlog View](../.nexus/concepts/grooming-backlog-view.md) — A lead can filter the Grooming backlog by title or issue number and change its width with a divider.
+- [Repository Menu](../.nexus/concepts/repository-menu.md) — The repository menu is the searchable list a person opens from the repository breadcrumb in the web view's banner.
 - [Raiden Sidebar](../.nexus/concepts/raiden-sidebar.md) — The sidebar lists the Raiden pages in groups: Sprint goal, Grooming, Timeline and Settings.
 - [Grooming Plan Moves](../.nexus/concepts/grooming-plan-moves.md) — A lead changes the Grooming plan by drag and drop, by an item's menu, or by the Take out of plan button on a goal row.
 - [Grooming Undo and Save State](../.nexus/concepts/grooming-undo-save.md) — The Grooming page shows whether the plan has unsaved changes, and a lead can undo plan changes one at a time.

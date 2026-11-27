@@ -1,8 +1,8 @@
 ---
 title: Raiden App Shell
 aliases: [raiden app, raiden pages frame]
-touches: [raiden-banner, raiden-page-host, grooming-plan, grooming-backlog-view, raiden-web-view, raiden-sidebar, github-sign-in, github-client, repository-context, web-view-sign-out]
-last_updated_by: "#66"
+touches: [raiden-banner, raiden-page-host, grooming-plan, grooming-backlog-view, raiden-web-view, raiden-sidebar, github-sign-in, github-client, repository-context, web-view-sign-out, live-backlog]
+last_updated_by: "#73"
 status: active
 verification: verified
 ---
@@ -44,6 +44,7 @@ Reusable controls go into the design system, each with its own guideline page: s
 - [github-client](github-client.md) — the shell receives the GitHub gateway from the host and gives it to pages.
 - [repository-context](repository-context.md) — the shell provides the shared current repository and shows the pick prompt while it is "none".
 - [web-view-sign-out](web-view-sign-out.md) — the shell shows Sign out only when the host supplies the step, and shows the sign-in screen at once.
+- [live-backlog](live-backlog.md) — the shell gives Grooming the gateway and the signed-in person for the live backlog, and hides the plan counts while it shows.
 
 ## Decision Log
 
@@ -69,3 +70,6 @@ In a banner host the shell shows the avatar and its menu in place of the sidebar
 
 ### 2026-11-24 — #66 — The shell holds which banner menu is open, so at most one is open
 The shell keeps one value for the open banner menu, repository or account, and gives each menu its open state and a change handler. No menu listens for another menu's event, so at most one is open by construction. Refuted alternative: a document event that each menu fires on open and the other listens for, which needs both menus to agree on event names and still races on a fast double click.
+
+### 2026-11-26 — #73 — Reciprocal link from live-backlog
+The live-backlog page names this page as a neighbour, so this page names it back.

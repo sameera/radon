@@ -22,3 +22,8 @@
 - **Choice:** Remove drag and the grip from live backlog rows; keep Alt+Up and Alt+Down as the way to move an item.
 - **Why:** Live-backlog invariant 7 forbids dragging a live row, not keyboard moves, so this is the smallest change that meets it.
 - **Refuted alternative:** Remove all reordering of live rows, which drops a working keyboard feature no invariant forbids.
+
+## 2026-11-27 — Un-ignore .env.frontend.local for Nx via .nxignore
+- **Choice:** Add `!.env.frontend.local` to `.nxignore` so the existing `{workspaceRoot}/.env.frontend.local` build input is hashed.
+- **Why:** Nx drops gitignored paths from its file map, so the fileset input matched nothing and a cached build baked in stale team settings.
+- **Refuted alternative:** A `{ "runtime": "cat .env.frontend.local 2>/dev/null || true" }` input in each build target, which spawns a shell per hash and is not portable to Windows.

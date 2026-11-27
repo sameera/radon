@@ -72,7 +72,7 @@ export function BandRows({ issues, band, assigned, filter, order, onOrder, curre
     };
     return (
         <div class="rd-band__list" ref={ref}>
-            <List groups={groupItems(shown)} current={current} onMove={move} onStep={step} />
+            <List groups={groupItems(shown)} current={current} onStep={step} />
         </div>
     );
 }

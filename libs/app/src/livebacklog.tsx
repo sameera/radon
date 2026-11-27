@@ -1,6 +1,5 @@
 import { Fragment, type VNode } from "preact";
 import { useEffect, useMemo, useRef, useState } from "preact/hooks";
-import { GripIcon } from "./icons.tsx";
 import { ExternalLink, repoPage } from "./links.tsx";
 import type { GitHubGateway } from "./gateway.ts";
 import { useRepo, type Repo } from "./repo.tsx";
@@ -104,24 +103,13 @@ export type Side = "before" | "after";
 interface ListProps {
     groups: ListGroup[];
     current: Repo | null;
-    onMove: (id: string, target: string, side: Side) => void;
     // Moves an item one place up (-1) or down (1) in the shown list.
     onStep: (id: string, by: -1 | 1) => void;
 }
 
-// The backlog list. Each item can be dragged to a new place. This drag is the backlog's own: it
-// never plans an item, and the page's drop zones ignore it (G18).
-export function List({ groups, current, onMove, onStep }: ListProps): VNode {
-    const [dragging, setDragging] = useState<string | null>(null);
-    const [over, setOver] = useState<{ id: string; side: Side } | null>(null);
-    const end = (): void => {
-        setDragging(null);
-        setOver(null);
-    };
-    const sideOf = (e: DragEvent): Side => {
-        const rect: DOMRect = (e.currentTarget as HTMLElement).getBoundingClientRect();
-        return e.clientY < rect.top + rect.height / 2 ? "before" : "after";
-    };
+// The backlog list. A live row can never be dragged (live-backlog invariant 7); Alt+Up and
+// Alt+Down move an item one place, which never plans it.
+export function List({ groups, current, onStep }: ListProps): VNode {
     return (
         <ul class="rd-lb-list">
             {groups.map((group: ListGroup) => (
@@ -140,59 +128,25 @@ export function List({ groups, current, onMove, onStep }: ListProps): VNode {
                             ))}
                         </div>
                     )}
-                    {group.items.map(({ issue, depth }) => {
-                        const side: Side | null = over?.id === issue.id && dragging !== issue.id ? over.side : null;
-                        return (
-                            <div
-                                class={`rd-bl-row rd-lb-row${dragging === issue.id ? " is-dragged" : ""}${side ? ` insert-${side}` : ""}`}
-                                data-num={issue.number}
-                                data-id={issue.id}
-                                data-depth={depth ?? 0}
-                                style={depth ? { paddingLeft: `calc(${depth} * var(--rd-space-4))` } : undefined}
-                                key={issue.id}
-                                draggable={true}
-                                aria-keyshortcuts="Alt+ArrowUp Alt+ArrowDown"
-                                onDragStart={(e: DragEvent) => {
-                                    e.stopPropagation();
-                                    setDragging(issue.id);
-                                    if (e.dataTransfer) {
-                                        e.dataTransfer.effectAllowed = "move";
-                                        e.dataTransfer.setData("application/x-raiden-backlog", issue.id);
-                                    }
-                                }}
-                                onDragEnd={end}
-                                onDragOver={(e: DragEvent) => {
-                                    if (dragging === null) {
-                                        return;
-                                    }
+                    {group.items.map(({ issue, depth }) => (
+                        <div
+                            class="rd-bl-row rd-lb-row"
+                            data-num={issue.number}
+                            data-id={issue.id}
+                            data-depth={depth ?? 0}
+                            style={depth ? { paddingLeft: `calc(${depth} * var(--rd-space-4))` } : undefined}
+                            key={issue.id}
+                            aria-keyshortcuts="Alt+ArrowUp Alt+ArrowDown"
+                            onKeyDown={(e: KeyboardEvent) => {
+                                if (e.altKey && (e.key === "ArrowUp" || e.key === "ArrowDown")) {
                                     e.preventDefault();
-                                    e.stopPropagation();
-                                    const next: Side = sideOf(e);
-                                    setOver((c) => (c?.id === issue.id && c.side === next ? c : { id: issue.id, side: next }));
-                                }}
-                                onDrop={(e: DragEvent) => {
-                                    if (dragging === null) {
-                                        return;
-                                    }
-                                    e.preventDefault();
-                                    e.stopPropagation();
-                                    onMove(dragging, issue.id, sideOf(e));
-                                    end();
-                                }}
-                                onKeyDown={(e: KeyboardEvent) => {
-                                    if (e.altKey && (e.key === "ArrowUp" || e.key === "ArrowDown")) {
-                                        e.preventDefault();
-                                        onStep(issue.id, e.key === "ArrowUp" ? -1 : 1);
-                                    }
-                                }}
-                            >
-                                <span class="rd-lb-grip" aria-hidden="true">
-                                    <GripIcon />
-                                </span>
-                                <LiveRef issue={issue} current={current} />
-                            </div>
-                        );
-                    })}
+                                    onStep(issue.id, e.key === "ArrowUp" ? -1 : 1);
+                                }
+                            }}
+                        >
+                            <LiveRef issue={issue} current={current} />
+                        </div>
+                    ))}
                 </li>
             ))}
         </ul>
@@ -207,8 +161,8 @@ interface LiveBacklogProps {
     width: number;
     filter: string;
     onFilter: (text: string) => void;
-    // The drop zone that takes a planned row out of the plan (G20). Rows here are dragged only to
-    // reorder the backlog, never onto a goal (G18).
+    // The drop zone that takes a planned row out of the plan (G20). Live rows here are never
+    // dragged (live-backlog invariant 7).
     zone: Record<string, unknown>;
     over: boolean;
     // In the band view: the no-sprint band's rows, shown as the last band in place of the list
@@ -317,7 +271,7 @@ export function LiveBacklog({ source, state, onRetry, width, filter, onFilter, z
                                         {filtering ? "No issues match. Clear the filter to show them all." : "This repository has no open issues."}
                                     </p>
                                 )}
-                                {groups.length > 0 && <List groups={groups} current={current} onMove={move} onStep={step} />}
+                                {groups.length > 0 && <List groups={groups} current={current} onStep={step} />}
                             </>
                         )}
                     </>

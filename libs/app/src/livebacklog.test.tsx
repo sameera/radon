@@ -66,20 +66,9 @@ const shape = (): string[] =>
         return head ? `${head}: ${items}` : items;
     });
 const row = (num: number): HTMLElement => $(`.rd-lb-row[data-num="${num}"]`);
-// Drags one backlog item onto another, to the given half of it.
-async function reorder(from: number, to: number, side: "before" | "after"): Promise<void> {
-    const target: HTMLElement = row(to);
-    target.getBoundingClientRect = () => ({ top: 0, height: 20, bottom: 20, left: 0, right: 100, width: 100, x: 0, y: 0, toJSON: () => ({}) });
-    const at = (type: string, el: Element): void => {
-        const event: Event = new Event(type, { bubbles: true, cancelable: true });
-        Object.defineProperty(event, "dataTransfer", { value: { setData: vi.fn(), getData: () => "", effectAllowed: "", dropEffect: "" } });
-        Object.defineProperty(event, "clientY", { value: side === "before" ? 2 : 18 });
-        el.dispatchEvent(event);
-    };
-    await act(() => at("dragstart", row(from)));
-    await act(() => at("dragover", target));
-    await act(() => at("drop", target));
-    await act(() => at("dragend", row(from)));
+// Moves one backlog item with Alt+Up or Alt+Down, the only way a live row moves (live-backlog invariant 7).
+async function step(num: number, k: "ArrowUp" | "ArrowDown"): Promise<void> {
+    await key(row(num).querySelector("a.rd-ref")!, k);
 }
 async function key(el: Element, k: string): Promise<void> {
     await act(() => {
@@ -253,19 +242,26 @@ describe("the list (D3)", () => {
         expect(session.get().undo).toHaveLength(0);
     });
 
-    it("moves an item by drag and drop", async () => {
+    it("never lets a live row be dragged, and a drag moves nothing (live-backlog invariant 7)", async () => {
         await open(fakeGitHub({ issues: CRUMB_TREE }));
-        await reorder(5, 30, "after");
-        expect(shape()).toEqual(["10>20: 25 30", "5"]);
-        await reorder(5, 25, "before");
+        for (const r of rows()) {
+            expect(r.getAttribute("draggable")).not.toBe("true");
+            expect(r.querySelector(".rd-lb-grip")).toBeNull();
+        }
+        const target: HTMLElement = row(30);
+        target.getBoundingClientRect = () => ({ top: 0, height: 20, bottom: 20, left: 0, right: 100, width: 100, x: 0, y: 0, toJSON: () => ({}) });
+        for (const [type, el] of [["dragstart", row(5)], ["dragover", target], ["drop", target], ["dragend", row(5)]] as const) {
+            await act(() => drag(el, type));
+        }
+        expect(row(5).classList.contains("is-dragged")).toBe(false);
         expect(shape()).toEqual(["5", "10>20: 25 30"]);
     });
 
     it("gives an item moved away from its siblings its own header, and joins them again when moved back", async () => {
         await open(fakeGitHub({ issues: CRUMB_TREE }));
-        await reorder(25, 5, "before");
+        await step(25, "ArrowUp");
         expect(shape()).toEqual(["10>20: 25", "5", "10>20: 30"]);
-        await reorder(25, 30, "before");
+        await step(25, "ArrowDown");
         expect(shape()).toEqual(["5", "10>20: 25 30"]);
     });
 
@@ -284,7 +280,7 @@ describe("the list (D3)", () => {
     it("keeps hidden items in place when an item moves while filtering", async () => {
         await open(fakeGitHub({ issues: CRUMB_TREE }));
         await type("story");
-        await reorder(30, 25, "before");
+        await step(30, "ArrowUp");
         await type("");
         expect(shape()).toEqual(["5", "10>20: 30 25"]);
     });
@@ -295,7 +291,7 @@ describe("the list (D3)", () => {
         const plan: string = JSON.stringify(session.get());
         const sent: number = github.requests.length;
         const sentBackend: number = github.backend.length;
-        await reorder(5, 30, "after");
+        await step(5, "ArrowDown");
         expect(JSON.stringify(session.get())).toBe(plan);
         expect(session.get().undo).toHaveLength(0);
         expect(github.requests).toHaveLength(sent);

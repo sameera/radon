@@ -17,3 +17,8 @@
 - **Choice:** A CSS media query under 760px takes the expanded sidebar out of the flow (absolute, over the page) and keeps a 56px rail-width margin on the main area.
 - **Why:** The page then fits a 360px window in both sidebar states, and the user's stored collapse choice and the toggle's `aria-expanded` stay true.
 - **Refuted alternative:** Force the sidebar collapsed below 760px; that overrides the stored preference and still lets an expand bring the sideways scroll back.
+
+## 2026-11-27 — Live rows lose drag but keep Alt+Arrow moves
+- **Choice:** Remove drag and the grip from live backlog rows; keep Alt+Up and Alt+Down as the way to move an item.
+- **Why:** Live-backlog invariant 7 forbids dragging a live row, not keyboard moves, so this is the smallest change that meets it.
+- **Refuted alternative:** Remove all reordering of live rows, which drops a working keyboard feature no invariant forbids.

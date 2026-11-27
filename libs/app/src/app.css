@@ -133,9 +133,6 @@
 .rd-lb-sep { color: var(--rd-fg-subtle); }
 .rd-lb-group:has(.rd-lb-head) .rd-lb-row { padding-left: var(--rd-space-6); }
 .rd-lb-row { position: relative; }
-.rd-lb-grip { display: flex; flex: none; color: var(--rd-fg-subtle); }
-.rd-lb-grip svg { width: 14px; height: 14px; }
-.rd-lb-row:hover .rd-lb-grip { color: var(--rd-fg-muted); }
 .rd-lb-row.insert-before::before, .rd-lb-row.insert-after::after {
     content: "";
     position: absolute;

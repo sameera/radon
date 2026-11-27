@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"sort"
+	"strconv"
 	"strings"
 	"testing"
 
@@ -87,10 +88,12 @@ type graphGitHub struct {
 	// Projects the caller cannot read by identity.
 	unreadable map[string]bool
 	milestones []fakeMilestone
-	queries    []string
-	auths      []string
-	methods    []string
-	paths      []string
+	// Milestones per page; 0 means all on one page.
+	milestonePage int
+	queries       []string
+	auths         []string
+	methods       []string
+	paths         []string
 }
 
 func iterJSON(list []fakeIteration) []map[string]any {
@@ -147,7 +150,19 @@ func (g *graphGitHub) server(t *testing.T) *httptest.Server {
 			}}})
 		case strings.HasPrefix(in.Query, "query Milestones"):
 			nodes := []any{}
-			for _, m := range g.milestones {
+			start := 0
+			if c, ok := in.Variables["cursor"].(string); ok {
+				start, _ = strconv.Atoi(c)
+			}
+			end := len(g.milestones)
+			if g.milestonePage > 0 && start+g.milestonePage < end {
+				end = start + g.milestonePage
+			}
+			var next any
+			if end < len(g.milestones) {
+				next = strconv.Itoa(end)
+			}
+			for _, m := range g.milestones[start:end] {
 				var due any
 				if m.Due != "" {
 					due = m.Due
@@ -156,7 +171,7 @@ func (g *graphGitHub) server(t *testing.T) *httptest.Server {
 					"description": m.Description, "state": m.State})
 			}
 			write(map[string]any{"data": map[string]any{"repository": map[string]any{"milestones": map[string]any{
-				"pageInfo": map[string]any{"hasNextPage": false, "endCursor": nil}, "nodes": nodes,
+				"pageInfo": map[string]any{"hasNextPage": next != nil, "endCursor": next}, "nodes": nodes,
 			}}}})
 		case strings.HasPrefix(in.Query, "query Source"):
 			id, _ := in.Variables["id"].(string)
@@ -524,5 +539,83 @@ func TestSyncTokenStaysInRequest(t *testing.T) {
 		if strings.Contains(text, secretToken) {
 			t.Fatalf("token found in %s", name)
 		}
+	}
+}
+
+// Story #86 AC1, D4, G9: one synced milestone per GitHub milestone, open and closed, with GitHub's
+// title, due date and description.
+func TestSyncHoldsOneMilestonePerGitHubMilestone(t *testing.T) {
+	g := &graphGitHub{databaseID: 7, milestones: []fakeMilestone{
+		{ID: "M_2", Number: 2, Title: "Beta", Due: "2026-12-31T08:00:00Z", Description: "Second", State: "OPEN"},
+		{ID: "M_1", Number: 1, Title: "Alpha", Due: "2026-10-01T00:00:00Z", Description: "First", State: "CLOSED"},
+		{ID: "M_3", Number: 3, Title: "Someday", State: "OPEN"},
+	}}
+	s := newMemStore()
+	res, a := runSync(t, syncHandler(t, g, s), syncReq(webOrigin, secretToken, widgets))
+	if res.StatusCode != 200 {
+		t.Fatalf("status %d body %s", res.StatusCode, res.Body)
+	}
+	got := []string{}
+	for _, m := range a.Milestones {
+		got = append(got, m.ID+" #"+strconv.Itoa(m.Number)+" "+m.Title+" due="+m.Due+" "+m.Description+" "+m.State+" "+m.Origin)
+	}
+	want := []string{
+		"M_1 #1 Alpha due=2026-10-01T00:00:00Z First CLOSED github",
+		"M_2 #2 Beta due=2026-12-31T08:00:00Z Second OPEN github",
+		"M_3 #3 Someday due=  OPEN github",
+	}
+	if strings.Join(got, "|") != strings.Join(want, "|") {
+		t.Fatalf("milestones\n got %v\nwant %v", got, want)
+	}
+}
+
+// Story #86 AC2, G9, G10, G12: added, edited and deleted milestones are matched after the next
+// sync; an edited milestone keeps its record; Raiden-owned milestones are never touched.
+func TestSyncFollowsMilestoneChanges(t *testing.T) {
+	g := &graphGitHub{databaseID: 7, milestones: []fakeMilestone{
+		{ID: "M_1", Number: 1, Title: "Alpha", Due: "2026-10-01T00:00:00Z", State: "OPEN"},
+		{ID: "M_2", Number: 2, Title: "Beta", State: "OPEN"},
+	}}
+	s := newMemStore()
+	h := syncHandler(t, g, s)
+	runSync(t, h, syncReq(webOrigin, secretToken, widgets))
+	s.parts["repo#7"]["milestone#raiden#1"] = store.Item{SK: "milestone#raiden#1", Attrs: map[string]string{"origin": "raiden", "title": "Own", "number": "0", "state": "OPEN"}}
+	g.milestones = []fakeMilestone{
+		{ID: "M_1", Number: 1, Title: "Alpha 1.0", Due: "2026-10-15T00:00:00Z", Description: "Now described", State: "CLOSED"},
+		{ID: "M_4", Number: 4, Title: "Gamma", State: "OPEN"},
+	}
+	_, a := runSync(t, h, syncReq(webOrigin, secretToken, widgets))
+	got := []string{}
+	for _, m := range a.Milestones {
+		got = append(got, m.ID+" "+m.Title+" "+m.Due+" "+m.Description+" "+m.State+" "+m.Origin)
+	}
+	want := []string{
+		"M_1 Alpha 1.0 2026-10-15T00:00:00Z Now described CLOSED github",
+		"M_4 Gamma   OPEN github",
+		"raiden#1 Own   OPEN raiden",
+	}
+	if strings.Join(got, "|") != strings.Join(want, "|") {
+		t.Fatalf("milestones\n got %v\nwant %v", got, want)
+	}
+}
+
+// Story #86 AC3, G16: no milestones means no synced milestones and no error.
+func TestSyncNoMilestones(t *testing.T) {
+	g := &graphGitHub{databaseID: 7}
+	res, a := runSync(t, syncHandler(t, g, newMemStore()), syncReq(webOrigin, secretToken, widgets))
+	if res.StatusCode != 200 || a.Milestones == nil || len(a.Milestones) != 0 {
+		t.Fatalf("status %d milestones %v", res.StatusCode, a.Milestones)
+	}
+}
+
+// Story #86: every milestone page is read, so a repository with more than one page keeps them all.
+func TestSyncReadsEveryMilestonePage(t *testing.T) {
+	g := &graphGitHub{databaseID: 7, milestonePage: 2}
+	for i := 1; i <= 5; i++ {
+		g.milestones = append(g.milestones, fakeMilestone{ID: "M_" + strconv.Itoa(i), Number: i, Title: "m", State: "OPEN"})
+	}
+	_, a := runSync(t, syncHandler(t, g, newMemStore()), syncReq(webOrigin, secretToken, widgets))
+	if len(a.Milestones) != 5 {
+		t.Fatalf("milestones %d, want 5", len(a.Milestones))
 	}
 }

@@ -23,9 +23,11 @@ import (
 // in this request only: it is never stored, logged or returned (G2).
 
 const (
-	originGitHub = "github"
-	sourceKey    = "source"
-	sprintPrefix = "sprint#"
+	originGitHub    = "github"
+	sourceKey       = "source"
+	sprintPrefix    = "sprint#"
+	milestonePrefix = "milestone#"
+	maxPages        = 100
 )
 
 var namePart = regexp.MustCompile(`^[A-Za-z0-9_.-]+$`)
@@ -207,6 +209,79 @@ const iterationsQuery = `query Iterations($id: ID!) {
     }
   }
 }`
+
+const milestonesQuery = `query Milestones($owner: String!, $name: String!, $cursor: String) {
+  repository(owner: $owner, name: $name) {
+    milestones(first: 100, after: $cursor, states: [OPEN, CLOSED]) {
+      pageInfo { hasNextPage endCursor }
+      nodes { id number title dueOn description state }
+    }
+  }
+}`
+
+// readMilestones reads every milestone, open and closed, page by page, as milestone records (D4).
+func readMilestones(ctx context.Context, gh *graphClient, owner, name string) ([]store.Item, *syncError) {
+	var out []store.Item
+	var cursor any
+	for page := 0; page < maxPages; page++ {
+		var data struct {
+			Repository *struct {
+				Milestones struct {
+					PageInfo struct {
+						HasNextPage bool   `json:"hasNextPage"`
+						EndCursor   string `json:"endCursor"`
+					} `json:"pageInfo"`
+					Nodes []struct {
+						ID          string  `json:"id"`
+						Number      int     `json:"number"`
+						Title       string  `json:"title"`
+						DueOn       *string `json:"dueOn"`
+						Description *string `json:"description"`
+						State       string  `json:"state"`
+					} `json:"nodes"`
+				} `json:"milestones"`
+			} `json:"repository"`
+		}
+		errs, fail := gh.query(ctx, milestonesQuery, map[string]any{"owner": owner, "name": name, "cursor": cursor}, &data)
+		if fail != nil {
+			return nil, fail
+		}
+		if data.Repository == nil {
+			if onlyNotFoundAt(errs, "repository") {
+				return nil, errCannotRead
+			}
+			return nil, errGitHub
+		}
+		if len(errs) > 0 {
+			return nil, errGitHub
+		}
+		for _, m := range data.Repository.Milestones.Nodes {
+			if m.ID == "" || m.Number <= 0 {
+				return nil, errGitHub
+			}
+			due, description := "", ""
+			if m.DueOn != nil {
+				due = *m.DueOn
+			}
+			if m.Description != nil {
+				description = *m.Description
+			}
+			out = append(out, store.Item{SK: milestonePrefix + m.ID, Attrs: map[string]string{
+				"origin": originGitHub, "number": strconv.Itoa(m.Number), "title": m.Title, "due": due,
+				"description": description, "state": m.State,
+			}})
+		}
+		info := data.Repository.Milestones.PageInfo
+		if !info.HasNextPage {
+			return out, nil
+		}
+		if info.EndCursor == "" {
+			return nil, errGitHub
+		}
+		cursor = info.EndCursor
+	}
+	return nil, errGitHub
+}
 
 type linkedProject struct {
 	ID        string `json:"id"`
@@ -442,6 +517,11 @@ func runGroomingSync(ctx context.Context, gh *graphClient, records store.Records
 		}
 	}
 
+	milestones, fail := readMilestones(ctx, gh, owner, name)
+	if fail != nil {
+		return nil, fail
+	}
+
 	plan := &syncPlan{}
 	if source == nil {
 		if _, ok := existing[sourceKey]; ok {
@@ -453,6 +533,7 @@ func runGroomingSync(ctx context.Context, gh *graphClient, records store.Records
 		}}})
 	}
 	plan.reconcile(existing, sprintPrefix, sprints)
+	plan.reconcile(existing, milestonePrefix, milestones)
 
 	// Answer only after every write succeeded.
 	for _, it := range plan.puts {
@@ -498,7 +579,18 @@ func partitionAnswer(repoID int64, source *syncSource, items map[string]store.It
 			})
 		}
 	}
-	answer := map[string]any{"repository": repoID, "source": nil, "sprints": sprints, "milestones": []any{}}
+	milestones := []map[string]any{}
+	for _, sk := range keys {
+		it := items[sk]
+		if strings.HasPrefix(sk, milestonePrefix) {
+			number, _ := strconv.Atoi(it.Attrs["number"])
+			milestones = append(milestones, map[string]any{
+				"id": strings.TrimPrefix(sk, milestonePrefix), "number": number, "title": it.Attrs["title"], "due": it.Attrs["due"],
+				"description": it.Attrs["description"], "state": it.Attrs["state"], "origin": origin(it.Attrs),
+			})
+		}
+	}
+	answer := map[string]any{"repository": repoID, "source": nil, "sprints": sprints, "milestones": milestones}
 	if source != nil {
 		answer["source"] = source
 	}

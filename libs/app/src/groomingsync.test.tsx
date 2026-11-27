@@ -97,3 +97,27 @@ describe("Grooming sync (story #85)", () => {
         expect(gateway.backend).toHaveLength(0);
     });
 });
+
+describe("Grooming sync: milestones (story #86)", () => {
+    it("reads each milestone's title, due date, description and state", async () => {
+        const milestones = [
+            { id: "M_1", number: 1, title: "Alpha", due: "2026-10-01T00:00:00Z", description: "First", state: "CLOSED", origin: "github" },
+            { id: "M_3", number: 3, title: "Someday", due: "", description: "", state: "OPEN", origin: "github" },
+        ];
+        const gateway = fakeGitHub({ issues: [], sync: { milestones } });
+        expect(await syncGrooming(gateway, WIDGETS)).toEqual({
+            ok: true,
+            source: null,
+            sprints: [],
+            milestones: [
+                { id: "M_1", number: 1, title: "Alpha", due: "2026-10-01T00:00:00Z", description: "First", state: "CLOSED", synced: true },
+                { id: "M_3", number: 3, title: "Someday", due: null, description: "", state: "OPEN", synced: true },
+            ],
+        });
+    });
+
+    it("fails on an unreadable milestone", async () => {
+        const gateway = fakeGitHub({ issues: [], sync: { milestones: [{ id: "M_1", title: "x" }] } });
+        expect(await syncGrooming(gateway, WIDGETS)).toEqual({ ok: false, cause: "other" });
+    });
+});

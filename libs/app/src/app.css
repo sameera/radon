@@ -121,11 +121,37 @@
 .rd-nav__notice { margin: 0; color: var(--rd-danger); font-size: 0.875em; }
 .rd-nav--collapsed .rd-nav__account { display: none; }
 
-/* Live backlog: a tree of any depth. Each level indents by one step. */
-.rd-lb-row { padding-left: calc(var(--rd-space-3) + var(--rd-lb-depth, 0) * var(--rd-space-6)); }
-.rd-lb-spacer { flex: 0 0 auto; width: 28px; }
+/* Live backlog: a list. Each item is one issue. Its ancestors sit on a small header row above it,
+   shared by the items next to it with the same parent. */
+.rd-lb-list { list-style: none; margin: 0; padding: 0; border-top: 1px solid var(--rd-border-muted); }
+.rd-lb-group { padding: var(--rd-space-1) 0; border-bottom: 1px solid var(--rd-border-muted); }
+.rd-lb-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: var(--rd-space-1); padding: 0 var(--rd-space-3); color: var(--rd-fg-muted); }
+.rd-lb-head .rd-ref { gap: var(--rd-space-1); font-size: inherit; line-height: 16px; }
+.rd-lb-head .rd-ref__num { font-size: inherit; line-height: inherit; color: inherit; }
+.rd-lb-head .rd-ref__title { font-weight: 500; color: inherit; }
+.rd-lb-crumb { min-width: 0; }
+.rd-lb-sep { color: var(--rd-fg-subtle); }
+.rd-lb-group:has(.rd-lb-head) .rd-lb-row { padding-left: var(--rd-space-6); }
+.rd-lb-row { position: relative; }
+.rd-lb-grip { display: flex; flex: none; color: var(--rd-fg-subtle); }
+.rd-lb-grip svg { width: 14px; height: 14px; }
+.rd-lb-row:hover .rd-lb-grip { color: var(--rd-fg-muted); }
+.rd-lb-row.insert-before::before, .rd-lb-row.insert-after::after {
+    content: "";
+    position: absolute;
+    left: var(--rd-space-2);
+    right: var(--rd-space-2);
+    height: 2px;
+    border-radius: var(--rd-radius-full);
+    background: var(--rd-brand);
+}
+.rd-lb-row.insert-before::before { top: -1px; }
+.rd-lb-row.insert-after::after { bottom: -1px; }
+/* The outside label is for screen readers. The muted color and the tooltip show it on screen. */
+.rd-lb-outside { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
 .rd-lb-failed { display: flex; flex-direction: column; align-items: flex-start; gap: var(--rd-space-2); }
 .rd-lb-failed .rd-lb-status { margin: 0; }
 .rd-lb-capped { margin: 0; padding: var(--rd-space-2) var(--rd-space-3); color: var(--rd-fg-muted); }
-/* A parent the query did not return: muted text plus a text label (D6). */
-.rd-lb-row.is-outside .rd-ref__num, .rd-lb-row.is-outside .rd-ref__title, .rd-lb-row.is-outside .rd-lb-hidden { color: var(--rd-fg-muted); font-weight: 400; }
+/* A parent the query did not return: the muted foreground, a lighter weight than a returned
+   ancestor, a tooltip and a text label (D6, G8). The subtle foreground stays for icons. */
+.rd-lb-crumb.is-outside .rd-ref__num, .rd-lb-crumb.is-outside .rd-ref__title, .rd-lb-crumb.is-outside .rd-lb-hidden { color: var(--rd-fg-muted); font-weight: 400; }

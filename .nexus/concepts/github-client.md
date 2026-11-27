@@ -1,8 +1,8 @@
 ---
 title: GitHub Client
 aliases: [github gateway, shared github client, github requests]
-touches: [github-sign-in, raiden-app-shell, raiden-page-host, raiden-web-view, web-repository-picker, web-view-sign-out]
-last_updated_by: "#58"
+touches: [github-sign-in, raiden-app-shell, raiden-page-host, raiden-web-view, web-repository-picker, web-view-sign-out, live-backlog]
+last_updated_by: "#73"
 status: active
 verification: verified
 ---
@@ -35,6 +35,7 @@ The client never throws. It returns plain data: a success with its status and bo
 - [raiden-web-view](raiden-web-view.md) — the web view runs the client in the page.
 - [web-repository-picker](web-repository-picker.md) — the picker's list requests go through the client as the signed-in person.
 - [web-view-sign-out](web-view-sign-out.md) — sign out takes the client's refresh lock so a renewal cannot sign the person back in.
+- [live-backlog](live-backlog.md) — every live backlog request goes through this client, and its failure kinds become the backlog's named failure causes.
 
 ## Decision Log
 
@@ -49,3 +50,6 @@ The web view repository picker uses this page: the picker's list requests go thr
 
 ### 2026-11-22 — #58 — Reciprocal link from web-view-sign-out
 Sign out takes the same browser lock that the client takes around a token renewal. Recorded for the new page.
+
+### 2026-11-26 — #73 — Reciprocal link from live-backlog
+The live-backlog page names this page as a neighbour, so this page names it back.

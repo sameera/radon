@@ -1,19 +1,19 @@
 ---
 title: Grooming Plan
 aliases: [grooming page, sprint goals plan, backlog planning]
-touches: [raiden-app-shell, raiden-page-host, grooming-undo-save, grooming-backlog-view, grooming-plan-moves, grooming-github-links, raiden-sidebar]
-last_updated_by: "#12"
+touches: [raiden-app-shell, raiden-page-host, grooming-undo-save, grooming-backlog-view, grooming-plan-moves, grooming-github-links, raiden-sidebar, live-backlog]
+last_updated_by: "#73"
 status: active
 verification: verified
 ---
 
 # Grooming Plan
 
-The Grooming page lets a lead plan the next sprint on sample data. A backlog panel lists initiatives with their epics. A goals panel lists the sprint goals in priority order, and the lead places items into goals.
+The Grooming page lets a lead plan the next sprint. A backlog panel lists the repository's open issues for a signed-in person, or sample initiatives with their epics otherwise. A goals panel lists the sprint goals in priority order, and the lead places items into goals.
 
 ## How It Works
 
-All initiatives, epics, goals, the starting plan and the sprint dates come from one sample-data source. Raiden reads nothing from GitHub in this version. Plan edits stay in one session state kept in memory and reset on reload. Every count, label and rank on the page is derived from that state.
+The goals, the starting plan, the sprint dates and the sample backlog come from one sample-data source. The live backlog reads GitHub and changes no plan state. Plan controls send no request. Plan edits stay in one session state kept in memory and reset on reload. Every count, label and rank on the page is derived from that state.
 
 An item has at most one own plan. An epic's own plan overrides its initiative's goal. Every count uses each epic's effective goal, so an epic counts once. Taking an epic's own plan out leaves it in its initiative's goal when that initiative is planned. Dropping an item on the goal it is already in changes nothing. Deleting a goal removes only the own plans in it. Ranks are the goals' positions from 1 to n.
 
@@ -24,7 +24,7 @@ Goals can be added, edited and deleted. Drops, menus, buttons and goal fields al
 1. Each epic counts once, under its effective goal.
 2. An item has at most one own plan.
 3. ~~A drag that started outside Raiden never changes the plan.~~ Moved with the split.
-4. No control makes Raiden send a network request. Issue numbers and the New initiative in GitHub link are plain links that open GitHub in a new tab, and the Grooming page and its plan stay as they were.
+4. ~~No control makes Raiden send a network request. Issue numbers and the New initiative in GitHub link are plain links that open GitHub in a new tab, and the Grooming page and its plan stay as they were.~~ Retired: Try again on the live backlog reads GitHub. Link behaviour is held by grooming-github-links invariants 1 and 3.
 5. The session state survives a remount and is lost on reload.
 6. Goal ranks are always the goals' positions, from 1 to n.
 7. ~~A menu action changes the plan exactly as the matching drag and drop does.~~ Moved with the split.
@@ -38,6 +38,7 @@ Goals can be added, edited and deleted. Drops, menus, buttons and goal fields al
 - [grooming-plan-moves](grooming-plan-moves.md) — drag and drop, the item menus and the Take out of plan button change the plan through its one change path.
 - [grooming-github-links](grooming-github-links.md) — the backlog and goal rows show each issue reference as a link to GitHub, and opening one leaves the plan unchanged.
 - [raiden-sidebar](raiden-sidebar.md) — the Grooming sidebar item shows the count of epics not planned, derived from this session state with the header count's rule.
+- [live-backlog](live-backlog.md) — for a signed-in person the live backlog replaces the sample backlog, and the goals and the plan stay on sample data.
 
 ## Decision Log
 
@@ -49,3 +50,6 @@ Story #17 asks that a menu action change the plan exactly as the same drag and d
 
 ### 2026-11-22 — #12 — Moves split out, and the no-network rule narrows to Raiden's own code
 Epic #12 would have pushed this page past the 400-word cap, so drag and drop, the item menus and the Take out of plan button moved to the grooming-plan-moves page. Invariants 3 and 7 moved with them and are struck here, so the other invariant numbers keep their meaning. Invariant 4 narrows because issue references and the New initiative link now open GitHub in a new tab. Raiden's own code still sends no request, and a page the user opens is a browser action, so no API traffic, no backend and no data leaving still hold. Refuted alternative: keep issue numbers as plain text, as epic #3 decided. Stories #22 and #23 then had no way to reach GitHub. The new grooming-github-links and raiden-sidebar pages name this page as a neighbour, so this page names them back.
+
+### 2026-11-26 — #73 — The backlog goes live while the plan stays on sample data
+Grooming shows the live backlog when the shell has a GitHub gateway and a signed-in person, and keeps the sample backlog otherwise. Both hosts always give both, and the backlog load is tied to the person, so there is nothing to read without them. The goals and the starting plan stay on sample data until their own epic. Invariant 4 is struck, because Try again on the live backlog sends a request to GitHub. The page keeps the rest of that rule in How It Works, and grooming-github-links holds the link behaviour. Refuted alternative: remove the sample backlog everywhere. It lost because a host with no sign-in would show an empty or failed backlog, and the plan rules would lose their drag and menu coverage.

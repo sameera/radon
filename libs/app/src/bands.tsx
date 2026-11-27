@@ -72,7 +72,7 @@ export function formatDate(date: string): string {
 function MilestoneHeader({ entry, repo }: { entry: BandEntry & { kind: "milestone" }; repo: Repo | null }): VNode {
     const m: Milestone = entry.milestone;
     const due: string | null = dueDate(m);
-    const href: string | null = repoPage(repo?.url, `milestone/${m.number}/edit`);
+    const href: string | null = repoPage(repo?.url, `milestones/${m.number}/edit`);
     return (
         <div class="rd-milestone" data-title={m.title} data-due={due ?? ""} data-start={entry.start ?? ""}>
             <div class="rd-milestone__line">

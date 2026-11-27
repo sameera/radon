@@ -128,7 +128,7 @@ describe("band view (story #88)", () => {
         expect(beta!.querySelector(".rd-milestone__desc")!.textContent).toBe("Ship the beta");
         expect(beta!.querySelector("input, textarea, [contenteditable]")).toBeNull();
         const link = beta!.querySelector<HTMLAnchorElement>("a.rd-milestone__edit")!;
-        expect(link.getAttribute("href")).toBe("https://github.com/acme/widgets/milestone/3/edit");
+        expect(link.getAttribute("href")).toBe("https://github.com/acme/widgets/milestones/3/edit");
         expect(link.getAttribute("target")).toBe("_blank");
         expect(empty!.dataset.start).toBe("");
         expect(empty!.querySelector(".rd-milestone__start")).toBeNull();

@@ -149,9 +149,10 @@ describe("how an outside parent looks (D6, G8)", () => {
         }
     });
 
-    it("grays outside parents with the muted foreground", () => {
+    it("grays outside parents with the muted foreground, not the subtle one", () => {
         const css: string = readFileSync(resolve(__dirname, "app.css"), "utf8");
-        expect(css).toMatch(/\.rd-lb-crumb\.is-outside[^{]*\{[^}]*var\(--rd-fg-subtle\)/);
+        expect(css).toMatch(/\.rd-lb-crumb\.is-outside[^{]*\{[^}]*var\(--rd-fg-muted\)/);
+        expect(css).not.toMatch(/\.rd-lb-crumb\.is-outside[^{]*\{[^}]*var\(--rd-fg-subtle\)/);
     });
 
     it("keeps the chain of outside parents above a filtered match", async () => {

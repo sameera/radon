@@ -124,7 +124,7 @@ function List({ groups, current, onMove, onStep }: ListProps): VNode {
             {groups.map((group: ListGroup) => (
                 <li class="rd-lb-group" key={group.items[0]!.issue.id}>
                     {group.chain.length > 0 && (
-                        <div class="rd-lb-head">
+                        <div class="rd-lb-head rd-text-small">
                             {group.chain.map((issue: LiveIssue, i: number) => (
                                 <Fragment key={issue.id}>
                                     {i > 0 && (

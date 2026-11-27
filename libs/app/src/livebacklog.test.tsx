@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-// Story #74: the backlog shows the current repository's open issues as a tree.
+// Story #74: the backlog shows the current repository's open issues as a list.
 import { options, type VNode } from "preact";
 import { act } from "preact/test-utils";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -171,6 +171,8 @@ describe("the list (D3)", () => {
         await open(fakeGitHub({ issues: TREE }));
         expect(shape()).toEqual(["5", "10>20: 25 30"]);
         expect(rows().map((r) => r.dataset.num)).toEqual(["5", "25", "30"]);
+        // The header is set in the design system's small style, not a literal font size.
+        expect($(".rd-lb-head").classList.contains("rd-text-small")).toBe(true);
     });
 
     it("shows each returned issue exactly once (G4)", async () => {

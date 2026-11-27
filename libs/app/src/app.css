@@ -125,7 +125,7 @@
    shared by the items next to it with the same parent. */
 .rd-lb-list { list-style: none; margin: 0; padding: 0; border-top: 1px solid var(--rd-border-muted); }
 .rd-lb-group { padding: var(--rd-space-1) 0; border-bottom: 1px solid var(--rd-border-muted); }
-.rd-lb-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: var(--rd-space-1); padding: 0 var(--rd-space-3); font-size: x-small; color: var(--rd-fg-muted); }
+.rd-lb-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: var(--rd-space-1); padding: 0 var(--rd-space-3); color: var(--rd-fg-muted); }
 .rd-lb-head .rd-ref { gap: var(--rd-space-1); font-size: inherit; line-height: 16px; }
 .rd-lb-head .rd-ref__num { font-size: inherit; line-height: inherit; color: inherit; }
 .rd-lb-head .rd-ref__title { font-weight: 500; color: inherit; }
@@ -152,5 +152,6 @@
 .rd-lb-failed { display: flex; flex-direction: column; align-items: flex-start; gap: var(--rd-space-2); }
 .rd-lb-failed .rd-lb-status { margin: 0; }
 .rd-lb-capped { margin: 0; padding: var(--rd-space-2) var(--rd-space-3); color: var(--rd-fg-muted); }
-/* A parent the query did not return: lighter text plus a text label (D6). */
-.rd-lb-crumb.is-outside .rd-ref__num, .rd-lb-crumb.is-outside .rd-ref__title, .rd-lb-crumb.is-outside .rd-lb-hidden { color: var(--rd-fg-subtle); font-weight: 400; }
+/* A parent the query did not return: the muted foreground, a lighter weight than a returned
+   ancestor, a tooltip and a text label (D6, G8). The subtle foreground stays for icons. */
+.rd-lb-crumb.is-outside .rd-ref__num, .rd-lb-crumb.is-outside .rd-ref__title, .rd-lb-crumb.is-outside .rd-lb-hidden { color: var(--rd-fg-muted); font-weight: 400; }

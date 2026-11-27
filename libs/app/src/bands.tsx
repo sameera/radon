@@ -1,7 +1,7 @@
 // The band view (story #88): each sprint is a horizontal band with the backlog column on the left
 // and the goal column on the right, under the milestone that contains it (D8, D9). Bands show only
 // after the Grooming sync and the backlog load both succeeded (D5).
-import type { VNode } from "preact";
+import { Fragment, type VNode } from "preact";
 import { useEffect, useMemo, useRef, useState } from "preact/hooks";
 import { ExternalLink, repoPage } from "./links.tsx";
 import { useRepo, type Repo } from "./repo.tsx";
@@ -233,6 +233,10 @@ export function BandPage({ live, backlogWidth, onBacklogWidth }: BandPageProps):
     const shownWidth: number = fit(backlogWidth, space);
     const { min, max } = limits(space);
     const entries: BandEntry[] = sync?.ok ? placeSprints(sync.sprints, sync.milestones) : [];
+    // The sprints after every due date have no header. When a milestone comes before them, a break
+    // marks where they start, so the first one does not read as under that milestone (AC5, G30).
+    const firstLoose: number = entries.findIndex((e: BandEntry) => e.kind === "sprint" && e.milestone === null);
+    const loose: number = firstLoose > 0 ? firstLoose : -1;
     const issues: LiveIssue[] = state?.ok ? state.issues : [];
     const assigned: Map<string, string | null> = useMemo(
         () => (sync?.ok ? assignBands(issues, sync.sprints, sync.source) : new Map()),
@@ -274,26 +278,32 @@ export function BandPage({ live, backlogWidth, onBacklogWidth }: BandPageProps):
                     <h2 class="rd-text-axis rd-bands__col rd-bands__col--goals">Goals</h2>
                 </div>
                 {state?.ok &&
-                    entries.map((entry: BandEntry) =>
+                    entries.map((entry: BandEntry, at: number) =>
                         entry.kind === "milestone" ? (
                             <MilestoneHeader entry={entry} repo={repo} key={`m:${entry.milestone.id}`} />
                         ) : (
-                            <Band
-                                sprint={entry.sprint}
-                                stacked={stacked}
-                                progress={sync?.ok && sync.progress?.sprint === entry.sprint.id ? sync.progress : null}
-                                key={`s:${entry.sprint.id}`}
-                            >
-                                <BandRows
-                                    issues={issues}
-                                    band={entry.sprint.id}
-                                    assigned={assigned}
-                                    filter={filter}
-                                    order={bandOrder(entry.sprint.id)}
-                                    onOrder={(ids: string[]) => setBandOrder(entry.sprint.id, ids)}
-                                    current={repo}
-                                />
-                            </Band>
+                            <Fragment key={`s:${entry.sprint.id}`}>
+                                {at === loose && (
+                                    <div class="rd-bands__loose rd-text-axis" role="separator">
+                                        No milestone
+                                    </div>
+                                )}
+                                <Band
+                                    sprint={entry.sprint}
+                                    stacked={stacked}
+                                    progress={sync?.ok && sync.progress?.sprint === entry.sprint.id ? sync.progress : null}
+                                >
+                                    <BandRows
+                                        issues={issues}
+                                        band={entry.sprint.id}
+                                        assigned={assigned}
+                                        filter={filter}
+                                        order={bandOrder(entry.sprint.id)}
+                                        onOrder={(ids: string[]) => setBandOrder(entry.sprint.id, ids)}
+                                        current={repo}
+                                    />
+                                </Band>
+                            </Fragment>
                         ),
                     )}
                 <LiveBacklog

@@ -7,3 +7,8 @@
 - **Choice:** Partition `repo#<databaseId>`; sort keys `source`, `sprint#<fieldId>#<iterationId>`, `milestone#<milestoneId>`; a sync touches only `origin=github` records under its own prefixes.
 - **Why:** Prefix plus origin marker lets later goal and assignment records (`goal#…`, `assign#…`) live in the same partition without a sync ever matching them.
 - **Refuted alternative:** One attribute map per repository, which a sync would rewrite whole.
+
+## 2026-11-27 — Mark the loose sprints with a "No milestone" break
+- **Choice:** A separator labelled "No milestone" before the first sprint with no placing milestone, shown only when a milestone header comes before it.
+- **Why:** A loose sprint right after the last milestone read as sitting under that milestone; a labelled rule says it does not, and it is not a milestone header, so AC5 still holds.
+- **Refuted alternative:** A plain unlabelled gap, which a reader can miss and a screen reader does not announce.

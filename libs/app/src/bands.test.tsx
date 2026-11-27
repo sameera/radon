@@ -137,6 +137,32 @@ describe("band view (story #88)", () => {
     it("shows a sprint after every due date, or with no milestones, with no header (AC5, G30)", async () => {
         await open(live({ sync: { sprints: [sprint("s1", "2026-11-02", "2026-11-15")] } }));
         expect(sequence()).toEqual(["S:s1"]);
+        expect($(".rd-bands__loose")).toBeNull();
+    });
+
+    it("marks where the sprints after every due date start, so none reads as under the last milestone (AC5, G30)", async () => {
+        // "|" stands for the break before the loose sprints.
+        const layout = (): string[] =>
+            $$<HTMLElement>(".rd-milestone, .rd-band[data-sprint], .rd-bands__loose").map((el) =>
+                el.classList.contains("rd-bands__loose") ? "|" : el.classList.contains("rd-milestone") ? `M:${el.dataset.title}` : `S:${el.dataset.sprint}`,
+            );
+        await open(
+            live({
+                sync: {
+                    sprints: [sprint("s1", "2026-11-02", "2026-11-15"), sprint("s2", "2027-01-05", "2027-01-18"), sprint("s3", "2027-01-19", "2027-02-01")],
+                    milestones: [milestone(1, "One", "2026-11-20T00:00:00Z")],
+                },
+            }),
+        );
+        expect(layout()).toEqual(["M:One", "S:s1", "|", "S:s2", "S:s3"]);
+        const mark = $<HTMLElement>(".rd-bands__loose")!;
+        expect(mark.getAttribute("role")).toBe("separator");
+        expect(mark.textContent).toBe("No milestone");
+        expect(mark.classList.contains("rd-milestone")).toBe(false);
+        unmount?.();
+        root.innerHTML = "";
+        await open(live({ sync: { sprints: [sprint("s2", "2027-01-05", "2027-01-18")], milestones: [milestone(1, "One", "2026-11-20T00:00:00Z")] } }));
+        expect(layout()).toEqual(["M:One", "|", "S:s2"]);
     });
 
     it("puts a milestone with no due date after the last sprint band (D9)", async () => {

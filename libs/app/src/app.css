@@ -173,6 +173,8 @@
 .rd-milestone__line { display: flex; flex-wrap: wrap; gap: var(--rd-space-3, 12px); align-items: baseline; }
 .rd-milestone__start, .rd-milestone__due { color: var(--rd-fg-muted); font-variant-numeric: tabular-nums; }
 .rd-milestone__desc { margin: var(--rd-space-1) 0 0; color: var(--rd-fg-muted); white-space: pre-wrap; overflow-wrap: anywhere; }
+/* The break before the sprints after every due date (AC5): a rule and a label, not a milestone header. */
+.rd-bands__loose { margin-top: var(--rd-space-3, 12px); padding: var(--rd-space-2) 0; border-top: 1px solid var(--rd-border); color: var(--rd-fg-muted); }
 .rd-bands > .rd-backlog { width: auto; }
 /* The current sprint (story #91): the page's one glow, and its progress bar. */
 .rd-band.is-current .rd-band__rows { border-color: var(--rd-brand); box-shadow: var(--rd-shadow-glow); }

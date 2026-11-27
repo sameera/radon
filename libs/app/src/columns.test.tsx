@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 // Story #88: the band view's divider moves in the direction of the key, and the backlog column
-// takes 58% of the view by default (D16, D18, G33, G44, G45, G48).
+// leaves the goal column 1/4 of the view by default (D16, D18, G33, G44, G45, G48).
 import { act } from "preact/test-utils";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { mountApp, type PreferenceStore } from "./mount.tsx";
@@ -19,14 +19,14 @@ let root: HTMLElement;
 let unmount: (() => void) | undefined;
 let stored: Record<string, unknown>;
 let prefs: PreferenceStore;
-const space = { w: 1000 };
+const space = { w: 1600 };
 const flush = (): Promise<void> => act(async () => void (await new Promise((r) => setTimeout(r, 0))));
 
 beforeEach(() => {
     root = document.createElement("div");
     document.body.appendChild(root);
     stored = {};
-    space.w = 1000;
+    space.w = 1600;
     prefs = { get: async (k: string) => stored[k], set: async (k: string, v: unknown) => void (stored[k] = v) };
     const original = HTMLElement.prototype.getBoundingClientRect;
     vi.spyOn(HTMLElement.prototype, "getBoundingClientRect").mockImplementation(function (this: HTMLElement) {
@@ -87,16 +87,17 @@ describe("the band view's divider (D16, D18)", () => {
         expect(head).toEqual(["rd-bands__col--goals", "rd-divider", "rd-bands__col--backlog"]);
     });
 
-    it("takes 58% of the view by default, fitted to both minimums (G48)", async () => {
+    it("leaves the goal column 1/4 of the view by default, fitted to both minimums (G48)", async () => {
         await open();
-        expect(shown()).toBe(580);
-        expect(stored["backlogWidth"]).toBeUndefined();
+        // 1600 - 400 for the goal column - 16 for the divider.
+        expect(shown()).toBe(1184);
+        expect(stored["groomBacklogWidth"]).toBeUndefined();
         unmount?.();
-        space.w = 700;
+        space.w = 1000;
         root.innerHTML = "";
         await open();
-        // 58% is 406, but the goal column must keep its minimum: 700 - 360 - 16.
-        expect(shown()).toBe(324);
+        // The goal column would take 250, but must keep its minimum: 1000 - 360 - 16.
+        expect(shown()).toBe(624);
     });
 
     it("moves the divider in the direction of the key: Left widens the backlog, Right narrows it (G44)", async () => {
@@ -120,30 +121,30 @@ describe("the band view's divider (D16, D18)", () => {
         const start: number = width();
         await drag(500, 480);
         expect(width()).toBe(start + 20);
-        expect(stored["backlogWidth"]).toBe(start + 20);
+        expect(stored["groomBacklogWidth"]).toBe(start + 20);
         await drag(500, 530);
         expect(width()).toBe(start - 10);
     });
 
-    it("resets to 58% on double click and on Enter (G48)", async () => {
+    it("resets to the default on double click and on Enter (G48)", async () => {
         await open();
         await key("ArrowLeft", { shiftKey: true });
-        expect(width()).not.toBe(580);
+        expect(width()).not.toBe(1184);
         await act(() => {
             divider().dispatchEvent(new MouseEvent("dblclick", { bubbles: true }));
         });
-        expect(width()).toBe(580);
+        expect(width()).toBe(1184);
         await key("ArrowLeft", { shiftKey: true });
         await key("Enter");
-        expect(width()).toBe(580);
+        expect(width()).toBe(1184);
     });
 
     it("keeps one preferred width, fits it to the view and never overwrites it (G39, G45)", async () => {
-        stored["backlogWidth"] = 900;
+        stored["groomBacklogWidth"] = 900;
         space.w = 700;
         await open();
         expect(shown()).toBe(324);
-        expect(stored["backlogWidth"]).toBe(900);
+        expect(stored["groomBacklogWidth"]).toBe(900);
         space.w = 2000;
         await act(() => void window.dispatchEvent(new Event("resize")));
         expect(shown()).toBe(900);

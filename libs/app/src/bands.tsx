@@ -212,8 +212,9 @@ interface BandPageProps {
 
 // Below this page width the two columns stack (D11).
 export const STACK_BELOW: number = 760;
-// The backlog column's default share of the view (D18).
-export const BACKLOG_SHARE: number = 0.58;
+// The goal column's default share of the view. The backlog takes the rest, less the divider.
+export const GOAL_SHARE: number = 0.25;
+const DIVIDER_W: number = 16;
 
 export function BandPage({ live, backlogWidth, onBacklogWidth }: BandPageProps): VNode {
     const repo: Repo | null = useRepo();
@@ -239,7 +240,7 @@ export function BandPage({ live, backlogWidth, onBacklogWidth }: BandPageProps):
             observer?.disconnect();
         };
     }, []);
-    const defaultWidth: number = space > 0 ? Math.round(space * BACKLOG_SHARE) : DEFAULT_BACKLOG_WIDTH;
+    const defaultWidth: number = space > 0 ? Math.round(space * (1 - GOAL_SHARE)) - DIVIDER_W : DEFAULT_BACKLOG_WIDTH;
     const shownWidth: number = fit(backlogWidth ?? defaultWidth, space);
     const { min, max } = limits(space);
     const entries: BandEntry[] = sync?.ok ? placeSprints(sync.sprints, sync.milestones) : [];

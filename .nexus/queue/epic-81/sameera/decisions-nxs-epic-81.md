@@ -42,3 +42,33 @@
 - **Choice:** The sprint card has a minimum height and no placeholder element.
 - **Why:** G46 forbids a goal field on the card, and a dashed empty box would read as one.
 - **Refuted alternative:** An empty bordered goal area, as the old build had in the goal column.
+
+## 2026-11-27 — Cap the band view's goal column at 25em through the backlog track
+- **Choice:** Backlog track is `max(var(--rd-backlog-w), 100% - 25em - divider)`; the goal track stays `1fr`.
+- **Why:** The goal column never passes 25em, and the extra width goes to the backlog instead of an empty gap on the right.
+- **Refuted alternative:** `minmax(0, 45em)` on the goal track, which leaves unused space when the backlog share is small.
+
+## 2026-11-27 — Band view's goal column defaults to 1/4 of the view (replaces the 25em cap)
+- **Choice:** Default backlog width is `75% of the view - divider`; the 25em cap on the goal column is gone. Drag, stored width and the 360px goal minimum still apply.
+- **Why:** The lead asked for the goal column at 1/4 of the screen; a fixed 25em cap fights that on wide screens.
+- **Refuted alternative:** Fixing the goal track at `25%` in CSS, which would drop the draggable divider and the stored width (D16).
+
+## 2026-11-27 — Rename the stored backlog-width pref to `groomBacklogWidth`
+- **Choice:** New pref key, so widths saved under the old layout (backlog on the left, 58% default) are dropped.
+- **Why:** An old saved width overrode the new 1/4 default and kept the goal column wider than the backlog.
+- **Refuted alternative:** Keep the key and let leads reset with a double click on the divider.
+
+## 2026-11-27 — Band divider spans the whole view
+- **Choice:** The divider stays in the header row's DOM but is absolutely positioned against `.rd-bands`, full height, with a muted line at rest.
+- **Why:** With panel borders gone, a transparent header-height divider had nothing to show where to grab.
+- **Refuted alternative:** A divider cell in every band row, which would split one control into many.
+
+## 2026-11-27 — Dotted sibling rules, one solid rule after a milestone
+- **Choice:** `.rd-band` and the issue rows carry a dotted `--rd-border-muted` top rule; `.rd-milestone + .rd-band` keeps a solid `--rd-border` rule.
+- **Why:** A dotted rule reads as "same kind, next item", so only the milestone break still reads as a section edge.
+- **Refuted alternative:** Dotted rules everywhere, which flattened the milestone break into another band boundary.
+
+## 2026-11-27 — The band divider has no resting line
+- **Choice:** Drop the muted `::after` line on the band view's divider; the handle paints only on hover or focus.
+- **Why:** The lead asked for no line between the goal and backlog columns, and the 16px hit area still sits between them.
+- **Refuted alternative:** Keep the muted line and rely on its low contrast, which still draws a column edge.

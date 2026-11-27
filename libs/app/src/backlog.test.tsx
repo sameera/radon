@@ -160,7 +160,7 @@ describe("backlog divider", () => {
         await act(() => ev("pointermove", 450));
         expect(width()).toBe(410);
         await act(() => ev("pointerup", 450));
-        expect(stored["backlogWidth"]).toBe(410);
+        expect(stored["groomBacklogWidth"]).toBe(410);
     });
 
     it("resets to the default width on double click", async () => {
@@ -176,14 +176,14 @@ describe("backlog divider", () => {
         await open();
         await key(divider(), "ArrowRight", { shiftKey: true });
         const chosen: number = width();
-        expect(stored["backlogWidth"]).toBe(chosen);
+        expect(stored["groomBacklogWidth"]).toBe(chosen);
         unmount();
         await open();
         expect(width()).toBe(chosen);
     });
 
     it("fits the stored width between the panel minimums, and returns to the chosen width when space allows", async () => {
-        stored["backlogWidth"] = 900;
+        stored["groomBacklogWidth"] = 900;
         const space = { w: 700 };
         const original = HTMLElement.prototype.getBoundingClientRect;
         vi.spyOn(HTMLElement.prototype, "getBoundingClientRect").mockImplementation(function (this: HTMLElement) {
@@ -200,7 +200,7 @@ describe("backlog divider", () => {
             window.dispatchEvent(new Event("resize"));
         });
         expect(width()).toBe(900);
-        expect(stored["backlogWidth"]).toBe(900);
+        expect(stored["groomBacklogWidth"]).toBe(900);
     });
 });
 

@@ -13,6 +13,11 @@ import { readFileSync } from "node:fs";
 import { fileURLToPath, URL as NodeURL } from "node:url";
 
 const CSS_TEXT: string = readFileSync(fileURLToPath(new NodeURL("./app.css", import.meta.url)), "utf8");
+// The body of the first rule whose selector matches, so a style change is asserted where it is written.
+const rule = (selector: string): string => {
+    const at: number = CSS_TEXT.indexOf(`${selector} {`);
+    return at < 0 ? "" : CSS_TEXT.slice(at + selector.length + 2, CSS_TEXT.indexOf("}", at));
+};
 
 const WIDGETS: Repo = { owner: "acme", name: "widgets", url: "https://github.com/acme/widgets" };
 const sprint = (id: string, start: string, end: string) => ({ id, field: "F", iteration: id, name: `Sprint ${id}`, start, end, origin: "github" });
@@ -210,6 +215,15 @@ describe("band view (story #88)", () => {
         expect(header.parentElement!.classList.contains("rd-bands")).toBe(true);
         expect($(".rd-milestone .rd-lb-row")).toBeNull();
         expect(CSS_TEXT).toMatch(/\.rd-milestone > \*[^{]*\{[^}]*grid-column: 1/);
+    });
+
+    it("rules sprints and issues with a dotted line, keeps the line after a milestone solid, and shows no column line (D15)", () => {
+        expect(rule(".rd-band")).toMatch(/border-top:\s*1px dotted var\(--rd-border-muted\)/);
+        expect(rule(".rd-milestone + .rd-band")).toMatch(/border-top:\s*1px solid var\(--rd-border\)/);
+        expect(rule(".rd-lb-group + .rd-lb-group, .rd-lb-group > .rd-lb-row + .rd-lb-row")).toMatch(/border-top:\s*1px dotted var\(--rd-border-muted\)/);
+        // The divider is a drag handle only: its line is transparent at rest.
+        expect(rule(".rd-divider::after")).toMatch(/background:\s*transparent/);
+        expect(CSS_TEXT).not.toMatch(/\.rd-bands__head > \.rd-divider::after\s*\{[^}]*var\(--rd-border-muted\)/);
     });
 });
 

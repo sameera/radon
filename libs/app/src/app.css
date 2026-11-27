@@ -44,7 +44,7 @@
 .rd-panel__head { display: flex; align-items: baseline; justify-content: space-between; gap: var(--rd-space-2); padding: var(--rd-space-2) var(--rd-space-1); }
 .rd-panel__head h2 { margin: 0; color: var(--rd-fg-muted); }
 .rd-panel__sub { color: var(--rd-fg-muted); font-size: 12px; }
-.rd-backlog { flex: 0 0 auto; border: 1px solid var(--rd-border); border-radius: var(--rd-radius-md); background: var(--rd-canvas); }
+.rd-backlog { flex: 0 0 auto; border-radius: var(--rd-radius-md); background: var(--rd-canvas); }
 .rd-goals { flex: 1; }
 .rd-backlog__filter { padding: 0 var(--rd-space-2) var(--rd-space-2); }
 .rd-backlog__empty { margin: 0; padding: var(--rd-space-3); color: var(--rd-fg-muted); }
@@ -61,7 +61,7 @@
 .rd-bl-row .rd-ref { flex: 1; min-width: 0; }
 .rd-bl-meta { color: var(--rd-fg-muted); font-size: 12px; white-space: nowrap; font-variant-numeric: tabular-nums; }
 .rd-goals__list { display: flex; flex-direction: column; gap: var(--rd-space-3); }
-.rd-goal-card { display: flex; gap: var(--rd-space-3); padding: var(--rd-space-4); border: 1px solid var(--rd-border); border-radius: var(--rd-radius-md); background: var(--rd-canvas); box-shadow: var(--rd-shadow-sm); }
+.rd-goal-card { display: flex; gap: var(--rd-space-3); padding: var(--rd-space-4); border-radius: var(--rd-radius-md); background: var(--rd-canvas); box-shadow: var(--rd-shadow-sm); }
 .rd-goal-card__rank { display: inline-flex; align-items: center; justify-content: center; width: 24px; height: 24px; border-radius: var(--rd-radius-full); background: var(--rd-brand-muted); color: var(--rd-brand-fg); }
 .rd-goal-card__body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: var(--rd-space-1); }
 .rd-goal-card__top { display: flex; align-items: center; gap: var(--rd-space-2); }
@@ -75,7 +75,7 @@
 /* ---------- Drag and drop ---------- */
 .rd-bl-row.is-dragged, .rd-plan-item.is-dragged { opacity: 0.45; }
 .rd-bl-row[draggable="true"], .rd-plan-item[draggable="true"] { cursor: grab; }
-.rd-goal-card.is-over, .rd-backlog.is-over { border-color: var(--rd-brand); box-shadow: var(--rd-shadow-glow); }
+.rd-goal-card.is-over, .rd-backlog.is-over { box-shadow: var(--rd-shadow-glow); }
 .rd-goal-card.is-over .rd-goal-card__drop { background: var(--rd-brand-muted); color: var(--rd-brand-fg); }
 
 /* ---------- Goals: add, reorder, options ---------- */
@@ -99,13 +99,13 @@
 }
 .rd-goal-card.insert-before::before { top: calc(-1 * var(--rd-space-2)); }
 .rd-goal-card.insert-after::after { bottom: calc(-1 * var(--rd-space-2)); }
-.rd-goal-card.is-over.insert-before, .rd-goal-card.is-over.insert-after { border-color: var(--rd-border); box-shadow: none; }
+.rd-goal-card.is-over.insert-before, .rd-goal-card.is-over.insert-after { box-shadow: none; }
 
 /* ---------- Menus ---------- */
 .rd-menu-wrap { position: relative; flex: none; }
 .rd-menu__note { margin: var(--rd-space-1) 0 0; padding: var(--rd-space-1) var(--rd-space-2); color: var(--rd-fg-muted); max-width: 240px; }
 .rd-plan-item .rd-ref { flex: 1; min-width: 0; }
-.rd-backlog__foot { padding: var(--rd-space-2) var(--rd-space-3); border-top: 1px solid var(--rd-border-muted); }
+.rd-backlog__foot { padding: var(--rd-space-2) var(--rd-space-3); }
 .rd-backlog__new { color: var(--rd-accent); text-decoration: none; }
 .rd-backlog__new:hover { text-decoration: underline; }
 .rd-backlog__new:focus-visible { outline: 2px solid var(--rd-accent); outline-offset: 2px; }
@@ -123,8 +123,10 @@
 
 /* Live backlog: a list. Each item is one issue. Its ancestors sit on a small header row above it,
    shared by the items next to it with the same parent. */
-.rd-lb-list { list-style: none; margin: 0; padding: 0; border-top: 1px solid var(--rd-border-muted); }
-.rd-lb-group { padding: var(--rd-space-1) 0; border-bottom: 1px solid var(--rd-border-muted); }
+.rd-lb-list { list-style: none; margin: 0; padding: 0; }
+.rd-lb-group { padding: var(--rd-space-1) 0; }
+/* Issues are siblings, not sections: a dotted rule between them, and none at the list's edges. */
+.rd-lb-group + .rd-lb-group, .rd-lb-group > .rd-lb-row + .rd-lb-row { border-top: 1px dotted var(--rd-border-muted); }
 .rd-lb-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: var(--rd-space-1); padding: 0 var(--rd-space-3); color: var(--rd-fg-muted); }
 .rd-lb-head .rd-ref { gap: var(--rd-space-1); font-size: inherit; line-height: 16px; }
 .rd-lb-head .rd-ref__num { font-size: inherit; line-height: inherit; color: inherit; }
@@ -155,13 +157,18 @@
 
 /* The band view (story #88): one band per sprint. The goal column is on the left and holds the
    milestone headers and each band's sprint card. The backlog column is on the right and holds only
-   rows. Every row of the view shares one grid, so the columns line up (D15, D17). */
-.rd-bands { --rd-divider-w: 16px; display: flex; flex-direction: column; gap: var(--rd-space-2); }
+   rows. Every row of the view shares one grid, so the columns line up (D15, D17). By default the goal
+   column takes 1/4 of the view. */
+.rd-bands { --rd-divider-w: 16px; position: relative; display: flex; flex-direction: column; gap: var(--rd-space-2); }
+/* The divider sits in the header row but spans the whole view, so the lead can grab it beside any band. */
+.rd-bands__head > .rd-divider { position: absolute; top: 0; bottom: 0; right: var(--rd-backlog-w); width: var(--rd-divider-w); z-index: 1; }
+/* No rule between the columns at rest: the handle shows only on hover or focus. */
+.rd-bands__head > .rd-divider:hover::after, .rd-bands__head > .rd-divider:focus-visible::after { background: var(--rd-brand); }
 .rd-bands__tools { display: flex; flex-wrap: wrap; align-items: center; gap: var(--rd-space-3); margin-bottom: var(--rd-space-3); }
 .rd-bands__tools .rd-input { flex: 1 1 240px; max-width: 360px; }
 .rd-bands__head, .rd-band, .rd-milestone {
     display: grid;
-    grid-template-columns: minmax(0, 1fr) var(--rd-divider-w) minmax(0, var(--rd-backlog-w, 58%));
+    grid-template-columns: minmax(0, 1fr) var(--rd-divider-w) minmax(0, var(--rd-backlog-w, calc(75% - var(--rd-divider-w))));
     align-items: stretch;
 }
 .rd-bands__head { align-items: center; }
@@ -169,9 +176,12 @@
 .rd-bands__col--goals, .rd-band__card, .rd-milestone > * { grid-column: 1; }
 .rd-bands__head > .rd-divider { grid-column: 2; }
 .rd-bands__col--backlog, .rd-band__rows { grid-column: 3; }
-.rd-band { border-top: 1px solid var(--rd-border); padding-top: var(--rd-space-2); }
-.rd-band__card { min-height: var(--rd-space-8, 32px); padding: var(--rd-space-3); border: 1px solid var(--rd-border); border-radius: var(--rd-radius-md); background: var(--rd-canvas); box-shadow: var(--rd-shadow-sm); }
-.rd-band__rows { border: 1px solid var(--rd-border); border-radius: var(--rd-radius-md); background: var(--rd-canvas); padding: var(--rd-space-2); }
+/* A dotted rule between sprints; the rule after a milestone stays solid, so a milestone reads as a
+   section break rather than another sibling band. */
+.rd-band { border-top: 1px dotted var(--rd-border-muted); padding-top: var(--rd-space-2); }
+.rd-milestone + .rd-band { border-top: 1px solid var(--rd-border); }
+.rd-band__card { min-height: var(--rd-space-8, 32px); padding: var(--rd-space-3); border-radius: var(--rd-radius-md); background: var(--rd-canvas); }
+.rd-band__rows { border-radius: var(--rd-radius-md); background: var(--rd-canvas); padding: var(--rd-space-2); }
 .rd-band__rows:empty { display: none; }
 .rd-band__label { display: flex; flex-wrap: wrap; gap: var(--rd-space-2); align-items: baseline; }
 .rd-band__dates { color: var(--rd-fg-muted); font-variant-numeric: tabular-nums; }
@@ -182,7 +192,7 @@
 /* The break before the sprints after every due date (AC5): a rule and a label, not a milestone header. */
 .rd-bands__loose { margin-top: var(--rd-space-3, 12px); padding: var(--rd-space-2) 0; border-top: 1px solid var(--rd-border); color: var(--rd-fg-muted); }
 /* The current sprint (story #91): its card carries the page's one glow, and its progress bar. */
-.rd-band__card.is-current { border-color: var(--rd-brand); box-shadow: var(--rd-shadow-glow); }
+.rd-band__card.is-current { box-shadow: var(--rd-shadow-glow); }
 .rd-band__progress { margin: var(--rd-space-2) 0 0; }
 
 /* Below 760px the columns stack (story #92, D11): each band shows its card above its rows, the

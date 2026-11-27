@@ -155,3 +155,22 @@
 /* A parent the query did not return: the muted foreground, a lighter weight than a returned
    ancestor, a tooltip and a text label (D6, G8). The subtle foreground stays for icons. */
 .rd-lb-crumb.is-outside .rd-ref__num, .rd-lb-crumb.is-outside .rd-ref__title, .rd-lb-crumb.is-outside .rd-lb-hidden { color: var(--rd-fg-muted); font-weight: 400; }
+
+/* The band view (story #88): one band per sprint, the backlog column on the left and the goal
+   column on the right, milestone headers across both. */
+.rd-bands { display: flex; flex-direction: column; gap: var(--rd-space-2); --rd-divider-w: 16px; }
+.rd-bands__head, .rd-band { display: flex; align-items: stretch; }
+.rd-bands__head { align-items: center; }
+.rd-bands__col { margin: 0; }
+.rd-bands__col--backlog, .rd-band__rows { flex: 0 0 var(--rd-backlog-w, 360px); min-width: 0; }
+.rd-bands__col--goals, .rd-band__goal { flex: 1; min-width: 0; }
+.rd-band__goal { margin-left: var(--rd-divider-w); min-height: var(--rd-space-8, 32px); border: 1px dashed var(--rd-border); border-radius: var(--rd-radius-md); }
+.rd-band { border-top: 1px solid var(--rd-border); padding-top: var(--rd-space-2); }
+.rd-band__rows { border: 1px solid var(--rd-border); border-radius: var(--rd-radius-md); background: var(--rd-canvas); padding: var(--rd-space-2); }
+.rd-band__label { display: flex; flex-wrap: wrap; gap: var(--rd-space-2); align-items: baseline; }
+.rd-band__dates { color: var(--rd-fg-muted); font-variant-numeric: tabular-nums; }
+.rd-milestone { padding: var(--rd-space-2) 0; }
+.rd-milestone__line { display: flex; flex-wrap: wrap; gap: var(--rd-space-3, 12px); align-items: baseline; }
+.rd-milestone__start, .rd-milestone__due { color: var(--rd-fg-muted); font-variant-numeric: tabular-nums; }
+.rd-milestone__desc { margin: var(--rd-space-1) 0 0; color: var(--rd-fg-muted); white-space: pre-wrap; overflow-wrap: anywhere; }
+.rd-bands > .rd-backlog { width: auto; }

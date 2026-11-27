@@ -13,14 +13,15 @@ export interface LiveSource {
     login: string;
 }
 
-// null while the load runs.
-type LoadState = BacklogLoad | null;
+// null while the load runs. A failure may be the backlog's or the Grooming sync's (D5).
+export type LoadCause = BacklogCause | "cannot-read-project" | "backend-unavailable";
+export type LoadState = { ok: true; issues: LiveIssue[]; hidden: number } | { ok: false; cause: LoadCause } | null;
 
 // Runs a backlog load for the current repository and person. A new load starts when either
 // changes, or on Try again. Each answer is stored with the repository, person and attempt it was
 // read for, and an answer stored for anything else reads as loading. So no render, not even the
 // first one after a change, shows an answer for an earlier repository or person (G12).
-function useBacklogLoad(source: LiveSource, repo: Repo | null, attempt: number): LoadState {
+export function useBacklogLoad(source: LiveSource, repo: Repo | null, attempt: number): BacklogLoad | null {
     const key: string = JSON.stringify([source.login, repo?.owner, repo?.name, repo?.url, attempt]);
     const [state, setState] = useState<{ key: string; load: BacklogLoad } | null>(null);
     useEffect(() => {
@@ -40,10 +41,12 @@ function useBacklogLoad(source: LiveSource, repo: Repo | null, attempt: number):
     return state !== null && state.key === key ? state.load : null;
 }
 
-const MESSAGES: Record<BacklogCause, string> = {
+const MESSAGES: Record<LoadCause, string> = {
     "signed-out": "You are signed out of GitHub. Sign in to see the backlog.",
     "cannot-read": "Raiden's GitHub App cannot read this repository's issues.",
     "rate-limit": "GitHub's rate limit was reached. Wait a few minutes, then try again.",
+    "cannot-read-project": "You cannot read the GitHub project that supplies this repository's sprints. Ask its owner for access.",
+    "backend-unavailable": "Raiden's backend is not available, so sprints and milestones could not load.",
     other: "The backlog could not load.",
 };
 
@@ -196,6 +199,9 @@ function List({ groups, current, onMove, onStep }: ListProps): VNode {
 
 interface LiveBacklogProps {
     source: LiveSource;
+    // The page's load, and the one Try again that reruns it.
+    state: LoadState;
+    onRetry: () => void;
     width: number;
     filter: string;
     onFilter: (text: string) => void;
@@ -207,10 +213,8 @@ interface LiveBacklogProps {
 
 // The backlog read from GitHub: the current repository's open issues as a list, each item under
 // a header of its ancestors (D3, D4).
-export function LiveBacklog({ source, width, filter, onFilter, zone, over }: LiveBacklogProps): VNode {
+export function LiveBacklog({ source, state, onRetry, width, filter, onFilter, zone, over }: LiveBacklogProps): VNode {
     const current: Repo | null = useRepo();
-    const [attempt, setAttempt] = useState<number>(0);
-    const state: LoadState = useBacklogLoad(source, current, attempt);
     // The lead's order, in page memory only, kept with the repository and person it was made for.
     // A change of either starts again from tree order.
     const orderKey: string = JSON.stringify([source.login, current?.owner, current?.name]);
@@ -275,7 +279,7 @@ export function LiveBacklog({ source, width, filter, onFilter, zone, over }: Liv
                         <p class="rd-lb-status rd-text-small" role="status">
                             {MESSAGES[state.cause]}
                         </p>
-                        <button type="button" class="rd-btn rd-lb-retry" onClick={() => setAttempt(attempt + 1)}>
+                        <button type="button" class="rd-btn rd-lb-retry" onClick={onRetry}>
                             Try again
                         </button>
                     </div>

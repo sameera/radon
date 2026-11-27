@@ -32,9 +32,8 @@ import {
 import { ExternalLink, IssueRef, repoPage } from "./links.tsx";
 import { useRepo } from "./repo.tsx";
 import { GROOMING_SPRINT, INITIATIVES } from "./sample.ts";
-import { LiveBacklog, type LiveSource } from "./livebacklog.tsx";
-import { syncGrooming, type SyncLoad } from "./groomingsync.ts";
-import type { Repo } from "./repo.tsx";
+import type { LiveSource } from "./livebacklog.tsx";
+import { BandPage } from "./bands.tsx";
 import type { SessionStore } from "./session.ts";
 
 // What is being dragged. It is tracked here, never in the drag data, so only drags that started
@@ -542,7 +541,7 @@ interface GroomingProps {
 }
 
 export const DEFAULT_BACKLOG_WIDTH: number = 360;
-const MIN_BACKLOG: number = 240;
+export const MIN_BACKLOG: number = 240;
 const MIN_GOALS: number = 360;
 const DIVIDER_WIDTH: number = 16;
 const FALLBACK_MAX: number = 720;
@@ -551,10 +550,10 @@ const BIG_STEP: number = 64;
 
 // The preferred width is the lead's choice. The shown width is that choice fitted between the
 // two panels' minimum widths at the current size.
-function limits(space: number): { min: number; max: number } {
+export function limits(space: number): { min: number; max: number } {
     return { min: MIN_BACKLOG, max: space > 0 ? Math.max(MIN_BACKLOG, space - MIN_GOALS - DIVIDER_WIDTH) : FALLBACK_MAX };
 }
-function fit(preferred: number, space: number): number {
+export function fit(preferred: number, space: number): number {
     const { min, max } = limits(space);
     return Math.min(max, Math.max(min, preferred));
 }
@@ -566,7 +565,7 @@ interface DividerProps {
     onChange: (value: number, final: boolean) => void;
 }
 
-function Divider({ width, min, max, onChange }: DividerProps): VNode {
+export function Divider({ width, min, max, onChange }: DividerProps): VNode {
     const drag = useRef<{ x: number; width: number } | null>(null);
     const clamp = (v: number): number => Math.min(max, Math.max(min, v));
     return (
@@ -619,40 +618,25 @@ function Divider({ width, min, max, onChange }: DividerProps): VNode {
     );
 }
 
-// Runs the Grooming sync when Grooming opens for a signed-in lead with a current repository, and
-// again when either changes. Each answer is kept with the repository and person it was read for.
-function useGroomingSync(live: LiveSource | undefined, repo: Repo | null, attempt: number): SyncLoad | null {
-    const key: string = JSON.stringify([live?.login, repo?.owner, repo?.name, attempt]);
-    const [state, setState] = useState<{ key: string; load: SyncLoad } | null>(null);
-    useEffect(() => {
-        if (!live || !repo) {
-            return;
-        }
-        let current = true;
-        void syncGrooming(live.gateway, repo).then((load: SyncLoad) => {
-            if (current) {
-                setState({ key, load });
-            }
-        });
-        return () => {
-            current = false;
-        };
-    }, [live?.gateway, key]);
-    return state !== null && state.key === key ? state.load : null;
+// For a signed-in lead with a live GitHub connection, Grooming is the band view alone. A host with
+// no live connection keeps the sample page (D8, G26, G27).
+export function GroomingPage(props: GroomingProps): VNode {
+    return props.live ? (
+        <BandPage live={props.live} backlogWidth={props.backlogWidth ?? DEFAULT_BACKLOG_WIDTH} onBacklogWidth={props.onBacklogWidth} />
+    ) : (
+        <SampleGroomingPage {...props} />
+    );
 }
 
-export function GroomingPage({
+function SampleGroomingPage({
     session,
     state,
     showIssues,
     onShowIssues,
     backlogWidth = DEFAULT_BACKLOG_WIDTH,
     onBacklogWidth,
-    live,
 }: GroomingProps): VNode {
     const [filter, setFilter] = useState<string>("");
-    const repo: Repo | null = useRepo();
-    useGroomingSync(live, repo, 0);
     const panelsRef = useRef<HTMLDivElement>(null);
     const [space, setSpace] = useState<number>(0);
     useEffect(() => {
@@ -735,7 +719,7 @@ export function GroomingPage({
                 </div>
                 <div class="rd-groom__actions">
                     <div class="rd-groom__sum">
-                        {!live && <b class="rd-groom__summary">{`${planned} of ${totalEpics(INITIATIVES)} epics planned`}</b>}
+                        {<b class="rd-groom__summary">{`${planned} of ${totalEpics(INITIATIVES)} epics planned`}</b>}
                         <span class="rd-groom__save-state" role="status">
                             {unsaved ? "Unsaved changes" : "All changes saved"}
                         </span>
@@ -760,26 +744,15 @@ export function GroomingPage({
                 </div>
             </header>
             <div class="rd-groom__panels" ref={panelsRef}>
-                {live ? (
-                    <LiveBacklog
-                        source={live}
-                        width={shownWidth}
-                        filter={filter}
-                        onFilter={setFilter}
-                        over={dnd.over?.target === "backlog"}
-                        zone={takeOutZone(dnd, state, session)}
-                    />
-                ) : (
-                    <Backlog
-                        state={state}
-                        session={session}
-                        dnd={dnd}
-                        filter={filter}
-                        onFilter={setFilter}
-                        width={shownWidth}
-                        menu={menu}
-                    />
-                )}
+                <Backlog
+                    state={state}
+                    session={session}
+                    dnd={dnd}
+                    filter={filter}
+                    onFilter={setFilter}
+                    width={shownWidth}
+                    menu={menu}
+                />
                 <Divider
                     width={shownWidth}
                     min={minWidth}

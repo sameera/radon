@@ -27,6 +27,8 @@ let root: HTMLElement;
 let unmount: (() => void) | undefined;
 let stored: Record<string, unknown>;
 let prefs: PreferenceStore;
+// The session the last open() mounted, so a test can check the plan behind the page (G39).
+let session: ReturnType<typeof createSessionStore>;
 const flush = (): Promise<void> => act(async () => void (await new Promise((r) => setTimeout(r, 0))));
 async function settle(): Promise<void> {
     for (let i = 0; i < 8; i++) {
@@ -38,7 +40,7 @@ async function open(gateway: FakeGitHub, repo: RepoStore = createRepoStore(WIDGE
     await act(async () => {
         unmount = await mountApp(root, {
             prefs,
-            session: createSessionStore(),
+            session: (session = createSessionStore()),
             signIn: createSignInController({ status: async () => login, signIn: async () => (login ? { login } : null) }),
             gateway,
             repo,
@@ -236,15 +238,14 @@ describe("the list (D3)", () => {
         expect($(".rd-backlog").textContent).toContain("No issues match");
     });
 
-    it("filtering never changes the plan, the save state or Undo (G27)", async () => {
+    // Story #88, D8: the signed-in band view shows no plan, so the plan is checked in the session.
+    it("filtering never changes the plan, the save state or Undo (G27, G39)", async () => {
         await open(fakeGitHub({ issues: TREE }));
-        const plan: string = $(".rd-goals").textContent!;
-        const save: string = $(".rd-groom__save-state").textContent!;
+        const plan: string = JSON.stringify(session.get());
         await type("epic");
         await type("");
-        expect($(".rd-goals").textContent).toBe(plan);
-        expect($(".rd-groom__save-state").textContent).toBe(save);
-        expect($$<HTMLButtonElement>(".rd-btn").find((b) => b.textContent === "Undo")!.getAttribute("aria-disabled")).toBe("true");
+        expect(JSON.stringify(session.get())).toBe(plan);
+        expect(session.get().undo).toHaveLength(0);
     });
 
     it("moves an item by drag and drop", async () => {
@@ -286,12 +287,14 @@ describe("the list (D3)", () => {
     it("reordering never changes the plan, the save state or Undo, and sends no request", async () => {
         const github = fakeGitHub({ issues: TREE });
         await open(github);
-        const plan: string = $(".rd-goals").textContent!;
+        const plan: string = JSON.stringify(session.get());
         const sent: number = github.requests.length;
+        const sentBackend: number = github.backend.length;
         await reorder(5, 30, "after");
-        expect($(".rd-goals").textContent).toBe(plan);
-        expect($(".rd-groom__save-state").textContent).toBe("All changes saved");
+        expect(JSON.stringify(session.get())).toBe(plan);
+        expect(session.get().undo).toHaveLength(0);
         expect(github.requests).toHaveLength(sent);
+        expect(github.backend).toHaveLength(sentBackend);
         expect(JSON.stringify(stored)).not.toMatch(/I_|order/);
     });
 
@@ -478,14 +481,14 @@ describe("loading and failure (D4)", () => {
 describe("live rows beside the sample plan (D5)", () => {
     it("live rows have no item menu, show no goal label, and dropping one on a goal plans nothing (G18)", async () => {
         await open(fakeGitHub({ issues: [{ n: 31, title: "Same number as a sample epic" }, { n: 12, title: "Same as a sample initiative" }] }));
-        const goal: HTMLElement = $(".rd-goal-card");
-        const plan: string = $(".rd-goals").textContent!;
+        // Story #88, D8: the goal column holds an empty goal area per sprint; a drop there plans nothing.
+        const goal: HTMLElement = $(".rd-bands__col--goals");
+        const plan: string = JSON.stringify(session.get());
         await act(() => drag(row(31), "dragstart"));
         await act(() => drag(goal, "dragover"));
         await act(() => drag(goal, "drop"));
         await act(() => drag(row(31), "dragend"));
-        expect($(".rd-goals").textContent).toBe(plan);
-        expect($(".rd-groom__save-state").textContent).toBe("All changes saved");
+        expect(JSON.stringify(session.get())).toBe(plan);
         for (const row of rows()) {
             expect(row.querySelector('[aria-haspopup="menu"]')).toBeNull();
             expect(row.textContent).not.toMatch(/Goal \d/);
@@ -501,19 +504,14 @@ describe("live rows beside the sample plan (D5)", () => {
         expect(grooming.getAttribute("aria-label")).toBe("Grooming");
     });
 
-    it("keeps the goals, and dragging a planned row onto the backlog still takes it out of the plan (G20)", async () => {
+    // Story #88, D8 reverses G20 for the signed-in lead: the sample goals, the plan, Undo and Save
+    // plan no longer show beside live rows. The sample page keeps them (G27).
+    it("shows no sample goals, planned items, Undo or Save plan beside live rows (D8, G26)", async () => {
         await open(fakeGitHub({ issues: TREE }));
-        const item: HTMLElement = $('.rd-plan-item[data-kind="epic"][data-num="50"]');
-        expect(item).not.toBeNull();
-        await act(() => drag(item, "dragstart"));
-        await act(() => drag($(".rd-backlog"), "dragover"));
-        await act(() => drag($(".rd-backlog"), "drop"));
-        await act(() => drag(item, "dragend"));
-        expect(root.querySelector('.rd-plan-item[data-kind="epic"][data-num="50"]')).toBeNull();
-        expect($(".rd-groom__save-state").textContent).toBe("Unsaved changes");
-        const undo = $$<HTMLButtonElement>(".rd-btn").find((b) => b.textContent === "Undo")!;
-        await click(undo);
-        expect(root.querySelector('.rd-plan-item[data-kind="epic"][data-num="50"]')).not.toBeNull();
+        expect(root.querySelector(".rd-goals")).toBeNull();
+        expect(root.querySelector(".rd-plan-item")).toBeNull();
+        expect($$<HTMLButtonElement>(".rd-btn").map((b) => b.textContent)).not.toContain("Undo");
+        expect($$<HTMLButtonElement>(".rd-btn").map((b) => b.textContent)).not.toContain("Save plan");
     });
 
     it("keeps the New initiative in GitHub link", async () => {

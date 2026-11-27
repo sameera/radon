@@ -1,13 +1,14 @@
-// The band view (story #88): each sprint is a horizontal band with the backlog column on the left
-// and the goal column on the right, under the milestone that contains it (D8, D9). Bands show only
-// after the Grooming sync and the backlog load both succeeded (D5).
+// The band view (story #88): each sprint is a horizontal band with the goal column on the left and
+// the backlog column on the right, under the milestone that contains it (D8, D9, D15). The goal
+// column holds the milestone headers and each band's sprint card (D17). Bands show only after the
+// Grooming sync and the backlog load both succeeded (D5).
 import { Fragment, type VNode } from "preact";
 import { useEffect, useMemo, useRef, useState } from "preact/hooks";
 import { ExternalLink, repoPage } from "./links.tsx";
 import { useRepo, type Repo } from "./repo.tsx";
-import { LiveBacklog, useBacklogLoad, type LiveSource, type LoadState } from "./livebacklog.tsx";
+import { LoadStatus, useBacklogLoad, type LiveSource, type LoadState } from "./livebacklog.tsx";
 import { syncGrooming, type Milestone, type Sprint, type SyncLoad } from "./groomingsync.ts";
-import { Divider, fit, limits } from "./grooming.tsx";
+import { DEFAULT_BACKLOG_WIDTH, Divider, fit, limits } from "./grooming.tsx";
 import { assignBands, BandRows } from "./bandrows.tsx";
 import { currentSprint, loadProgress, localToday, type Progress } from "./progress.ts";
 import { buildTree, filterTree, type LiveIssue } from "./backlogload.ts";
@@ -90,13 +91,11 @@ function MilestoneHeader({ entry, repo }: { entry: BandEntry & { kind: "mileston
     );
 }
 
-export interface BandProps {
-    sprint: Sprint;
-    // Below 760 pixels the goal area sits above the rows (D11).
-    stacked?: boolean;
-    // Set for the current sprint only: its band alone carries the glow and the bar (G31, G32).
+interface CardProps {
+    name: string;
+    detail: string;
+    // Set for the current sprint only: its card alone carries the glow and the bar (G31, G32).
     progress?: Progress | null;
-    children?: VNode | null;
 }
 
 function ProgressBar({ progress }: { progress: Progress }): VNode {
@@ -116,26 +115,33 @@ function ProgressBar({ progress }: { progress: Progress }): VNode {
     );
 }
 
-// One sprint band. The goal area stays empty until the sprint-goals epic fills it.
-function Band({ sprint, progress, stacked, children }: BandProps): VNode {
-    const goal: VNode = <div class="rd-band__goal" aria-label={`Goal for ${sprint.name}`} />;
+// A sprint card in the goal column: the sprint's name and dates, and the progress bar of the
+// current sprint. Its height leaves room for the goal that the sprint-goals epic adds (D17).
+function SprintCard({ name, detail, progress }: CardProps): VNode {
     return (
-        <div
-            class={`rd-band${progress ? " is-current" : ""}`}
-            data-sprint={sprint.id}
-            role="group"
-            aria-label={progress ? `${sprint.name}, current sprint` : sprint.name}
-        >
-            {stacked && goal}
-            <div class="rd-band__rows">
-                <div class="rd-band__label">
-                    <b class="rd-band__name">{sprint.name}</b>
-                    <span class="rd-band__dates rd-text-small">{`${formatDate(sprint.start)} – ${formatDate(sprint.end)}`}</span>
-                </div>
-                {progress && <ProgressBar progress={progress} />}
-                {children}
+        <div class={`rd-band__card${progress ? " is-current" : ""}`}>
+            <div class="rd-band__label">
+                <b class="rd-band__name">{name}</b>
+                <span class="rd-band__dates rd-text-small">{detail}</span>
             </div>
-            {!stacked && goal}
+            {progress && <ProgressBar progress={progress} />}
+        </div>
+    );
+}
+
+interface BandProps extends CardProps {
+    // The band's key: the sprint's id, or none for the no-sprint band.
+    band: { sprint: string } | { none: true };
+    label: string;
+    children?: VNode | null;
+}
+
+// One band: the card first, then the rows, in this order at every width (D11, G43).
+function Band({ band, label, children, ...card }: BandProps): VNode {
+    return (
+        <div class="rd-band" data-sprint={"sprint" in band ? band.sprint : undefined} data-band={"none" in band ? "none" : undefined} role="group" aria-label={label}>
+            <SprintCard {...card} />
+            <div class="rd-band__rows">{children}</div>
         </div>
     );
 }
@@ -199,12 +205,15 @@ function useGroomingLoad(live: LiveSource, repo: Repo | null, attempt: number): 
 
 interface BandPageProps {
     live: LiveSource;
-    backlogWidth: number;
+    // The lead's preferred backlog width. Unset, the backlog takes its default share (D18).
+    backlogWidth?: number;
     onBacklogWidth?: (value: number, final: boolean) => void;
 }
 
 // Below this page width the two columns stack (D11).
 export const STACK_BELOW: number = 760;
+// The backlog column's default share of the view (D18).
+export const BACKLOG_SHARE: number = 0.58;
 
 export function BandPage({ live, backlogWidth, onBacklogWidth }: BandPageProps): VNode {
     const repo: Repo | null = useRepo();
@@ -230,7 +239,8 @@ export function BandPage({ live, backlogWidth, onBacklogWidth }: BandPageProps):
             observer?.disconnect();
         };
     }, []);
-    const shownWidth: number = fit(backlogWidth, space);
+    const defaultWidth: number = space > 0 ? Math.round(space * BACKLOG_SHARE) : DEFAULT_BACKLOG_WIDTH;
+    const shownWidth: number = fit(backlogWidth ?? defaultWidth, space);
     const { min, max } = limits(space);
     const entries: BandEntry[] = sync?.ok ? placeSprints(sync.sprints, sync.milestones) : [];
     // The sprints after every due date have no header. When a milestone comes before them, a break
@@ -255,6 +265,8 @@ export function BandPage({ live, backlogWidth, onBacklogWidth }: BandPageProps):
         : !anyMatch
           ? "No issues match. Clear the filter to show them all."
           : null;
+    const count: number = issues.filter((i) => i.inQuery).length;
+    const newInitiative: string | null = repoPage(repo?.url, "issues/new");
     return (
         <section class="rd-groom rd-groom--bands" aria-labelledby="rd-groom-title">
             <header class="rd-groom__header">
@@ -265,69 +277,93 @@ export function BandPage({ live, backlogWidth, onBacklogWidth }: BandPageProps):
                     </h1>
                 </div>
             </header>
+            <div class="rd-bands__tools">
+                <input
+                    class="rd-input"
+                    type="search"
+                    aria-label="Filter backlog"
+                    placeholder="Filter by title or number"
+                    value={filter}
+                    onInput={(e) => setFilter((e.currentTarget as HTMLInputElement).value)}
+                />
+                {state?.ok && <span class="rd-panel__sub">{`${count} ${count === 1 ? "issue" : "issues"}`}</span>}
+                {newInitiative !== null && (
+                    <ExternalLink class="rd-backlog__new rd-text-small" href={newInitiative}>
+                        New initiative in GitHub
+                    </ExternalLink>
+                )}
+            </div>
             <div
                 class={`rd-bands${stacked ? " rd-bands--stacked" : ""}`}
                 ref={bandsRef}
                 style={stacked ? undefined : { "--rd-backlog-w": `${shownWidth}px` }}
             >
-                <div class="rd-bands__head">
-                    <h2 class="rd-text-axis rd-bands__col rd-bands__col--backlog">Backlog</h2>
-                    {!stacked && (
-                        <Divider width={shownWidth} min={min} max={max} onChange={(value: number, final: boolean) => onBacklogWidth?.(value, final)} />
-                    )}
-                    <h2 class="rd-text-axis rd-bands__col rd-bands__col--goals">Goals</h2>
-                </div>
-                {state?.ok &&
-                    entries.map((entry: BandEntry, at: number) =>
-                        entry.kind === "milestone" ? (
-                            <MilestoneHeader entry={entry} repo={repo} key={`m:${entry.milestone.id}`} />
-                        ) : (
-                            <Fragment key={`s:${entry.sprint.id}`}>
-                                {at === loose && (
-                                    <div class="rd-bands__loose rd-text-axis" role="separator">
-                                        No milestone
-                                    </div>
-                                )}
-                                <Band
-                                    sprint={entry.sprint}
-                                    stacked={stacked}
-                                    progress={sync?.ok && sync.progress?.sprint === entry.sprint.id ? sync.progress : null}
-                                >
-                                    <BandRows
-                                        issues={issues}
-                                        band={entry.sprint.id}
-                                        assigned={assigned}
-                                        filter={filter}
-                                        order={bandOrder(entry.sprint.id)}
-                                        onOrder={(ids: string[]) => setBandOrder(entry.sprint.id, ids)}
-                                        current={repo}
-                                    />
-                                </Band>
-                            </Fragment>
-                        ),
-                    )}
-                <LiveBacklog
-                    source={live}
-                    state={state}
-                    rows={
-                        <BandRows
-                            issues={issues}
-                            band={null}
-                            assigned={assigned}
-                            filter={filter}
-                            order={bandOrder("")}
-                            onOrder={(ids: string[]) => setBandOrder("", ids)}
-                            current={repo}
-                        />
-                    }
-                    emptyText={emptyText}
-                    onRetry={() => setAttempt(attempt + 1)}
-                    width={shownWidth}
-                    filter={filter}
-                    onFilter={setFilter}
-                    zone={{}}
-                    over={false}
-                />
+                {!state?.ok && <LoadStatus state={state} onRetry={() => setAttempt(attempt + 1)} />}
+                {state?.ok && (
+                    <>
+                        {state.hidden > 0 && (
+                            <p class="rd-lb-capped rd-text-small" role="note">
+                                {`${state.hidden} ${state.hidden === 1 ? "issue is" : "issues are"} not shown. GitHub search returns at most 1,000 issues. A later Settings page will let you narrow the query.`}
+                            </p>
+                        )}
+                        {emptyText && <p class="rd-backlog__empty rd-text-small">{emptyText}</p>}
+                        {!stacked && (
+                            <div class="rd-bands__head">
+                                <h2 class="rd-text-axis rd-bands__col rd-bands__col--goals">Goals</h2>
+                                <Divider
+                                    width={shownWidth}
+                                    min={min}
+                                    max={max}
+                                    side="right"
+                                    defaultWidth={defaultWidth}
+                                    onChange={(value: number, final: boolean) => onBacklogWidth?.(value, final)}
+                                />
+                                <h2 class="rd-text-axis rd-bands__col rd-bands__col--backlog">Backlog</h2>
+                            </div>
+                        )}
+                        {entries.map((entry: BandEntry, at: number) =>
+                            entry.kind === "milestone" ? (
+                                <MilestoneHeader entry={entry} repo={repo} key={`m:${entry.milestone.id}`} />
+                            ) : (
+                                <Fragment key={`s:${entry.sprint.id}`}>
+                                    {at === loose && (
+                                        <div class="rd-bands__loose rd-text-axis" role="separator">
+                                            No milestone
+                                        </div>
+                                    )}
+                                    <Band
+                                        band={{ sprint: entry.sprint.id }}
+                                        label={sync?.ok && sync.progress?.sprint === entry.sprint.id ? `${entry.sprint.name}, current sprint` : entry.sprint.name}
+                                        name={entry.sprint.name}
+                                        detail={`${formatDate(entry.sprint.start)} – ${formatDate(entry.sprint.end)}`}
+                                        progress={sync?.ok && sync.progress?.sprint === entry.sprint.id ? sync.progress : null}
+                                    >
+                                        <BandRows
+                                            issues={issues}
+                                            band={entry.sprint.id}
+                                            assigned={assigned}
+                                            filter={filter}
+                                            order={bandOrder(entry.sprint.id)}
+                                            onOrder={(ids: string[]) => setBandOrder(entry.sprint.id, ids)}
+                                            current={repo}
+                                        />
+                                    </Band>
+                                </Fragment>
+                            ),
+                        )}
+                        <Band band={{ none: true }} label="Issues with no sprint" name="No sprint" detail="Issues with no sprint in GitHub">
+                            <BandRows
+                                issues={issues}
+                                band={null}
+                                assigned={assigned}
+                                filter={filter}
+                                order={bandOrder("")}
+                                onOrder={(ids: string[]) => setBandOrder("", ids)}
+                                current={repo}
+                            />
+                        </Band>
+                    </>
+                )}
             </div>
         </section>
     );

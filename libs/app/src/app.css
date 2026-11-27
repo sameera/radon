@@ -153,17 +153,26 @@
    ancestor, a tooltip and a text label (D6, G8). The subtle foreground stays for icons. */
 .rd-lb-crumb.is-outside .rd-ref__num, .rd-lb-crumb.is-outside .rd-ref__title, .rd-lb-crumb.is-outside .rd-lb-hidden { color: var(--rd-fg-muted); font-weight: 400; }
 
-/* The band view (story #88): one band per sprint, the backlog column on the left and the goal
-   column on the right, milestone headers across both. */
-.rd-bands { display: flex; flex-direction: column; gap: var(--rd-space-2); --rd-divider-w: 16px; }
-.rd-bands__head, .rd-band { display: flex; align-items: stretch; }
+/* The band view (story #88): one band per sprint. The goal column is on the left and holds the
+   milestone headers and each band's sprint card. The backlog column is on the right and holds only
+   rows. Every row of the view shares one grid, so the columns line up (D15, D17). */
+.rd-bands { --rd-divider-w: 16px; display: flex; flex-direction: column; gap: var(--rd-space-2); }
+.rd-bands__tools { display: flex; flex-wrap: wrap; align-items: center; gap: var(--rd-space-3); margin-bottom: var(--rd-space-3); }
+.rd-bands__tools .rd-input { flex: 1 1 240px; max-width: 360px; }
+.rd-bands__head, .rd-band, .rd-milestone {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) var(--rd-divider-w) minmax(0, var(--rd-backlog-w, 58%));
+    align-items: stretch;
+}
 .rd-bands__head { align-items: center; }
 .rd-bands__col { margin: 0; }
-.rd-bands__col--backlog, .rd-band__rows { flex: 0 0 var(--rd-backlog-w, 360px); min-width: 0; }
-.rd-bands__col--goals, .rd-band__goal { flex: 1; min-width: 0; }
-.rd-band__goal { margin-left: var(--rd-divider-w); min-height: var(--rd-space-8, 32px); border: 1px dashed var(--rd-border); border-radius: var(--rd-radius-md); }
+.rd-bands__col--goals, .rd-band__card, .rd-milestone > * { grid-column: 1; }
+.rd-bands__head > .rd-divider { grid-column: 2; }
+.rd-bands__col--backlog, .rd-band__rows { grid-column: 3; }
 .rd-band { border-top: 1px solid var(--rd-border); padding-top: var(--rd-space-2); }
+.rd-band__card { min-height: var(--rd-space-8, 32px); padding: var(--rd-space-3); border: 1px solid var(--rd-border); border-radius: var(--rd-radius-md); background: var(--rd-canvas); box-shadow: var(--rd-shadow-sm); }
 .rd-band__rows { border: 1px solid var(--rd-border); border-radius: var(--rd-radius-md); background: var(--rd-canvas); padding: var(--rd-space-2); }
+.rd-band__rows:empty { display: none; }
 .rd-band__label { display: flex; flex-wrap: wrap; gap: var(--rd-space-2); align-items: baseline; }
 .rd-band__dates { color: var(--rd-fg-muted); font-variant-numeric: tabular-nums; }
 .rd-milestone { padding: var(--rd-space-2) 0; }
@@ -172,22 +181,17 @@
 .rd-milestone__desc { margin: var(--rd-space-1) 0 0; color: var(--rd-fg-muted); white-space: pre-wrap; overflow-wrap: anywhere; }
 /* The break before the sprints after every due date (AC5): a rule and a label, not a milestone header. */
 .rd-bands__loose { margin-top: var(--rd-space-3, 12px); padding: var(--rd-space-2) 0; border-top: 1px solid var(--rd-border); color: var(--rd-fg-muted); }
-.rd-bands > .rd-backlog { width: auto; }
-/* The current sprint (story #91): the page's one glow, and its progress bar. */
-.rd-band.is-current .rd-band__rows { border-color: var(--rd-brand); box-shadow: var(--rd-shadow-glow); }
-.rd-band__progress { margin: var(--rd-space-2) 0; }
+/* The current sprint (story #91): its card carries the page's one glow, and its progress bar. */
+.rd-band__card.is-current { border-color: var(--rd-brand); box-shadow: var(--rd-shadow-glow); }
+.rd-band__progress { margin: var(--rd-space-2) 0 0; }
 
-/* Below 760px the columns stack (story #92, D11): each band puts its goal area above its rows, the
+/* Below 760px the columns stack (story #92, D11): each band shows its card above its rows, the
    divider hides, and long titles and crumbs wrap, so a 360px page never scrolls sideways. */
-.rd-bands, .rd-band, .rd-band__rows, .rd-band__list, .rd-lb-row, .rd-lb-head { min-width: 0; max-width: 100%; }
+.rd-bands, .rd-band, .rd-band__card, .rd-band__rows, .rd-band__list, .rd-lb-row, .rd-lb-head { min-width: 0; max-width: 100%; }
 .rd-bands .rd-ref__title, .rd-bands .rd-lb-crumb, .rd-bands .rd-ref { overflow-wrap: anywhere; white-space: normal; }
 .rd-bands .rd-lb-head { display: flex; flex-wrap: wrap; }
-.rd-bands--stacked .rd-band { flex-direction: column; }
-.rd-bands--stacked .rd-band__rows, .rd-bands--stacked .rd-bands__col--backlog { flex: 1 1 auto; width: auto; }
-.rd-bands--stacked .rd-band__goal { margin: 0 0 var(--rd-space-2); }
-.rd-bands--stacked .rd-band--none .rd-band__goal { display: none; }
-.rd-bands--stacked .rd-bands__col--goals { display: none; }
-.rd-bands--stacked > .rd-backlog { flex-basis: auto !important; max-width: 100%; }
+.rd-bands--stacked .rd-band, .rd-bands--stacked .rd-milestone { grid-template-columns: minmax(0, 1fr); gap: var(--rd-space-2); }
+.rd-bands--stacked .rd-band__card, .rd-bands--stacked .rd-band__rows, .rd-bands--stacked .rd-milestone > * { grid-column: 1; }
 
 /* Below 760px the expanded sidebar overlays the page instead of taking its width (G34). The page
    keeps only the collapsed rail's 56px beside it, so a 360px window never scrolls sideways with the

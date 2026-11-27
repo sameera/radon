@@ -9,7 +9,7 @@ import { createRepoStore, type Repo, type RepoStore } from "./repo.tsx";
 import { createSignInController } from "./signin.ts";
 import { createSessionStore } from "./session.ts";
 import { fakeGitHub, type FakeGitHub, type FakeIssue } from "./testing/fakegraph.ts";
-import { LiveBacklog } from "./livebacklog.tsx";
+import { BandPage } from "./bands.tsx";
 
 const WIDGETS: Repo = { owner: "acme", name: "widgets", url: "https://github.com/acme/widgets" };
 const GADGETS: Repo = { owner: "acme", name: "gadgets", url: "https://github.com/acme/gadgets" };
@@ -57,10 +57,10 @@ async function open(gateway: FakeGitHub, repo: RepoStore = createRepoStore(WIDGE
 
 const $ = <T extends Element>(sel: string): T => root.querySelector<T>(sel)!;
 const $$ = <T extends Element>(sel: string): T[] => Array.from(root.querySelectorAll<T>(sel));
-const rows = (): HTMLElement[] => $$<HTMLElement>(".rd-backlog .rd-lb-row");
+const rows = (): HTMLElement[] => $$<HTMLElement>(".rd-bands .rd-lb-row");
 // Each list item as "<header numbers>: <item numbers>", or the item numbers alone with no header.
 const shape = (): string[] =>
-    $$<HTMLElement>(".rd-backlog .rd-lb-group").map((g) => {
+    $$<HTMLElement>(".rd-bands .rd-lb-group").map((g) => {
         const head: string = Array.from(g.querySelectorAll<HTMLElement>(".rd-lb-crumb"), (c) => c.dataset.num).join(">");
         const items: string = Array.from(g.querySelectorAll<HTMLElement>(".rd-lb-row"), (r) => r.dataset.num).join(" ");
         return head ? `${head}: ${items}` : items;
@@ -75,8 +75,8 @@ async function key(el: Element, k: string): Promise<void> {
         el.dispatchEvent(new KeyboardEvent("keydown", { key: k, altKey: true, bubbles: true, cancelable: true }));
     });
 }
-const status = (): string => $(".rd-backlog .rd-lb-status")?.textContent ?? "";
-const retry = (): HTMLButtonElement | null => root.querySelector<HTMLButtonElement>(".rd-backlog .rd-lb-retry");
+const status = (): string => $(".rd-bands .rd-lb-status")?.textContent ?? "";
+const retry = (): HTMLButtonElement | null => root.querySelector<HTMLButtonElement>(".rd-bands .rd-lb-retry");
 const filter = (): HTMLInputElement => $('input[aria-label="Filter backlog"]');
 async function type(value: string): Promise<void> {
     await act(() => {
@@ -123,9 +123,9 @@ describe("reading the backlog from GitHub (D1)", () => {
     it("lists the issues the fixed query returns for the current repository", async () => {
         const github = fakeGitHub({ issues: TREE });
         await open(github);
-        const nums: string[] = $$<HTMLElement>(".rd-backlog [data-num]").map((r) => r.dataset.num!);
+        const nums: string[] = $$<HTMLElement>(".rd-bands [data-num]").map((r) => r.dataset.num!);
         expect([...new Set(nums)].sort()).toEqual(["10", "20", "25", "30", "5"]);
-        expect($(".rd-backlog").textContent).toContain("Story eleven");
+        expect($(".rd-bands").textContent).toContain("Story eleven");
     });
 
     it("asks GitHub's GraphQL search, confined by Raiden to the current repository, and only reads (G1, G2, G3)", async () => {
@@ -173,7 +173,7 @@ describe("the list (D3)", () => {
 
     it("shows each returned issue exactly once (G4)", async () => {
         await open(fakeGitHub({ issues: TREE }));
-        const nums: string[] = $$<HTMLElement>(".rd-backlog .rd-lb-crumb, .rd-backlog .rd-lb-row").map((r) => r.dataset.num!);
+        const nums: string[] = $$<HTMLElement>(".rd-bands .rd-lb-crumb, .rd-bands .rd-lb-row").map((r) => r.dataset.num!);
         expect(new Set(nums).size).toBe(nums.length);
         expect(nums).toHaveLength(5);
     });
@@ -229,7 +229,7 @@ describe("the list (D3)", () => {
         expect(shape()).toEqual(["10>20: 25 30"]);
         await type("nothing matches this");
         expect(rows()).toHaveLength(0);
-        expect($(".rd-backlog").textContent).toContain("No issues match");
+        expect($(".rd-bands").textContent).toContain("No issues match");
     });
 
     // Story #88, D8: the signed-in band view shows no plan, so the plan is checked in the session.
@@ -301,7 +301,7 @@ describe("the list (D3)", () => {
 
     it("counts the returned issues", async () => {
         await open(fakeGitHub({ issues: TREE }));
-        expect($(".rd-backlog .rd-panel__sub").textContent).toBe("5 issues");
+        expect($(".rd-bands__tools .rd-panel__sub").textContent).toBe("5 issues");
     });
 });
 
@@ -322,7 +322,7 @@ describe("paging and the search cap (D1, D7)", () => {
         expect(rows()).toHaveLength(1000);
         expect(github.requests).toHaveLength(10);
         expect($(".rd-lb-capped").textContent).toContain("200 issues are not shown");
-        expect($(".rd-backlog .rd-panel__sub").textContent).toBe("1000 issues");
+        expect($(".rd-bands__tools .rd-panel__sub").textContent).toBe("1000 issues");
     });
 });
 
@@ -435,7 +435,7 @@ describe("loading and failure (D4)", () => {
         release();
         await settle();
         expect(rows().map((r) => r.dataset.num)).toEqual(["7"]);
-        expect($(".rd-backlog").textContent).not.toContain("Widget issue");
+        expect($(".rd-bands").textContent).not.toContain("Widget issue");
     });
 
     it("never paints the earlier repository's backlog, even for one render, after a repository change (G12)", async () => {
@@ -449,14 +449,14 @@ describe("loading and failure (D4)", () => {
                     : undefined,
         });
         const repo = await open(github);
-        expect($(".rd-backlog").textContent).toContain("Widget issue");
+        expect($(".rd-bands").textContent).toContain("Widget issue");
         // What the backlog shows each time it finishes a render, including the first one after the
         // change, which Preact paints before it runs any effect.
         const painted: string[] = [];
         const before = options.diffed;
         options.diffed = (vnode: VNode) => {
-            if (vnode.type === LiveBacklog) {
-                painted.push($(".rd-backlog").textContent ?? "");
+            if (vnode.type === BandPage) {
+                painted.push($(".rd-bands").textContent ?? "");
             }
             before?.(vnode);
         };

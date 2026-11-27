@@ -52,20 +52,23 @@ async function openAt(width: number): Promise<void> {
 
 const band = (): HTMLElement => root.querySelector<HTMLElement>('.rd-band[data-sprint="F#a"]')!;
 const order = (el: HTMLElement): string[] =>
-    Array.from(el.children, (c) => (c.classList.contains("rd-band__goal") ? "goal" : c.classList.contains("rd-band__rows") ? "rows" : "?"));
+    Array.from(el.children, (c) => (c.classList.contains("rd-band__card") ? "card" : c.classList.contains("rd-band__rows") ? "rows" : "?"));
 
 describe("stacking (story #92)", () => {
-    it("stacks the columns below 760px, each band's goal area above its rows (AC1, G34)", async () => {
+    it("stacks the columns below 760px, each band's card above its rows (AC1, G34, G43)", async () => {
         await openAt(759);
         expect(root.querySelector(".rd-bands")!.classList.contains("rd-bands--stacked")).toBe(true);
-        expect(order(band())).toEqual(["goal", "rows"]);
+        expect(order(band())).toEqual(["card", "rows"]);
         expect(root.querySelector(".rd-divider")).toBeNull();
     });
 
     it("sets the columns side by side at 760px and wider, with the divider (AC2, G33)", async () => {
         await openAt(760);
         expect(root.querySelector(".rd-bands")!.classList.contains("rd-bands--stacked")).toBe(false);
-        expect(order(band())).toEqual(["rows", "goal"]);
+        // The same order as stacked, so nothing is reordered on screen (D11, G43).
+        expect(order(band())).toEqual(["card", "rows"]);
+        expect(CSS_TEXT).toMatch(/\.rd-band__card[^{]*\{[^}]*grid-column: 1/);
+        expect(CSS_TEXT).toMatch(/\.rd-band__rows[^{]*\{[^}]*grid-column: 3/);
         expect(root.querySelector(".rd-divider")).not.toBeNull();
     });
 
@@ -79,8 +82,7 @@ describe("stacking (story #92)", () => {
     it("never scrolls sideways at 360px: stacked bands take the full width and long text wraps (AC3, G34)", async () => {
         await openAt(360);
         expect(root.querySelector(".rd-bands--stacked")).not.toBeNull();
-        expect(CSS_TEXT).toMatch(/\.rd-bands--stacked \.rd-band \{[^}]*flex-direction: column/);
-        expect(CSS_TEXT).toMatch(/\.rd-bands--stacked \.rd-band__rows[^{]*\{[^}]*flex: 1 1 auto/);
+        expect(CSS_TEXT).toMatch(/\.rd-bands--stacked \.rd-band[^{]*\{[^}]*grid-template-columns: minmax\(0, 1fr\)/);
         expect(CSS_TEXT).toMatch(/\.rd-bands \.rd-ref__title[^{]*\{[^}]*overflow-wrap: anywhere/);
         expect(CSS_TEXT).toMatch(/\.rd-bands \.rd-lb-head[^{]*\{[^}]*flex-wrap: wrap/);
         expect(band().style.getPropertyValue("width")).toBe("");

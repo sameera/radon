@@ -16,6 +16,10 @@ export interface FakeIssue {
     inQuery?: boolean;
     // The parent cannot be read: GitHub answers no parent and no error at this issue (R2).
     hiddenParent?: boolean;
+    // The issue's iteration values on its project items: [project, field, iteration].
+    sprints?: [string, string, string][];
+    // GitHub reports that not all of the issue's project values were returned.
+    moreValues?: boolean;
 }
 
 export interface FakeOptions {
@@ -77,6 +81,15 @@ export function fakeGitHub(o: FakeOptions): FakeGitHub {
             url: `https://github.com/${issue.repo}/issues/${issue.n}`,
             repository: { nameWithOwner: issue.repo },
         };
+        if (path[0] === "search") {
+            out.projectItems = {
+                pageInfo: { hasNextPage: issue.moreValues === true },
+                nodes: (issue.sprints ?? []).map(([project, field, iteration]) => ({
+                    project: { id: project },
+                    fieldValues: { pageInfo: { hasNextPage: false }, nodes: [{}, { iterationId: iteration, field: { id: field } }] },
+                })),
+            };
+        }
         const pid: string | null = parentId(issue);
         if (issue.hiddenParent) {
             // What GitHub really answers for a parent the viewer cannot read: no parent and no

@@ -85,7 +85,7 @@ function LiveRef({ issue, current }: { issue: LiveIssue; current: Repo | null })
 // One ancestor on a header row. A parent the query did not return is muted and carries a text
 // label for screen readers, so color is not the only signal (D6, G8).
 function Crumb({ issue, current }: { issue: LiveIssue; current: Repo | null }): VNode {
-    const outside: boolean = !issue.inQuery;
+    const outside: boolean = !issue.inQuery && !issue.elsewhere;
     const label: string = issue.hidden ? "Not in the backlog query" : `Not in the backlog query, ${issue.state.toLowerCase()}`;
     return (
         <span
@@ -99,7 +99,7 @@ function Crumb({ issue, current }: { issue: LiveIssue; current: Repo | null }): 
     );
 }
 
-type Side = "before" | "after";
+export type Side = "before" | "after";
 
 interface ListProps {
     groups: ListGroup[];
@@ -111,7 +111,7 @@ interface ListProps {
 
 // The backlog list. Each item can be dragged to a new place. This drag is the backlog's own: it
 // never plans an item, and the page's drop zones ignore it (G18).
-function List({ groups, current, onMove, onStep }: ListProps): VNode {
+export function List({ groups, current, onMove, onStep }: ListProps): VNode {
     const [dragging, setDragging] = useState<string | null>(null);
     const [over, setOver] = useState<{ id: string; side: Side } | null>(null);
     const end = (): void => {
@@ -140,13 +140,15 @@ function List({ groups, current, onMove, onStep }: ListProps): VNode {
                             ))}
                         </div>
                     )}
-                    {group.items.map(({ issue }) => {
+                    {group.items.map(({ issue, depth }) => {
                         const side: Side | null = over?.id === issue.id && dragging !== issue.id ? over.side : null;
                         return (
                             <div
                                 class={`rd-bl-row rd-lb-row${dragging === issue.id ? " is-dragged" : ""}${side ? ` insert-${side}` : ""}`}
                                 data-num={issue.number}
                                 data-id={issue.id}
+                                data-depth={depth ?? 0}
+                                style={depth ? { paddingLeft: `calc(${depth} * var(--rd-space-4))` } : undefined}
                                 key={issue.id}
                                 draggable={true}
                                 aria-keyshortcuts="Alt+ArrowUp Alt+ArrowDown"

@@ -2,12 +2,14 @@
 // and the goal column on the right, under the milestone that contains it (D8, D9). Bands show only
 // after the Grooming sync and the backlog load both succeeded (D5).
 import type { VNode } from "preact";
-import { useEffect, useRef, useState } from "preact/hooks";
+import { useEffect, useMemo, useRef, useState } from "preact/hooks";
 import { ExternalLink, repoPage } from "./links.tsx";
 import { useRepo, type Repo } from "./repo.tsx";
 import { LiveBacklog, useBacklogLoad, type LiveSource, type LoadState } from "./livebacklog.tsx";
 import { syncGrooming, type Milestone, type Sprint, type SyncLoad } from "./groomingsync.ts";
 import { Divider, fit, limits } from "./grooming.tsx";
+import { assignBands, BandRows } from "./bandrows.tsx";
+import type { LiveIssue } from "./backlogload.ts";
 
 export type BandEntry =
     | { kind: "milestone"; milestone: Milestone; sprints: Sprint[]; start: string | null }
@@ -89,10 +91,11 @@ function MilestoneHeader({ entry, repo }: { entry: BandEntry & { kind: "mileston
 
 export interface BandProps {
     sprint: Sprint;
+    children?: VNode | null;
 }
 
 // One sprint band. The goal area stays empty until the sprint-goals epic fills it.
-function Band({ sprint }: BandProps): VNode {
+function Band({ sprint, children }: BandProps): VNode {
     return (
         <div class="rd-band" data-sprint={sprint.id} role="group" aria-label={sprint.name}>
             <div class="rd-band__rows">
@@ -100,6 +103,7 @@ function Band({ sprint }: BandProps): VNode {
                     <b class="rd-band__name">{sprint.name}</b>
                     <span class="rd-band__dates rd-text-small">{`${formatDate(sprint.start)} – ${formatDate(sprint.end)}`}</span>
                 </div>
+                {children}
             </div>
             <div class="rd-band__goal" aria-label={`Goal for ${sprint.name}`} />
         </div>
@@ -174,6 +178,19 @@ export function BandPage({ live, backlogWidth, onBacklogWidth }: BandPageProps):
     const shownWidth: number = fit(backlogWidth, space);
     const { min, max } = limits(space);
     const entries: BandEntry[] = sync?.ok ? placeSprints(sync.sprints, sync.milestones) : [];
+    const issues: LiveIssue[] = state?.ok ? state.issues : [];
+    const assigned: Map<string, string | null> = useMemo(
+        () => (sync?.ok ? assignBands(issues, sync.sprints, sync.source) : new Map()),
+        [issues, sync],
+    );
+    // The lead's order inside each band, in page memory only, kept with the repository and person.
+    const orderKey: string = JSON.stringify([live.login, repo?.owner, repo?.name]);
+    const [orders, setOrders] = useState<{ key: string; bands: Record<string, string[]> }>({ key: orderKey, bands: {} });
+    const bandOrder = (band: string): string[] | null => (orders.key === orderKey ? (orders.bands[band] ?? null) : null);
+    const setBandOrder = (band: string, ids: string[]): void =>
+        setOrders({ key: orderKey, bands: { ...(orders.key === orderKey ? orders.bands : {}), [band]: ids } });
+    // Issues placed in a sprint band leave the list below the bands (D7).
+    const rest: LoadState = state?.ok ? { ...state, issues: issues.map((i) => (i.inQuery && assigned.get(i.id) ? { ...i, inQuery: false, elsewhere: true } : i)) } : state;
     return (
         <section class="rd-groom rd-groom--bands" aria-labelledby="rd-groom-title">
             <header class="rd-groom__header">
@@ -195,12 +212,22 @@ export function BandPage({ live, backlogWidth, onBacklogWidth }: BandPageProps):
                         entry.kind === "milestone" ? (
                             <MilestoneHeader entry={entry} repo={repo} key={`m:${entry.milestone.id}`} />
                         ) : (
-                            <Band sprint={entry.sprint} key={`s:${entry.sprint.id}`} />
+                            <Band sprint={entry.sprint} key={`s:${entry.sprint.id}`}>
+                                <BandRows
+                                    issues={issues}
+                                    band={entry.sprint.id}
+                                    assigned={assigned}
+                                    filter={filter}
+                                    order={bandOrder(entry.sprint.id)}
+                                    onOrder={(ids: string[]) => setBandOrder(entry.sprint.id, ids)}
+                                    current={repo}
+                                />
+                            </Band>
                         ),
                     )}
                 <LiveBacklog
                     source={live}
-                    state={state}
+                    state={rest}
                     onRetry={() => setAttempt(attempt + 1)}
                     width={shownWidth}
                     filter={filter}

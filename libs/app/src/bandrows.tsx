@@ -1,0 +1,64 @@
+// Places each backlog issue in its sprint's band (D6, D7, story #89).
+import type { VNode } from "preact";
+import { useMemo } from "preact/hooks";
+import { buildTree, filterTree, type LiveIssue, type TreeNode } from "./backlogload.ts";
+import { flattenBand, groupItems, moveItem, orderItems, type ListItem } from "./backloglist.ts";
+import { List, type Side } from "./livebacklog.tsx";
+import type { Sprint, SyncSource } from "./groomingsync.ts";
+import type { Repo } from "./repo.tsx";
+
+// The sprint of an issue: its iteration value on the sync source's field, matched to a sprint by
+// identity. No value, a value on another field or project, or one with no sprint gives null.
+export function sprintOf(issue: LiveIssue, sprints: Map<string, Sprint>, source: SyncSource | null): Sprint | null {
+    if (!source) {
+        return null;
+    }
+    const value = issue.iterations?.find((v) => v.project === source.project && v.field === source.field);
+    return value ? (sprints.get(`${value.field}#${value.iteration}`) ?? null) : null;
+}
+
+// Each query issue's band key: the sprint's id, or null for no sprint.
+export function assignBands(issues: LiveIssue[], sprints: Sprint[], source: SyncSource | null): Map<string, string | null> {
+    const bySprint: Map<string, Sprint> = new Map(sprints.filter((s) => s.synced).map((s) => [`${s.field}#${s.iteration}`, s]));
+    const out: Map<string, string | null> = new Map();
+    for (const issue of issues) {
+        if (issue.inQuery) {
+            out.set(issue.id, sprintOf(issue, bySprint, source)?.id ?? null);
+        }
+    }
+    return out;
+}
+
+interface BandRowsProps {
+    issues: LiveIssue[];
+    // The band's key in the assignment map.
+    band: string | null;
+    assigned: Map<string, string | null>;
+    filter: string;
+    order: string[] | null;
+    onOrder: (ids: string[]) => void;
+    current: Repo | null;
+}
+
+// One band's rows in today's list form, limited to the band's issues (D7, G21, G25).
+export function BandRows({ issues, band, assigned, filter, order, onOrder, current }: BandRowsProps): VNode | null {
+    const inBand = (issue: LiveIssue): boolean => issue.inQuery && assigned.get(issue.id) === band;
+    const tree: TreeNode[] = useMemo(
+        () => buildTree(issues.map((i) => (i.inQuery && !inBand(i) ? { ...i, inQuery: false, elsewhere: true } : i))),
+        [issues, assigned, band],
+    );
+    const all: ListItem[] = useMemo(() => orderItems(flattenBand(tree, inBand), order), [tree, order]);
+    const shown: ListItem[] = useMemo(() => orderItems(flattenBand(filterTree(tree, filter), inBand), order), [tree, filter, order]);
+    if (shown.length === 0) {
+        return null;
+    }
+    const move = (id: string, target: string, side: Side): void => onOrder(moveItem(all, id, target, side));
+    const step = (id: string, by: -1 | 1): void => {
+        const at: number = shown.findIndex((i) => i.issue.id === id);
+        const target: ListItem | undefined = shown[at + by];
+        if (at >= 0 && target) {
+            move(id, target.issue.id, by < 0 ? "before" : "after");
+        }
+    };
+    return <List groups={groupItems(shown)} current={current} onMove={move} onStep={step} />;
+}

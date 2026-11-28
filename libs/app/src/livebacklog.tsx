@@ -145,7 +145,7 @@ export function List({ groups, current, onStep, onDragRow, flags, onShift }: Lis
                             data-num={issue.number}
                             data-id={issue.id}
                             data-depth={depth ?? 0}
-                            style={depth ? { paddingLeft: `calc(${depth} * var(--rd-space-4))` } : undefined}
+                            style={depth ? { paddingLeft: `calc(${depth} * var(--rd-space-8))` } : undefined}
                             key={issue.id}
                             aria-keyshortcuts={onShift ? "Alt+ArrowUp Alt+ArrowDown Alt+Shift+ArrowUp Alt+Shift+ArrowDown" : "Alt+ArrowUp Alt+ArrowDown"}
                             draggable={onDragRow ? true : undefined}

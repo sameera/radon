@@ -12,17 +12,11 @@ import { RepoContext, useRepo, useRepoStore, type RepoStore } from "./repo.tsx";
 import { useRepoList } from "./repolist.ts";
 import { pickRepository, REMEMBERED, useRemembered } from "./remember.ts";
 import type { PreferenceStore } from "./mount.tsx";
-import { INITIATIVES } from "./sample.ts";
-import { unplannedEpicCount } from "./plan.ts";
-import { useSession, type SessionStore } from "./session.ts";
 import { Sidebar, type PageId } from "./sidebar.tsx";
 
 export interface AppProps {
-    session: SessionStore;
     // The repository context. The host writes it; every page reads it (D1).
     repo: RepoStore;
-    showIssues: boolean;
-    onShowIssues: (value: boolean) => void;
     sidebarCollapsed?: boolean;
     onSidebarCollapsed?: (value: boolean) => void;
     backlogWidth?: number;
@@ -36,11 +30,8 @@ export interface AppProps {
 }
 
 // The current page is in-memory state: switching never touches the address, and a reload
-// always opens Grooming. The session state lives in the store, so it survives page switches.
+// always opens Grooming.
 function Shell({
-    session,
-    showIssues: initialShowIssues,
-    onShowIssues,
     sidebarCollapsed = false,
     onSidebarCollapsed,
     backlogWidth: initialWidth,
@@ -54,10 +45,8 @@ function Shell({
     const [backlogWidth, setBacklogWidth] = useState<number | undefined>(initialWidth);
     const [collapsed, setCollapsed] = useState<boolean>(sidebarCollapsed);
     const [page, setPage] = useState<PageId>("grooming");
-    const [showIssues, setShowIssues] = useState<boolean>(initialShowIssues);
     // The one banner menu open, if any: opening one closes the other (G16).
     const [menu, setMenu] = useState<"repo" | "account" | null>(null);
-    const state = useSession(session);
     const current = useRepo();
     const repoStore = useRepoStore();
     const auth = useSignIn(signIn);
@@ -109,7 +98,6 @@ function Shell({
         <div class={banner ? "rd-app rd-app--framed" : "rd-app"}>
             <Sidebar
                 current={page}
-                unplanned={live ? undefined : unplannedEpicCount(INITIATIVES, state)}
                 onSelect={setPage}
                 account={account}
                 collapsed={collapsed}
@@ -123,9 +111,6 @@ function Shell({
                     <PickPrompt />
                 ) : page === "grooming" ? (
                     <GroomingPage
-                        session={session}
-                        state={state}
-                        showIssues={showIssues}
                         live={live}
                         backlogWidth={backlogWidth}
                         onBacklogWidth={(value: number, final: boolean) => {
@@ -133,10 +118,6 @@ function Shell({
                             if (final) {
                                 onBacklogWidth?.(value);
                             }
-                        }}
-                        onShowIssues={(value: boolean) => {
-                            setShowIssues(value);
-                            onShowIssues(value);
                         }}
                     />
                 ) : (

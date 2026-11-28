@@ -7,7 +7,6 @@ import { resolve } from "node:path";
 import { mountApp } from "./mount.tsx";
 import { createRepoStore, type Repo } from "./repo.tsx";
 import { createSignInController } from "./signin.ts";
-import { createSessionStore } from "./session.ts";
 import { fakeGitHub, idOf, type FakeGitHub, type FakeIssue } from "./testing/fakegraph.ts";
 
 const WIDGETS: Repo = { owner: "acme", name: "widgets", url: "https://github.com/acme/widgets" };
@@ -23,7 +22,6 @@ async function settle(): Promise<void> {
 async function open(gateway: FakeGitHub): Promise<void> {
     await act(async () => {
         unmount = await mountApp(root, {
-            session: createSessionStore(),
             signIn: createSignInController({ status: async () => "ada", signIn: async () => ({ login: "ada" }) }),
             gateway,
             repo: createRepoStore(WIDGETS),
@@ -183,7 +181,6 @@ describe("parents in another repository (D3)", () => {
         const github = fakeGitHub({ issues: [{ n: 3, repo: "acme/planning" }, { n: 7, parent: "acme/planning#3" }] });
         await act(async () => {
             unmount = await mountApp(root, {
-                session: createSessionStore(),
                 signIn: createSignInController({ status: async () => "ada", signIn: async () => ({ login: "ada" }) }),
                 gateway: github,
                 repo: createRepoStore({ owner: "acme", name: "widgets", url: "https://ghe.example.com/acme/widgets" }),

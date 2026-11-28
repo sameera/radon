@@ -4,7 +4,14 @@ import { act } from "preact/test-utils";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { mountApp } from "./mount.tsx";
 import { createRepoStore, repoFromUrl, useRepo, RepoContext, type RepoStore } from "./repo.tsx";
-import { createSessionStore } from "./session.ts";
+import { createSignInController } from "./signin.ts";
+import { fakeGitHub } from "./testing/fakegraph.ts";
+
+async function settle(): Promise<void> {
+    for (let i = 0; i < 8; i++) {
+        await act(async () => void (await new Promise((r) => setTimeout(r, 0))));
+    }
+}
 
 const ACME = { owner: "acme", name: "widgets", url: "https://github.com/acme/widgets" };
 const OTHER = { owner: "acme", name: "gadgets", url: "https://github.com/acme/gadgets" };
@@ -69,21 +76,28 @@ describe("repository context (D1, G1, G2)", () => {
 describe("shell with the repository context (D2, G3)", () => {
     it("shows the page for the host's repository and updates links when it changes", async () => {
         const store: RepoStore = createRepoStore(ACME);
+        // Story #104: Grooming needs a live connection, so the page opens signed in.
         await act(async () => {
-            unmount = await mountApp(root, { session: createSessionStore(), repo: store });
+            unmount = await mountApp(root, {
+                repo: store,
+                gateway: fakeGitHub({ issues: [{ n: 31, title: "One" }] }),
+                signIn: createSignInController({ status: async () => "ada", signIn: async () => ({ login: "ada" }) }),
+            });
         });
+        await settle();
         expect(root.querySelector(".rd-groom")).not.toBeNull();
         expect(root.querySelector(".rd-pick-prompt")).toBeNull();
-        const href = (): string => root.querySelector<HTMLAnchorElement>('.rd-bl-epic[data-num="31"] a.rd-ref')!.getAttribute("href")!;
-        expect(href()).toBe("https://github.com/acme/widgets/issues/31");
+        const href = (): string => root.querySelector<HTMLAnchorElement>("a.rd-backlog__new")!.getAttribute("href")!;
+        expect(href()).toBe("https://github.com/acme/widgets/issues/new");
         await act(() => store.set(OTHER));
-        expect(href()).toBe("https://github.com/acme/gadgets/issues/31");
+        await settle();
+        expect(href()).toBe("https://github.com/acme/gadgets/issues/new");
     });
 
     it("asks the person to pick a repository, above every page, when none is chosen", async () => {
         const store: RepoStore = createRepoStore(null);
         await act(async () => {
-            unmount = await mountApp(root, { session: createSessionStore(), repo: store });
+            unmount = await mountApp(root, { repo: store });
         });
         expect(root.querySelector(".rd-pick-prompt")!.textContent).toContain("Pick a repository");
         expect(root.querySelector(".rd-groom")).toBeNull();

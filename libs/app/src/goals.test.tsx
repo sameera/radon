@@ -6,7 +6,6 @@ import type { GitHubRequest, GitHubResult } from "@raiden/shared";
 import { mountApp, type PreferenceStore } from "./mount.tsx";
 import { createRepoStore, type Repo, type RepoStore } from "./repo.tsx";
 import { createSignInController } from "./signin.ts";
-import { createSessionStore } from "./session.ts";
 import { fakeGitHub, type FakeGitHub, type FakeOptions } from "./testing/fakegraph.ts";
 import { GOAL_CAP, GOAL_PATH, normalizeGoal } from "./goals.ts";
 
@@ -45,7 +44,6 @@ async function open(gateway: FakeGitHub, login = "ada"): Promise<void> {
     await act(async () => {
         unmount = await mountApp(root, {
             prefs,
-            session: createSessionStore(),
             signIn: createSignInController({ status: async () => login, signIn: async () => ({ login }) }),
             gateway,
             repo: repos,

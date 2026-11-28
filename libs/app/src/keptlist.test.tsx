@@ -6,7 +6,6 @@ import type { GitHubGateway } from "./gateway.ts";
 import { mountApp, type PreferenceStore } from "./mount.tsx";
 import { createRepoStore, type Repo } from "./repo.tsx";
 import { createSignInController } from "./signin.ts";
-import { createSessionStore } from "./session.ts";
 import { useRepoList } from "./repolist.ts";
 
 const A: Repo = { owner: "acme", name: "alpha", url: "https://github.com/acme/alpha" };
@@ -61,7 +60,6 @@ async function open(login: string, prefs: PreferenceStore, gateway: GitHubGatewa
             return;
         }
         unmount = await mountApp(root, {
-            session: createSessionStore(),
             signIn: createSignInController({ status: async () => login, signIn: async () => ({ login }) }),
             gateway,
             prefs,

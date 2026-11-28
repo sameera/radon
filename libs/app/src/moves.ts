@@ -80,9 +80,11 @@ interface MovesArgs {
     mayEdit: boolean;
     // The issue's number, for the failure message.
     numberOf: (id: string) => number | null;
+    // Hears a row going back to its saved band after a failed save.
+    onRollback?: (id: string) => void;
 }
 
-export function useMoves({ gateway, repo, pageKey, loaded, mayEdit, numberOf }: MovesArgs): Moves {
+export function useMoves({ gateway, repo, pageKey, loaded, mayEdit, numberOf, onRollback }: MovesArgs): Moves {
     const book: MoveBook = useMemo(() => ({ saved: new Map(), targets: new Map(), inFlight: new Set(), queued: new Map() }), [pageKey, loaded]);
     const current = useRef<MoveBook>(book);
     current.current = book;
@@ -125,6 +127,7 @@ export function useMoves({ gateway, repo, pageKey, loaded, mayEdit, numberOf }: 
             // Drop any waiting target and go back to the last band Raiden saved (G21, G24).
             book.targets.delete(id);
             bump();
+            onRollback?.(id);
             const n: number | null = numberOf(id);
             setFailure({ book, text: `The move of ${n === null ? "the issue" : `#${n}`} was not saved. ${MOVE_CAUSE_TEXT[result.cause]}` });
         });

@@ -22,3 +22,8 @@
 - **Choice:** the design system's `rd-pill rd-pill--attention` span at the row's end, worded "In GitHub: Sprint 14" or "In GitHub: no sprint"; it compares the row's shown band, moves included, with its GitHub sprint.
 - **Why:** the Pill is the design system's worded status with an attention tint, and comparing the shown band flags a fresh move at once.
 - **Refuted alternative:** an icon with a tooltip, which carries the state by color and hover alone.
+
+## 2026-11-28 — Focus after a band move is restored by the page, not the band
+- **Choice:** the band page refocuses the moved row's link after the render that shows it in its new band, and again after a rollback when focus was on that row.
+- **Why:** a move between bands re-creates the row in another band's list, so the band's own refocus cannot reach it.
+- **Refuted alternative:** keep the row's DOM node and move it between bands by hand, which works against Preact's rendering.

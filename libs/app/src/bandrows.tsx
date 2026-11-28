@@ -60,10 +60,19 @@ interface BandRowsProps {
     onDragRow?: (id: string | null) => void;
     // The unsynced-with-GitHub flag's words, by issue identity (story #115).
     flags?: Map<string, string>;
+    // Set for editors: Alt+Shift moves a row to the neighbouring band (story #116).
+    onShift?: (id: string, by: -1 | 1) => void;
+}
+
+// The identities of a band's rows in the order they show, without a filter.
+export function bandIds(issues: LiveIssue[], assigned: Map<string, string | null>, band: string | null, order: string[] | null): string[] {
+    const inBand = (issue: LiveIssue): boolean => issue.inQuery && assigned.get(issue.id) === band;
+    const tree: TreeNode[] = buildTree(issues.map((i) => (i.inQuery && !inBand(i) ? { ...i, inQuery: false, elsewhere: true } : i)));
+    return orderItems(flattenBand(tree, inBand), order).map((item: ListItem) => item.issue.id);
 }
 
 // One band's rows in today's list form, limited to the band's issues (D7, G21, G25).
-export function BandRows({ issues, band, assigned, filter, order, onOrder, current, onDragRow, flags }: BandRowsProps): VNode | null {
+export function BandRows({ issues, band, assigned, filter, order, onOrder, current, onDragRow, flags, onShift }: BandRowsProps): VNode | null {
     const inBand = (issue: LiveIssue): boolean => issue.inQuery && assigned.get(issue.id) === band;
     const tree: TreeNode[] = useMemo(
         () => buildTree(issues.map((i) => (i.inQuery && !inBand(i) ? { ...i, inQuery: false, elsewhere: true } : i))),
@@ -94,7 +103,7 @@ export function BandRows({ issues, band, assigned, filter, order, onOrder, curre
     };
     return (
         <div class="rd-band__list" ref={ref}>
-            <List groups={groupItems(shown)} current={current} onStep={step} onDragRow={onDragRow} flags={flags} />
+            <List groups={groupItems(shown)} current={current} onStep={step} onDragRow={onDragRow} flags={flags} onShift={onShift} />
         </div>
     );
 }

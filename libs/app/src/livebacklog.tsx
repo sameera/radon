@@ -114,11 +114,13 @@ interface ListProps {
     onDragRow?: (id: string | null) => void;
     // A row's unsynced-with-GitHub flag, by issue identity: worded status, never a control (G14).
     flags?: Map<string, string>;
+    // Set for an editor only: moves the row to the previous (-1) or next (1) band (story #116).
+    onShift?: (id: string, by: -1 | 1) => void;
 }
 
 // The backlog list. Only an editor's rows can be dragged, to move the issue to another sprint's
 // band; Alt+Up and Alt+Down move an item one place inside its band.
-export function List({ groups, current, onStep, onDragRow, flags }: ListProps): VNode {
+export function List({ groups, current, onStep, onDragRow, flags, onShift }: ListProps): VNode {
     return (
         <ul class="rd-lb-list">
             {groups.map((group: ListGroup) => (
@@ -145,7 +147,7 @@ export function List({ groups, current, onStep, onDragRow, flags }: ListProps): 
                             data-depth={depth ?? 0}
                             style={depth ? { paddingLeft: `calc(${depth} * var(--rd-space-4))` } : undefined}
                             key={issue.id}
-                            aria-keyshortcuts="Alt+ArrowUp Alt+ArrowDown"
+                            aria-keyshortcuts={onShift ? "Alt+ArrowUp Alt+ArrowDown Alt+Shift+ArrowUp Alt+Shift+ArrowDown" : "Alt+ArrowUp Alt+ArrowDown"}
                             draggable={onDragRow ? true : undefined}
                             onDragStart={
                                 onDragRow
@@ -163,7 +165,14 @@ export function List({ groups, current, onStep, onDragRow, flags }: ListProps): 
                             onKeyDown={(e: KeyboardEvent) => {
                                 if (e.altKey && (e.key === "ArrowUp" || e.key === "ArrowDown")) {
                                     e.preventDefault();
-                                    onStep(issue.id, e.key === "ArrowUp" ? -1 : 1);
+                                    const by: -1 | 1 = e.key === "ArrowUp" ? -1 : 1;
+                                    // Alt+Shift moves the row to the neighbouring band, for an editor
+                                    // only; Alt alone moves it inside its band (story #116, D9).
+                                    if (e.shiftKey) {
+                                        onShift?.(issue.id, by);
+                                    } else {
+                                        onStep(issue.id, by);
+                                    }
                                 }
                             }}
                         >

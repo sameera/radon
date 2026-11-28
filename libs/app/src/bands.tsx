@@ -9,7 +9,7 @@ import { useRepo, type Repo } from "./repo.tsx";
 import { LoadStatus, useBacklogLoad, type LiveSource, type LoadState } from "./livebacklog.tsx";
 import { syncGrooming, type Milestone, type Sprint, type SyncLoad } from "./groomingsync.ts";
 import { DEFAULT_BACKLOG_WIDTH, Divider, fit, limits } from "./grooming.tsx";
-import { assignBands, BandRows, shownBands } from "./bandrows.tsx";
+import { assignBands, bandIds, BandRows, shownBands } from "./bandrows.tsx";
 import { MOVE_MARKER, onlyMarker, useMoves } from "./moves.ts";
 import { currentSprint, loadProgress, localToday, type Progress } from "./progress.ts";
 import { buildTree, filterTree, type LiveIssue } from "./backlogload.ts";
@@ -319,6 +319,8 @@ export function BandPage({ live, backlogWidth, onBacklogWidth }: BandPageProps):
     const bandOrder = (band: string): string[] | null => (orders.key === orderKey ? (orders.bands[band] ?? null) : null);
     const setBandOrder = (band: string, ids: string[]): void =>
         setOrders((o) => ({ key: orderKey, bands: { ...(o.key === orderKey ? o.bands : {}), [band]: ids } }));
+    // The row that takes focus once the next render shows it in its new band.
+    const [refocus, setRefocus] = useState<string | null>(null);
     // Sprint moves, saved one at a time per row in Raiden's records (story #114, D6).
     const mayEdit: boolean = sync?.ok === true && sync.mayEdit;
     const { bands: assigned, move, notice } = useMoves({
@@ -328,7 +330,21 @@ export function BandPage({ live, backlogWidth, onBacklogWidth }: BandPageProps):
         loaded,
         mayEdit,
         numberOf: (id: string) => issues.find((i) => i.id === id)?.number ?? null,
+        // Focus stays on the row wherever it shows, also after a rollback took it from the lead (D6).
+        onRollback: (id: string) => {
+            const active: Element | null = document.activeElement;
+            if (active === null || active === document.body || active.closest(".rd-lb-row")?.getAttribute("data-id") === id) {
+                setRefocus(id);
+            }
+        },
     });
+    // After a move between bands, focus follows the row into its new band (G16, G17).
+    useEffect(() => {
+        if (refocus !== null) {
+            bandsRef.current?.querySelector<HTMLElement>(`.rd-lb-row[data-id="${CSS.escape(refocus)}"] .rd-ref`)?.focus();
+            setRefocus(null);
+        }
+    }, [refocus, assigned]);
     // The unsynced-with-GitHub flag: a row whose shown band differs from its GitHub sprint names
     // that sprint, or says GitHub has none. Rows that agree carry no flag (story #115, D4, G9).
     const flags: Map<string, string> = useMemo(() => {
@@ -348,6 +364,21 @@ export function BandPage({ live, backlogWidth, onBacklogWidth }: BandPageProps):
             const key: string = to ?? "";
             setBandOrder(key, [id, ...(bandOrder(key) ?? []).filter((x: string) => x !== id)]);
         }
+    };
+    // Alt+Shift+Down moves a row to the top of the next band, Alt+Shift+Up to the bottom of the
+    // previous one, in on-screen band order: sprint bands, then the no-sprint band. Milestone
+    // headers and the "No milestone" break are not bands (story #116, D9, G18, G20).
+    const bandKeys: (string | null)[] = [...entries.flatMap((e: BandEntry) => (e.kind === "sprint" ? [e.sprint.id] : [])), null];
+    const shiftBand = (id: string, by: -1 | 1): void => {
+        const at: number = bandKeys.indexOf(assigned.get(id) ?? null);
+        const to: string | null | undefined = at < 0 ? undefined : bandKeys[at + by];
+        if (to === undefined || !move(id, to)) {
+            return;
+        }
+        const key: string = to ?? "";
+        const rest: string[] = bandIds(issues, assigned, to, bandOrder(key)).filter((x: string) => x !== id);
+        setBandOrder(key, by > 0 ? [id, ...rest] : [...rest, id]);
+        setRefocus(id);
     };
     // The row an editor is dragging now. A drop is taken only from it, with only the marker (G6).
     const dragging = useRef<string | null>(null);
@@ -484,6 +515,7 @@ export function BandPage({ live, backlogWidth, onBacklogWidth }: BandPageProps):
                                             current={repo}
                                             onDragRow={onDragRow}
                                             flags={flags}
+                                            onShift={mayEdit ? shiftBand : undefined}
                                         />
                                     </Band>
                                 </Fragment>
@@ -500,6 +532,7 @@ export function BandPage({ live, backlogWidth, onBacklogWidth }: BandPageProps):
                                 current={repo}
                                 onDragRow={onDragRow}
                                 flags={flags}
+                                onShift={mayEdit ? shiftBand : undefined}
                             />
                         </Band>
                     </>

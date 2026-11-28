@@ -3,7 +3,6 @@ import { App } from "./app.tsx";
 import type { GitHubGateway } from "./gateway.ts";
 import type { SignInController } from "./signin.ts";
 import { createRepoStore, repoFromUrl, type RepoStore } from "./repo.tsx";
-import { sharedSession, type SessionStore } from "./session.ts";
 
 // A small key-value store for UI preferences that last across reloads. The host supplies it, so
 // this library holds no extension-only code.
@@ -16,7 +15,6 @@ export interface AppOptions {
     // Stylesheet text for the isolated boundary: tokens, design-system components, app layout.
     css?: string;
     prefs?: PreferenceStore;
-    session?: SessionStore;
     // The repository context (D1). The host keeps it current: the extension from the github.com page,
     // the web view from its drop-down. Without it, the context starts from repoUrl.
     repo?: RepoStore;
@@ -33,7 +31,6 @@ export interface AppOptions {
     gateway?: GitHubGateway;
 }
 
-const SHOW_ISSUES: string = "showIssues";
 const SIDEBAR_COLLAPSED: string = "sidebarCollapsed";
 const BACKLOG_WIDTH: string = "groomBacklogWidth";
 
@@ -41,12 +38,10 @@ const BACKLOG_WIDTH: string = "groomBacklogWidth";
 // before the first render, so the page never flashes the wrong state. Returns a function that
 // removes the app.
 export async function mountApp(root: ShadowRoot | HTMLElement, options: AppOptions = {}): Promise<() => void> {
-    const [storedIssues, storedCollapsed, storedWidth]: unknown[] = await Promise.all([
-        options.prefs?.get(SHOW_ISSUES),
+    const [storedCollapsed, storedWidth]: unknown[] = await Promise.all([
         options.prefs?.get(SIDEBAR_COLLAPSED),
         options.prefs?.get(BACKLOG_WIDTH),
     ]);
-    const showIssues: boolean = typeof storedIssues === "boolean" ? storedIssues : true;
     const collapsed: boolean = typeof storedCollapsed === "boolean" ? storedCollapsed : false;
     const backlogWidth: number | undefined =
         typeof storedWidth === "number" && Number.isFinite(storedWidth) ? storedWidth : undefined;
@@ -69,15 +64,12 @@ export async function mountApp(root: ShadowRoot | HTMLElement, options: AppOptio
     root.append(style, container);
     render(
         <App
-            session={options.session ?? sharedSession()}
             repo={options.repo ?? createRepoStore(repoFromUrl(options.repoUrl))}
             banner={options.banner}
             signInLogo={options.signInLogo}
             signIn={options.signIn}
             gateway={options.gateway}
             prefs={options.prefs}
-            showIssues={showIssues}
-            onShowIssues={(value: boolean) => void options.prefs?.set(SHOW_ISSUES, value)}
             sidebarCollapsed={collapsed}
             onSidebarCollapsed={(value: boolean) => void options.prefs?.set(SIDEBAR_COLLAPSED, value)}
             backlogWidth={backlogWidth}

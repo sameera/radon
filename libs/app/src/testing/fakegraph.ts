@@ -35,12 +35,23 @@ export interface FakeOptions {
     cannotRead?: boolean;
     // What Raiden's backend answers to the Grooming sync. Defaults to an empty partition.
     sync?: FakeSync | ((request: GitHubRequest) => GitHubResult | Promise<GitHubResult>);
+    // What Raiden's backend answers to a goal write, when it returns a result. Otherwise the write
+    // is saved in `goals`, which every later sync answer of this fake returns.
+    goal?: (request: GitHubRequest) => GitHubResult | undefined | Promise<GitHubResult | undefined>;
+    // What Raiden's backend answers to a move write, when it returns a result. Otherwise the move
+    // is saved in `assignments`, which every later sync answer of this fake returns (story #114).
+    move?: (request: GitHubRequest) => GitHubResult | undefined | Promise<GitHubResult | undefined>;
 }
 
 export interface FakeSync {
     source?: { project: string; field: string } | null;
     sprints?: Record<string, unknown>[];
     milestones?: Record<string, unknown>[];
+    // Saved goals, by sprint id.
+    goals?: Record<string, string>;
+    // Saved sprint assignments, by issue identity; null is the no-sprint mark (story #114).
+    assignments?: Record<string, string | null>;
+    mayEdit?: boolean;
 }
 
 export interface FakeGitHub extends GitHubGateway {
@@ -48,6 +59,10 @@ export interface FakeGitHub extends GitHubGateway {
     requests: GitHubRequest[];
     // Requests to Raiden's backend, kept apart so GitHub request indexes stay as they were.
     backend: GitHubRequest[];
+    // The goals the fake backend holds, by sprint id.
+    goals: Record<string, string>;
+    // The sprint assignments the fake backend holds, by issue identity.
+    assignments: Record<string, string | null>;
 }
 
 const INLINE: number = 3;
@@ -114,9 +129,33 @@ export function fakeGitHub(o: FakeOptions): FakeGitHub {
     const gateway: FakeGitHub = {
         requests: [],
         backend: [],
+        goals: typeof o.sync === "object" ? { ...(o.sync.goals ?? {}) } : {},
+        assignments: typeof o.sync === "object" ? { ...(o.sync.assignments ?? {}) } : {},
         async request(request: GitHubRequest): Promise<GitHubResult> {
             if (request.to === "backend") {
                 gateway.backend.push(request);
+                if (request.path === "/grooming/goal") {
+                    const forced = await o.goal?.(request);
+                    if (forced) {
+                        return forced;
+                    }
+                    const b = request.body as { sprint: string; text: string };
+                    if (b.text === "") {
+                        delete gateway.goals[b.sprint];
+                    } else {
+                        gateway.goals[b.sprint] = b.text;
+                    }
+                    return { ok: true, status: 200, body: { sprint: b.sprint, text: b.text } };
+                }
+                if (request.path === "/grooming/move") {
+                    const forced = await o.move?.(request);
+                    if (forced) {
+                        return forced;
+                    }
+                    const b = request.body as { issue: string; sprint: string | null };
+                    gateway.assignments[b.issue] = b.sprint;
+                    return { ok: true, status: 200, body: { issue: b.issue, sprint: b.sprint } };
+                }
                 if (typeof o.sync === "function") {
                     return o.sync(request);
                 }
@@ -124,7 +163,15 @@ export function fakeGitHub(o: FakeOptions): FakeGitHub {
                 return {
                     ok: true,
                     status: 200,
-                    body: { repository: 1, source: sync.source ?? null, sprints: sync.sprints ?? [], milestones: sync.milestones ?? [] },
+                    body: {
+                        repository: 1,
+                        source: sync.source ?? null,
+                        sprints: sync.sprints ?? [],
+                        milestones: sync.milestones ?? [],
+                        goals: Object.entries(gateway.goals).map(([sprint, text]) => ({ sprint, text })),
+                        assignments: Object.entries(gateway.assignments).map(([issue, sprint]) => ({ issue, sprint })),
+                        mayEdit: sync.mayEdit ?? false,
+                    },
                 };
             }
             const index: number = gateway.requests.length;

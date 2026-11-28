@@ -80,7 +80,9 @@ type fakeMilestone struct {
 
 // graphGitHub plays GitHub's GraphQL endpoint for the sync.
 type graphGitHub struct {
-	databaseID  int
+	databaseID int
+	// The caller's role on the repository, as GraphQL's viewerPermission names it.
+	permission  string
 	missingRepo bool
 	reject      bool
 	rateLimited bool
@@ -90,10 +92,13 @@ type graphGitHub struct {
 	milestones []fakeMilestone
 	// Milestones per page; 0 means all on one page.
 	milestonePage int
-	queries       []string
-	auths         []string
-	methods       []string
-	paths         []string
+	// The repository each issue identity belongs to, by GitHub's databaseId. An issue not named
+	// here does not exist for the caller (story #114).
+	issueRepos map[string]int
+	queries    []string
+	auths      []string
+	methods    []string
+	paths      []string
 }
 
 func iterJSON(list []fakeIteration) []map[string]any {
@@ -128,6 +133,31 @@ func (g *graphGitHub) server(t *testing.T) *httptest.Server {
 		}
 		write := func(v any) { _ = json.NewEncoder(w).Encode(v) }
 		switch {
+		case strings.HasPrefix(in.Query, "query GoalRepo"):
+			if g.missingRepo {
+				write(map[string]any{"data": map[string]any{"repository": nil},
+					"errors": []any{map[string]any{"type": "NOT_FOUND", "path": []any{"repository"}}}})
+				return
+			}
+			write(map[string]any{"data": map[string]any{"repository": map[string]any{
+				"databaseId": g.databaseID, "viewerPermission": g.permission,
+			}}})
+		case strings.HasPrefix(in.Query, "query MoveCheck"):
+			if g.missingRepo {
+				write(map[string]any{"data": map[string]any{"repository": nil, "node": nil},
+					"errors": []any{map[string]any{"type": "NOT_FOUND", "path": []any{"repository"}}}})
+				return
+			}
+			repo := map[string]any{"databaseId": g.databaseID, "viewerPermission": g.permission}
+			id, _ := in.Variables["issue"].(string)
+			owner, ok := g.issueRepos[id]
+			if !ok {
+				write(map[string]any{"data": map[string]any{"repository": repo, "node": nil},
+					"errors": []any{map[string]any{"type": "NOT_FOUND", "path": []any{"node"}}}})
+				return
+			}
+			write(map[string]any{"data": map[string]any{"repository": repo,
+				"node": map[string]any{"repository": map[string]any{"databaseId": owner}}}})
 		case strings.HasPrefix(in.Query, "query Repo"):
 			if g.missingRepo {
 				write(map[string]any{"data": map[string]any{"repository": nil},
@@ -145,8 +175,9 @@ func (g *graphGitHub) server(t *testing.T) *httptest.Server {
 				projects = append(projects, map[string]any{"id": p.ID, "createdAt": p.Created, "fields": map[string]any{"nodes": fields}})
 			}
 			write(map[string]any{"data": map[string]any{"repository": map[string]any{
-				"databaseId": g.databaseID,
-				"projectsV2": map[string]any{"nodes": projects},
+				"databaseId":       g.databaseID,
+				"viewerPermission": g.permission,
+				"projectsV2":       map[string]any{"nodes": projects},
 			}}})
 		case strings.HasPrefix(in.Query, "query Milestones"):
 			nodes := []any{}
@@ -253,7 +284,17 @@ type syncAnswer struct {
 		State       string `json:"state"`
 		Origin      string `json:"origin"`
 	} `json:"milestones"`
-	Error string `json:"error"`
+	Goals []struct {
+		Sprint string `json:"sprint"`
+		Text   string `json:"text"`
+	} `json:"goals"`
+	// Story #114: every sprint assignment record; a nil sprint is the no-sprint mark.
+	Assignments []struct {
+		Issue  string  `json:"issue"`
+		Sprint *string `json:"sprint"`
+	} `json:"assignments"`
+	MayEdit bool   `json:"mayEdit"`
+	Error   string `json:"error"`
 }
 
 func runSync(t *testing.T, h *Handler, r events.APIGatewayV2HTTPRequest) (events.APIGatewayV2HTTPResponse, syncAnswer) {

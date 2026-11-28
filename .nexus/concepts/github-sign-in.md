@@ -1,7 +1,7 @@
 ---
 title: GitHub Sign-In
 aliases: [sign in with github, github sign-in, sign-in flow, signed-in user]
-touches: [github-client, raiden-app-shell, raiden-page-host, raiden-web-view, web-repository-picker, web-view-sign-out, grooming-sync]
+touches: [github-client, raiden-app-shell, raiden-page-host, raiden-web-view, web-repository-picker, web-view-sign-out, backend-settings, grooming-sync]
 last_updated_by: "#81"
 status: active
 verification: verified
@@ -39,6 +39,7 @@ The extension keeps its record in extension storage, and only the worker reads i
 - [web-repository-picker](web-repository-picker.md) — the login from sign-in tags and checks the picker's stored repository and list.
 - [grooming-sync](grooming-sync.md) — the backend reads GitHub with the lead's token during the Grooming sync, and the organization Projects permission lets it read organization projects.
 - [web-view-sign-out](web-view-sign-out.md) — sign out ends the web view's sign-in only, and the next sign-in asks for the account chooser.
+- [backend-settings](backend-settings.md) — on AWS, the backend's code exchange reads its client secret, client ID, return addresses and origins from two secret stores.
 
 ## Decision Log
 
@@ -53,6 +54,9 @@ The web view repository picker uses this page: the login from sign-in tags and c
 
 ### 2026-11-22 — #58 — Sign-out is an optional host step, so the shell stays free of hosts
 The sign-in port gains an optional sign-out step, and the shell shows Sign out only when the host supplies it. The web view supplies it and the extension does not, so the extension is exactly as it was. Only the host knows where its sign-in record lives, and the shell must never import from a host. The behaviour of sign out has its own page, web-view-sign-out, which also records the reciprocal link. Refuted alternative: none.
+
+### 2026-11-28 — #96 — Reciprocal link from backend-settings
+On AWS, the backend reads the settings its code exchange uses from two secret stores, which backend-settings records.
 
 ### 2026-11-28 — #81 — The App reads organization projects, and the backend receives the token on data requests
 The repository-level Projects permission does not reach a project an organization owns, so the App gains the organization-level Projects permission, read only, and no other permission. Without it no organization repository would get synced sprints. A project owned by a person stays unreadable until #84. The backend now receives the lead's token on the Grooming sync, so "keeps nothing" narrows to "keeps no token and no code": it now stores the repository's synced records. Refuted alternative: keep the App's permissions unchanged and leave sprints to #84. No team would update its App, but organization repositories, the main case, would get no sprints.

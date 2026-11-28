@@ -5,7 +5,6 @@ import type { GitHubGateway } from "./gateway.ts";
 import { mountApp, type PreferenceStore } from "./mount.tsx";
 import { createRepoStore, type Repo, type RepoStore } from "./repo.tsx";
 import { createSignInController, type SignInPort } from "./signin.ts";
-import { createSessionStore } from "./session.ts";
 
 const WIDGETS: Repo = { owner: "acme", name: "widgets", url: "https://github.com/acme/widgets" };
 const GADGETS: Repo = { owner: "acme", name: "gadgets", url: "https://github.com/acme/gadgets" };
@@ -58,7 +57,6 @@ async function open(o: {
     const repo = o.repo ?? createRepoStore(null);
     await act(async () => {
         unmount = await mountApp(root, {
-            session: createSessionStore(),
             signIn: createSignInController(port(o.login)),
             gateway: o.gateway,
             prefs: o.prefs,

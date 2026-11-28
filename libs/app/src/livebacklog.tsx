@@ -6,6 +6,7 @@ import type { GitHubGateway } from "./gateway.ts";
 import type { Repo } from "./repo.tsx";
 import { loadBacklog, type BacklogCause, type BacklogLoad, type LiveIssue } from "./backlogload.ts";
 import type { ListGroup } from "./backloglist.ts";
+import { MOVE_MARKER } from "./moves.ts";
 
 // What a page needs to read the live backlog: the gateway and the signed-in person (D1, G12).
 export interface LiveSource {
@@ -108,11 +109,18 @@ interface ListProps {
     current: Repo | null;
     // Moves an item one place up (-1) or down (1) in the shown list.
     onStep: (id: string, by: -1 | 1) => void;
+    // Set for an editor only: a row can be dragged, carrying only Raiden's row marker, and this
+    // hears its start (the row's identity) and its end (null) (story #114, D8, G6, G26).
+    onDragRow?: (id: string | null) => void;
+    // A row's unsynced-with-GitHub flag, by issue identity: worded status, never a control (G14).
+    flags?: Map<string, string>;
+    // Set for an editor only: moves the row to the previous (-1) or next (1) band (story #116).
+    onShift?: (id: string, by: -1 | 1) => void;
 }
 
-// The backlog list. A live row can never be dragged (live-backlog invariant 7); Alt+Up and
-// Alt+Down move an item one place, which never plans it.
-export function List({ groups, current, onStep }: ListProps): VNode {
+// The backlog list. Only an editor's rows can be dragged, to move the issue to another sprint's
+// band; Alt+Up and Alt+Down move an item one place inside its band.
+export function List({ groups, current, onStep, onDragRow, flags, onShift }: ListProps): VNode {
     return (
         <ul class="rd-lb-list">
             {groups.map((group: ListGroup) => (
@@ -139,15 +147,37 @@ export function List({ groups, current, onStep }: ListProps): VNode {
                             data-depth={depth ?? 0}
                             style={depth ? { paddingLeft: `calc(${depth} * var(--rd-space-4))` } : undefined}
                             key={issue.id}
-                            aria-keyshortcuts="Alt+ArrowUp Alt+ArrowDown"
+                            aria-keyshortcuts={onShift ? "Alt+ArrowUp Alt+ArrowDown Alt+Shift+ArrowUp Alt+Shift+ArrowDown" : "Alt+ArrowUp Alt+ArrowDown"}
+                            draggable={onDragRow ? true : undefined}
+                            onDragStart={
+                                onDragRow
+                                    ? (e: DragEvent) => {
+                                          // A drag that starts on the issue link drags the row and carries no link (G7).
+                                          e.dataTransfer?.setData(MOVE_MARKER, issue.id);
+                                          if (e.dataTransfer) {
+                                              e.dataTransfer.effectAllowed = "move";
+                                          }
+                                          onDragRow(issue.id);
+                                      }
+                                    : undefined
+                            }
+                            onDragEnd={onDragRow ? () => onDragRow(null) : undefined}
                             onKeyDown={(e: KeyboardEvent) => {
                                 if (e.altKey && (e.key === "ArrowUp" || e.key === "ArrowDown")) {
                                     e.preventDefault();
-                                    onStep(issue.id, e.key === "ArrowUp" ? -1 : 1);
+                                    const by: -1 | 1 = e.key === "ArrowUp" ? -1 : 1;
+                                    // Alt+Shift moves the row to the neighbouring band, for an editor
+                                    // only; Alt alone moves it inside its band (story #116, D9).
+                                    if (e.shiftKey) {
+                                        onShift?.(issue.id, by);
+                                    } else {
+                                        onStep(issue.id, by);
+                                    }
                                 }
                             }}
                         >
                             <LiveRef issue={issue} current={current} icon />
+                            {flags?.has(issue.id) && <span class="rd-pill rd-pill--attention rd-lb-flag">{flags.get(issue.id)}</span>}
                         </div>
                     ))}
                 </li>

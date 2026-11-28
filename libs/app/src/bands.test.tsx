@@ -6,7 +6,6 @@ import type { GitHubResult } from "@raiden/shared";
 import { mountApp, type PreferenceStore } from "./mount.tsx";
 import { createRepoStore, type Repo } from "./repo.tsx";
 import { createSignInController } from "./signin.ts";
-import { createSessionStore } from "./session.ts";
 import { fakeGitHub, type FakeGitHub, type FakeOptions } from "./testing/fakegraph.ts";
 import { placeSprints } from "./bands.tsx";
 import { readFileSync } from "node:fs";
@@ -58,7 +57,6 @@ async function open(gateway: FakeGitHub | undefined): Promise<void> {
     await act(async () => {
         unmount = await mountApp(root, {
             prefs,
-            session: createSessionStore(),
             signIn: createSignInController({ status: async () => "ada", signIn: async () => ({ login: "ada" }) }),
             gateway,
             repo: createRepoStore(WIDGETS),
@@ -189,10 +187,12 @@ describe("band view (story #88)", () => {
         expect($(".rd-divider")).not.toBeNull();
     });
 
-    it("keeps today's sample page for a host with no live connection (G27)", async () => {
+    // Story #104, D10 replaces G27: a host with no live connection shows a sign-in note, not the sample page.
+    it("shows a sign-in note, and no sample page, for a host with no live connection (G23)", async () => {
         await open(undefined);
         expect($(".rd-bands")).toBeNull();
-        expect($(".rd-goals")).not.toBeNull();
+        expect($(".rd-goals")).toBeNull();
+        expect($(".rd-groom-note")!.textContent).toContain("Grooming needs a GitHub sign-in");
     });
 
     it("puts the name and dates on the card in the goal column, and only rows in the backlog column (AC2, G41, G46)", async () => {

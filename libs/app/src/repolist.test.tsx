@@ -8,7 +8,6 @@ import { mountApp } from "./mount.tsx";
 import { createRepoStore, type Repo, type RepoStore } from "./repo.tsx";
 import { loadReachable, useRepoList } from "./repolist.ts";
 import { createSignInController, type SignInController, type SignInPort } from "./signin.ts";
-import { createSessionStore } from "./session.ts";
 
 function repoRow(owner: string, name: string): unknown {
     return { name, owner: { login: owner }, html_url: `https://github.com/${owner}/${name}` };
@@ -110,7 +109,6 @@ async function open(opts: { login: string | null; gateway?: GitHubGateway; repo?
     const signIn = createSignInController(port(opts.login));
     await act(async () => {
         unmount = await mountApp(root, {
-            session: createSessionStore(),
             signIn,
             gateway: opts.gateway,
             repo: opts.repo ?? createRepoStore(null),

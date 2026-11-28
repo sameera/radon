@@ -1,8 +1,8 @@
 ---
 title: Grooming Sprint Bands
 aliases: [band view, sprint bands, milestone headers, sprint card, goal column, backlog column, no-sprint band, current sprint, sprint progress]
-touches: [live-backlog, grooming-backlog-view, grooming-sync, grooming-github-links, live-backlog-rows, sprint-goals, raiden-app-shell]
-last_updated_by: "#82"
+touches: [live-backlog, grooming-backlog-view, grooming-sync, grooming-github-links, live-backlog-rows, sprint-goals, raiden-app-shell, grooming-sprint-assignments]
+last_updated_by: "#83"
 status: active
 verification: verified
 ---
@@ -15,7 +15,7 @@ For a signed-in lead, Grooming shows the backlog as one band per sprint, under h
 
 A Grooming load runs the Grooming sync and the backlog load together, and bands show only after both succeeded. A failure names its cause and offers one Try again for both.
 
-Each issue goes in the band of its iteration on the sync source. An issue with no such iteration, or one matching no sprint, goes in the last band, whose card says so. Sprints sort by date. Each sprint sits under the milestone with the earliest due date on or after its start, comparing calendar dates with the due date read in UTC. Sprints after every due date have no header, and a "No milestone" separator marks where they start. Milestones with no due date come after the last sprint band, before the no-sprint band. A header shows the title, due date, first sprint's start, description and a link to edit the milestone in GitHub.
+Each issue goes in the band of its sprint, as grooming-sprint-assignments decides. An issue with no sprint goes in the last band, whose card says so. Sprints sort by date. Each sprint sits under the milestone with the earliest due date on or after its start, comparing calendar dates with the due date read in UTC. Sprints after every due date have no header, and a "No milestone" separator marks where they start. Milestones with no due date come after the last sprint band, before the no-sprint band. A header shows the title, due date, first sprint's start, description and a link to edit the milestone in GitHub.
 
 A sprint card shows the sprint's name, dates and goal. The current sprint is the one whose dates contain today, the earliest start winning. Its card alone carries the glow and a progress bar: the closed share of all its issues in GitHub, open and closed.
 
@@ -24,7 +24,7 @@ Below 760 pixels, each band stacks its card above its rows, and the divider hide
 ## Key Invariants
 
 1. Every issue the backlog query returns appears as a row in exactly one band.
-2. An issue whose iteration on the sync source is sprint S appears only in the band of S.
+2. ~~An issue whose iteration on the sync source is sprint S appears only in the band of S.~~ Moved to grooming-sprint-assignments.
 3. When GitHub reports that an issue's project values were not all returned, the load fails, so no issue lands in the wrong band.
 4. At most one element carries the glow: the current sprint's card.
 5. The backlog column holds no sprint name, dates, glow or progress bar.
@@ -40,6 +40,7 @@ Below 760 pixels, each band stacks its card above its rows, and the divider hide
 - [grooming-github-links](grooming-github-links.md) — each milestone header links to the milestone's edit page in GitHub, in a new tab under the same link rules.
 - [sprint-goals](sprint-goals.md) — each sprint card holds its sprint's goal, as a goal field for a goal editor and as text for everyone else.
 - [raiden-app-shell](raiden-app-shell.md) — the shell shows Grooming first and gives it the gateway, the signed-in person and the backlog width.
+- [grooming-sprint-assignments](grooming-sprint-assignments.md) — a saved sprint move decides a row's band, and every sprint band and the no-sprint band accept a drop.
 
 ## Decision Log
 
@@ -48,3 +49,6 @@ Story #88 requires two columns, and sample goals beside real sprints would read 
 
 ### 2026-11-28 — #82 — Sprint cards carry the goal, and the sample page gives way to a sign-in note
 Each sprint card now shows its sprint's goal, because the goal belongs beside the sprint's issues. Invariant 7 is struck, because a goal editor's card now holds a goal field. The no-sprint band is not a sprint, so its card has no goal. A host with no live GitHub connection now shows a note that Grooming needs a GitHub sign-in instead of the sample page, because both real hosts already show the sign-in screen to a signed-out person. The grooming-plan page is retired, so its edge is dropped. The sprint-goals and raiden-app-shell pages name this page as a neighbour, so this page names them back. Refuted alternative: keep the sample page, without goals, as a demo for hosts with no connection. It keeps a backlog for tests and screenshots, but it keeps the plan code alive for a path no real host uses.
+
+### 2026-11-28 — #83 — Raiden's sprint decides the band
+Epic #83 lets the lead move an issue to another sprint in Raiden, and Raiden's sprint wins over GitHub's iteration. So a row goes in the band of its usable Raiden sprint and follows GitHub only when Raiden holds none. Invariant 2 moves to grooming-sprint-assignments, which now holds the placement rule. The no-sprint card no longer says "in GitHub", because an issue can be there by Raiden's choice. The progress bar still counts the sprint's issues in GitHub. The new grooming-sprint-assignments page names this page as a neighbour, so this page names it back. Refuted alternative: the backend returns each issue's band. It lost because the backend would have to read every issue's iteration from GitHub again.

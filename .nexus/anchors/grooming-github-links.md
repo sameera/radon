@@ -1,6 +1,6 @@
 ---
 concept: grooming-github-links
-source_sha: 6324cccef4b14fcfe27c8f46c656e693875acf29
+source_sha: c1cde6af5ae8bfde02668a639d73d3a357d9a25a
 generated: 2026-11-28
 ---
 
@@ -10,11 +10,9 @@ generated: 2026-11-28
 # Code Anchors: Grooming GitHub Links
 
 - `libs/app/src/links.tsx` — repository page addresses, new-tab link with no opener, issue reference link (#28)
-- `libs/app/src/grooming.tsx` — issue references in backlog and goal rows, New initiative link at the backlog foot (#28)
 - `libs/app/src/mount.tsx` — passes the repository address into the app (#28)
-- `libs/app/src/issuelinks.test.tsx` — issue links open in a new tab and do not drag (#28)
 - `libs/app/src/newinit.test.tsx` — New initiative link and its absence without an address (#28)
 - `libs/design-system/components/IssueRef.md` — issue reference as a link (#28)
 - `libs/design-system/components.css` — link styles for issue references and the backlog foot (#28)
 - `libs/app/src/livebacklog.tsx` — live row links to the issue's own repository on the current GitHub server
-- `libs/app/src/bands.tsx` — milestone header link to the milestone's edit page
+- `libs/app/src/bands.tsx` — New initiative link beside the backlog filter, and the milestone header link to the milestone's edit page

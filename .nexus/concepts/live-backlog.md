@@ -1,8 +1,8 @@
 ---
 title: Live Backlog
 aliases: [live backlog, backlog query, backlog load, sprint values]
-touches: [grooming-plan, grooming-backlog-view, raiden-app-shell, github-client, repository-context, grooming-sprint-bands, live-backlog-rows]
-last_updated_by: "#81"
+touches: [grooming-backlog-view, raiden-app-shell, github-client, repository-context, grooming-sprint-bands, live-backlog-rows]
+last_updated_by: "#82"
 status: active
 verification: verified
 ---
@@ -31,10 +31,9 @@ A load shows a loading state until it ends. A failed load names its cause and of
 
 ## Integration Points
 
-- [grooming-plan](grooming-plan.md) — the live backlog fills the band view's backlog column, and the sample goals and plan stay only on the sample page.
 - [grooming-sprint-bands](grooming-sprint-bands.md) — the live backlog fills the band view's backlog column, split into bands by each issue's iteration value on the sync source.
 - [grooming-backlog-view](grooming-backlog-view.md) — the same filter and width apply, and a matching row shows with its descendants under its full chain.
-- [raiden-app-shell](raiden-app-shell.md) — the shell gives Grooming the gateway and the signed-in person, and hides the plan counts while the live backlog shows.
+- [raiden-app-shell](raiden-app-shell.md) — the shell gives Grooming the gateway and the signed-in person for the live backlog.
 - [github-client](github-client.md) — every backlog request goes through the shared client, whose failure kinds become the backlog's named failure causes.
 - [repository-context](repository-context.md) — a new load starts when the current repository changes, and the backlog drops an answer for the previous one.
 - [live-backlog-rows](live-backlog-rows.md) — the rows page shows the issues and parent chains this load returns.
@@ -46,3 +45,6 @@ The backlog reads the query through GitHub's GraphQL search, and each answer als
 
 ### 2026-11-28 — #81 — The backlog reads each issue's sprint, and its rows split out
 The backlog load now also reads each issue's iteration values, in the same answers it already reads, and the browser matches them to sprints. This keeps invariants 5 and 6: the backlog reads GitHub only through the gateway, and issue titles never reach the backend. Invariant 3 is rewritten as the record states, because a load now includes the sprint and milestone sync. The record's rewrite of invariant 1 put the page over the 400-word cap, so how the loaded issues show as rows moved to the new live-backlog-rows page. Invariants 1, 2 and 7 moved with it and are struck here, so the other numbers keep their meaning. The link to grooming-github-links moved too, because the links sit on rows. Refuted alternative: the backend reads every issue's iteration during the sync and returns each issue's sprint. The browser would do less work, but the backend would page through every project item on each load, and issue data would start reaching the backend.
+
+### 2026-11-28 — #82 — The grooming-plan edge goes with the sample page
+The sample Grooming page and its plan counts are deleted, so the live backlog is the only backlog and the shell has no counts to hide. The grooming-plan page is retired, so its edge is dropped. Refuted alternative: none.

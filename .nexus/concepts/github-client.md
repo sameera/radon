@@ -1,8 +1,8 @@
 ---
 title: GitHub Client
 aliases: [github gateway, shared github client, github requests]
-touches: [github-sign-in, raiden-app-shell, raiden-page-host, raiden-web-view, web-repository-picker, web-view-sign-out, live-backlog, grooming-sync]
-last_updated_by: "#81"
+touches: [github-sign-in, raiden-app-shell, raiden-page-host, raiden-web-view, web-repository-picker, web-view-sign-out, live-backlog, grooming-sync, sprint-goals]
+last_updated_by: "#82"
 status: active
 verification: verified
 ---
@@ -37,6 +37,7 @@ The client never throws. It returns plain data: a success with its status and bo
 - [web-view-sign-out](web-view-sign-out.md) — sign out takes the client's refresh lock so a renewal cannot sign the person back in.
 - [live-backlog](live-backlog.md) — every live backlog request goes through this client, and its failure kinds become the backlog's named failure causes.
 - [grooming-sync](grooming-sync.md) — the Grooming sync request goes through this client to the team's backend, with the token, the same renewal and the same failure kinds.
+- [sprint-goals](sprint-goals.md) — the goal write goes through this client to the team's backend, and a permission failure becomes the card's not-allowed cause.
 
 ## Decision Log
 
@@ -57,3 +58,6 @@ The live-backlog page names this page as a neighbour, so this page names it back
 
 ### 2026-11-28 — #81 — The client also sends the token to the team's configured backend
 The Grooming sync runs in the backend as the signed-in lead, so the client gains a second permitted destination: the team's configured backend. It adds the token there the same way, and a rejected-credentials answer from the backend gets the same single renewal and retry. A backend failure may carry one reason from a fixed list, so the page can name an unreadable project apart from an unreadable repository, while free backend text never reaches a page. Refuted alternative: a new failure kind for each backend cause. It is more explicit, but every host and page would have to learn each new kind.
+
+### 2026-11-28 — #82 — Reciprocal link from sprint-goals
+The sprint-goals page names this page as a neighbour, so this page names it back. The goal write uses the same backend destination, renewal and failure kinds as the sync. The backend answers an unknown sprint with a conflict, not a not-found, because this client reads a not-found as a permission failure and the card would wrongly say the lead is not allowed.

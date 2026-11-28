@@ -1,9 +1,9 @@
 ---
 title: Grooming Plan
 aliases: [grooming page, sprint goals plan, backlog planning]
-touches: [raiden-app-shell, raiden-page-host, grooming-undo-save, grooming-backlog-view, grooming-plan-moves, grooming-github-links, raiden-sidebar, live-backlog, grooming-sprint-bands]
-last_updated_by: "#81"
-status: active
+touches: [grooming-undo-save, grooming-plan-moves]
+last_updated_by: "#82"
+status: deprecated
 verification: verified
 ---
 
@@ -31,15 +31,8 @@ Goals can be added, edited and deleted. Drops, menus, buttons and goal fields al
 
 ## Integration Points
 
-- [raiden-app-shell](raiden-app-shell.md) — the shell shows Grooming as its first page, supplies the preference store that keeps the Show issues choice, and shows on the Grooming sidebar item the count of epics not planned, derived from the session state.
-- [raiden-page-host](raiden-page-host.md) — the host opens Grooming on every load of the Raiden address.
 - [grooming-undo-save](grooming-undo-save.md) — every plan change goes through the change path, which records the undo list and refreshes the save state.
-- [grooming-backlog-view](grooming-backlog-view.md) — the backlog filter and width change what the backlog shows, never the plan.
 - [grooming-plan-moves](grooming-plan-moves.md) — drag and drop, the item menus and the Take out of plan button change the plan through its one change path.
-- [grooming-github-links](grooming-github-links.md) — the backlog and goal rows show each issue reference as a link to GitHub, and opening one leaves the plan unchanged.
-- [raiden-sidebar](raiden-sidebar.md) — the Grooming sidebar item shows the count of epics not planned, derived from this session state with the header count's rule.
-- [live-backlog](live-backlog.md) — for a signed-in person the band view replaces both panels, and the sample goals and the plan show only when the host gives no live GitHub connection.
-- [grooming-sprint-bands](grooming-sprint-bands.md) — for a signed-in lead the band view replaces both panels, and the sample goals, plan, Undo and Save plan show only without a live connection.
 
 ## Decision Log
 
@@ -57,3 +50,6 @@ Grooming shows the live backlog when the shell has a GitHub gateway and a signed
 
 ### 2026-11-28 — #81 — The band view replaces both panels for a signed-in lead
 For a signed-in person with a live GitHub connection, Grooming shows only the band view, and the sample goals panel, its ranking, Undo and Save plan do not show. Story #88 requires two columns, and sample goals beside real sprints would read as real data. A host with no live connection keeps the sample page until #82 removes it, so the plan rules on this page now hold only on the sample page. Refuted alternative: keep the sample goals panel beside the bands until #82. Nothing would be removed before its epic, but it breaks the two-column layout and puts sample goals next to real sprints.
+
+### 2026-11-28 — #82 — Retired: the sample page and its plan are deleted
+Epic #82 deleted the sample Grooming page: the sample goals and their ranks, the starting plan and its rules, the sample backlog, and the Show issues switch. Goals now live on the sprint cards and save to Raiden's backend, as the sprint-goals page states. A host with no live GitHub connection shows a sign-in note, as the grooming-sprint-bands page states. Story #104 requires that no sample goal appears, signed in or not, and keeping the plan would mean maintaining a model nobody uses. The edges to active pages are dropped, so only the edges to the two retired plan pages remain. Refuted alternative: keep the sample page, without goals, as a demo for hosts with no connection. It keeps a backlog for tests and screenshots, but it keeps the plan code alive for a path no real host uses.

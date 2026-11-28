@@ -1,8 +1,8 @@
 ---
 title: Raiden App Shell
 aliases: [raiden app, raiden pages frame]
-touches: [raiden-banner, raiden-page-host, grooming-plan, grooming-backlog-view, raiden-web-view, raiden-sidebar, github-sign-in, github-client, repository-context, web-view-sign-out, live-backlog]
-last_updated_by: "#73"
+touches: [raiden-banner, raiden-page-host, grooming-backlog-view, raiden-web-view, raiden-sidebar, github-sign-in, github-client, repository-context, web-view-sign-out, live-backlog, grooming-sprint-bands]
+last_updated_by: "#82"
 status: active
 verification: verified
 ---
@@ -13,7 +13,7 @@ The shell is the frame shared by every Raiden page. It shows the sidebar of Raid
 
 ## How It Works
 
-The shell is built with Preact in its own library. The extension host only mounts it, gives it the stylesheet text, gives it a preference store and gives it a repository context that the host keeps current. The shell reads preferences only through that store. While the repository context is "none", the main area shows a pick prompt in place of the page. The sidebar and banner stay. It reads the Show issues choice, the sidebar choice and the backlog width in one pass before its first render, so the page does not flash the wrong state.
+The shell is built with Preact in its own library. The extension host only mounts it, gives it the stylesheet text, gives it a preference store and gives it a repository context that the host keeps current. The shell reads preferences only through that store. While the repository context is "none", the main area shows a pick prompt in place of the page. The sidebar and banner stay. It reads the sidebar choice and the backlog width in one pass before its first render, so the page does not flash the wrong state.
 
 Switching sidebar pages changes only what the shell shows. Nothing in the address changes.
 
@@ -35,16 +35,16 @@ Reusable controls go into the design system, each with its own guideline page: s
 ## Integration Points
 
 - [raiden-page-host](raiden-page-host.md) — the host mounts the shell, supplies the stylesheet text, the preference store and the repository context, and resolves the theme.
-- [grooming-plan](grooming-plan.md) — Grooming is the first page the shell shows, and it is the page that opens on every load.
 - [grooming-backlog-view](grooming-backlog-view.md) — the shell reads the preferred backlog width before its first render and keeps it through the preference store.
 - [raiden-web-view](raiden-web-view.md) — the web view mounts the shell with the banner option set.
 - [raiden-banner](raiden-banner.md) — the shell draws the banner when the host sets the option, and the banner holds the repository breadcrumb and the avatar.
-- [raiden-sidebar](raiden-sidebar.md) — the shell draws the sidebar, keeps its collapsed choice through the preference store, and passes it the not-planned count.
+- [raiden-sidebar](raiden-sidebar.md) — the shell draws the sidebar, keeps its collapsed choice through the preference store, and tells it which page is current.
 - [github-sign-in](github-sign-in.md) — the shell shows the sign-in control, and the username or, in the web view, the avatar and menu, and does not block pages.
 - [github-client](github-client.md) — the shell receives the GitHub gateway from the host and gives it to pages.
 - [repository-context](repository-context.md) — the shell provides the shared current repository and shows the pick prompt while it is "none".
 - [web-view-sign-out](web-view-sign-out.md) — the shell shows Sign out only when the host supplies the step, and shows the sign-in screen at once.
-- [live-backlog](live-backlog.md) — the shell gives Grooming the gateway and the signed-in person for the live backlog, and hides the plan counts while it shows.
+- [live-backlog](live-backlog.md) — the shell gives Grooming the gateway and the signed-in person for the live backlog.
+- [grooming-sprint-bands](grooming-sprint-bands.md) — Grooming is the first page the shell shows on every load: the band view, or a sign-in note without a live connection.
 
 ## Decision Log
 
@@ -73,3 +73,6 @@ The shell keeps one value for the open banner menu, repository or account, and g
 
 ### 2026-11-26 — #73 — Reciprocal link from live-backlog
 The live-backlog page names this page as a neighbour, so this page names it back.
+
+### 2026-11-28 — #82 — The shell drops the sample session, the Show issues choice and the plan counts
+The sample Grooming page is deleted, so the shell no longer holds the in-memory session, no longer reads or keeps the Show issues choice, and passes the sidebar no count. The stored Show issues value is left unused. The grooming-plan page is retired, so the Grooming edge now points at grooming-sprint-bands, which is what the shell shows as Grooming. Refuted alternative: none.

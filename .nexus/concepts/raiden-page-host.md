@@ -1,8 +1,8 @@
 ---
 title: Raiden Page Host
 aliases: [raiden tab, raiden address, raiden host]
-touches: [raiden-app-shell, grooming-plan, raiden-web-view, grooming-github-links, github-sign-in, github-client, repository-context]
-last_updated_by: "#66"
+touches: [raiden-app-shell, raiden-web-view, grooming-github-links, github-sign-in, github-client, repository-context]
+last_updated_by: "#82"
 status: active
 verification: verified
 ---
@@ -32,7 +32,6 @@ The app code loads only when the Raiden address opens, so every other github.com
 ## Integration Points
 
 - [raiden-app-shell](raiden-app-shell.md) — the host mounts the shell and gives it the preference store and the repository context, which the host fills from the page without a network request.
-- [grooming-plan](grooming-plan.md) — the host opens on Grooming, and the Show issues choice is stored through the host's preference store.
 - [raiden-web-view](raiden-web-view.md) — the web view is a second host beside this one, with its own theme and preference store.
 - [grooming-github-links](grooming-github-links.md) — the Grooming links are built from the repository address this host reads from GitHub's page.
 - [github-sign-in](github-sign-in.md) — the extension host signs in through its background worker and keeps the record in extension storage.
@@ -58,3 +57,6 @@ The host used to keep the address it mounted with and never compare it. The Raid
 
 ### 2026-11-24 — #66 — The web view's context comes from its menu, not a drop-down
 The web view has no github.com page to read, so its repository comes from its own repository menu. This entry changes only the wording of that source, because the drop-down it named is gone. Refuted alternative: none.
+
+### 2026-11-28 — #82 — The grooming-plan edge goes with the sample page
+The Show issues choice is no longer read or stored, and the grooming-plan page is retired, so its edge is dropped. The shell still opens on Grooming, as the raiden-app-shell page states. Refuted alternative: none.

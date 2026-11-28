@@ -1,6 +1,6 @@
 ---
 concept: grooming-backlog-view
-source_sha: 6324cccef4b14fcfe27c8f46c656e693875acf29
+source_sha: c1cde6af5ae8bfde02668a639d73d3a357d9a25a
 generated: 2026-11-28
 ---
 
@@ -9,8 +9,7 @@ generated: 2026-11-28
 
 # Code Anchors: Grooming Backlog View
 
-- `libs/app/src/plan.ts` — backlog filter matching (#26)
-- `libs/app/src/grooming.tsx` — divider that moves in the key's direction for either backlog side, and a reset width
+- `libs/app/src/grooming.tsx` — divider that moves in the key's direction, and a reset width
 - `libs/app/src/app.tsx` — holds the shown backlog width and reports the final choice (#26)
 - `libs/app/src/mount.tsx` — reads and keeps the preferred backlog width under its new key
 - `libs/app/src/app.css` — backlog, filter and divider layout (#26)

@@ -114,7 +114,8 @@ It deploys only `RaidenWeb`, reads the backend address and the web view address 
 no client ID is set.
 
 It uploads only the changed files, the page last, and deletes removed files after the page. Then it clears the
-CloudFront cache and waits until that finishes. When the command ends, the web view address serves the new files. Every
+CloudFront cache and waits until that finishes. When the command ends, the web view address serves the new files. If a
+run fails while it clears the cache, run it again: it clears the cache even though no file changed. Every
 file tells the browser to check for a newer copy on each load, so no browser keeps a stale service worker or manifest.
 
 ## Repeat runs
@@ -150,16 +151,18 @@ The CloudFormation execution role then creates the resources. Your credentials n
 
 | Command | Action | Resource |
 |---|---|---|
-| `pnpm aws:settings` | `secretsmanager:PutSecretValue` | `raiden/github-client-secret`, `raiden/signin-settings` |
-| `pnpm aws:settings` | `lambda:GetFunctionConfiguration`, `lambda:UpdateFunctionConfiguration` | the `raiden-backend` function |
-| `pnpm aws:setup`, `pnpm aws:update-web` | `secretsmanager:GetSecretValue` | `raiden/signin-settings` only |
+| `pnpm aws:settings` | `secretsmanager:PutSecretValue` | `raiden/github-client-secret-*`, `raiden/signin-settings-*` |
+| `pnpm aws:settings` | `lambda:GetFunctionConfiguration`, `lambda:UpdateFunctionConfiguration`, `lambda:GetFunction` | the `raiden-backend` function |
+| `pnpm aws:setup`, `pnpm aws:update-web` | `secretsmanager:GetSecretValue` | `raiden/signin-settings-*` only |
 | `pnpm aws:setup`, `pnpm aws:update-web` | `s3:ListBucket` | the `RaidenWeb` bucket |
 | `pnpm aws:setup`, `pnpm aws:update-web` | `s3:PutObject`, `s3:DeleteObject` | the objects in the `RaidenWeb` bucket |
-| `pnpm aws:setup`, `pnpm aws:update-web` | `cloudfront:CreateInvalidation`, `cloudfront:GetInvalidation` | the `RaidenWeb` distribution |
+| `pnpm aws:setup`, `pnpm aws:update-web` | `cloudfront:CreateInvalidation`, `cloudfront:GetInvalidation`, `cloudfront:ListInvalidations` | the `RaidenWeb` distribution |
+
+Secrets Manager adds a random suffix to each secret's ARN, so a policy names the secrets with a trailing `-*`. `lambda:GetFunction` is what the settings command calls while it waits for the function to finish its update.
 
 Every command also calls `cloudformation:DescribeStacks` to read the stack outputs.
 
-No command needs `secretsmanager:GetSecretValue` on `raiden/github-client-secret`. Only the backend function reads it.
+No command needs `secretsmanager:GetSecretValue` on `raiden/github-client-secret-*`. Only the backend function reads it.
 
 ## Build the extension against the deployment
 

@@ -68,6 +68,15 @@ describe("deployment guide", () => {
         }
     });
 
+    it("names every right the commands' waiters and checks call, and the secrets with their ARN suffix (#102 AC3)", () => {
+        const perms: string = section(/permissions/i);
+        expect(perms).toContain("`lambda:GetFunction`");
+        expect(perms).toContain("`cloudfront:ListInvalidations`");
+        expect(perms).toContain("`raiden/github-client-secret-*`");
+        expect(perms).toContain("`raiden/signin-settings-*`");
+        expect(perms).not.toMatch(/`raiden\/(github-client-secret|signin-settings)`/);
+    });
+
     it("names the bootstrap resources and their administrator rights (R1)", () => {
         const boot: string = section(/bootstrap/i);
         expect(boot).toContain("CDKToolkit");

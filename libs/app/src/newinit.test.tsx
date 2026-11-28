@@ -2,24 +2,32 @@
 import { act } from "preact/test-utils";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { mountApp } from "./mount.tsx";
-import { createSessionStore, type SessionStore } from "./session.ts";
+import { createRepoStore, repoFromUrl } from "./repo.tsx";
+import { createSignInController } from "./signin.ts";
+import { fakeGitHub } from "./testing/fakegraph.ts";
 
 const REPO: string = "https://github.com/acme/widgets";
 
 let root: HTMLElement;
 let unmount: () => void;
-let session: SessionStore;
 let fetchSpy: ReturnType<typeof vi.fn>;
 
+// Story #104: the link lives in the band view, so the page opens signed in with a live connection.
 async function open(repoUrl: string | undefined = REPO): Promise<void> {
-    session = createSessionStore();
     await act(async () => {
-        unmount = await mountApp(root, { session, repoUrl });
+        unmount = await mountApp(root, {
+            repo: createRepoStore(repoFromUrl(repoUrl)),
+            gateway: fakeGitHub({ issues: [{ n: 1, title: "One" }] }),
+            signIn: createSignInController({ status: async () => "ada", signIn: async () => ({ login: "ada" }) }),
+        });
     });
+    for (let i = 0; i < 8; i++) {
+        await act(async () => void (await new Promise((r) => setTimeout(r, 0))));
+    }
 }
 const $ = <T extends Element>(sel: string): T => root.querySelector<T>(sel)!;
 const link = (): HTMLAnchorElement | null =>
-    root.querySelector<HTMLAnchorElement>(".rd-backlog a.rd-backlog__new");
+    root.querySelector<HTMLAnchorElement>("a.rd-backlog__new");
 
 beforeEach(() => {
     root = document.createElement("div");
@@ -34,12 +42,12 @@ afterEach(() => {
 });
 
 describe("New initiative in GitHub link", () => {
-    it("sits at the foot of the backlog panel", async () => {
+    it("sits in the band view's tool row, above the bands", async () => {
         await open();
         const a: HTMLAnchorElement = link()!;
         expect(a).toBeTruthy();
         expect(a.textContent!.trim()).toBe("New initiative in GitHub");
-        expect($(".rd-backlog").lastElementChild!.contains(a)).toBe(true);
+        expect($(".rd-bands__tools").contains(a)).toBe(true);
     });
 
     it("opens the create-issue page of the current repository in a new tab", async () => {
@@ -57,16 +65,14 @@ describe("New initiative in GitHub link", () => {
         expect(new URL(link()!.href).search).toBe("");
     });
 
-    it("leaves the Raiden page, its address and its plan as they were", async () => {
+    it("leaves the Raiden page and its address as they were", async () => {
         await open();
         const before: string = root.innerHTML.replace(/\s+/g, " ");
         const address: string = location.href;
-        const state = session.get();
         const a: HTMLAnchorElement = link()!;
         a.addEventListener("click", (e) => e.preventDefault());
         await act(() => a.click());
         expect(location.href).toBe(address);
-        expect(session.get()).toBe(state);
         expect(root.innerHTML.replace(/\s+/g, " ")).toBe(before);
     });
 
@@ -99,16 +105,13 @@ describe("New initiative in GitHub link", () => {
     });
 
     it("is not shown when no repository is known; the page asks for one instead (G3)", async () => {
-        session = createSessionStore();
-        await act(async () => {
-            unmount = await mountApp(root, { session });
-        });
+        await open("");
         expect(link()).toBeNull();
         expect(root.textContent).not.toContain("New initiative in GitHub");
         expect(root.querySelector(".rd-pick-prompt")).not.toBeNull();
     });
 
-    it("stays at the foot while the backlog filter hides every row", async () => {
+    it("stays while the backlog filter hides every row", async () => {
         await open();
         const input: HTMLInputElement = $('input[aria-label="Filter backlog"]');
         await act(() => {

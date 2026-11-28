@@ -7,7 +7,6 @@ import type { GitHubResult } from "@raiden/shared";
 import { mountApp, type PreferenceStore } from "./mount.tsx";
 import { createRepoStore, type Repo, type RepoStore } from "./repo.tsx";
 import { createSignInController } from "./signin.ts";
-import { createSessionStore } from "./session.ts";
 import { fakeGitHub, type FakeGitHub, type FakeIssue } from "./testing/fakegraph.ts";
 import { BandPage } from "./bands.tsx";
 
@@ -32,8 +31,6 @@ let root: HTMLElement;
 let unmount: (() => void) | undefined;
 let stored: Record<string, unknown>;
 let prefs: PreferenceStore;
-// The session the last open() mounted, so a test can check the plan behind the page (G39).
-let session: ReturnType<typeof createSessionStore>;
 const flush = (): Promise<void> => act(async () => void (await new Promise((r) => setTimeout(r, 0))));
 async function settle(): Promise<void> {
     for (let i = 0; i < 8; i++) {
@@ -45,7 +42,6 @@ async function open(gateway: FakeGitHub, repo: RepoStore = createRepoStore(WIDGE
     await act(async () => {
         unmount = await mountApp(root, {
             prefs,
-            session: (session = createSessionStore()),
             signIn: createSignInController({ status: async () => login, signIn: async () => (login ? { login } : null) }),
             gateway,
             repo,
@@ -253,14 +249,15 @@ describe("the list (D3)", () => {
         expect($(".rd-bands").textContent).toContain("No issues match");
     });
 
-    // Story #88, D8: the signed-in band view shows no plan, so the plan is checked in the session.
-    it("filtering never changes the plan, the save state or Undo (G27, G39)", async () => {
-        await open(fakeGitHub({ issues: TREE }));
-        const plan: string = JSON.stringify(session.get());
+    // Story #104, D10: the plan is gone, so filtering is checked to send nothing and change no goal.
+    it("filtering sends no request and changes no goal (G27, G39)", async () => {
+        const github = fakeGitHub({ issues: TREE });
+        await open(github);
+        const backend: number = github.backend.length;
         await type("epic");
         await type("");
-        expect(JSON.stringify(session.get())).toBe(plan);
-        expect(session.get().undo).toHaveLength(0);
+        expect(github.backend).toHaveLength(backend);
+        expect(github.goals).toEqual({});
     });
 
     it("never lets a live row be dragged, and a drag moves nothing (live-backlog invariant 7)", async () => {
@@ -306,15 +303,12 @@ describe("the list (D3)", () => {
         expect(shape()).toEqual(["5", "10>20: 30 25"]);
     });
 
-    it("reordering never changes the plan, the save state or Undo, and sends no request", async () => {
+    it("reordering sends no request", async () => {
         const github = fakeGitHub({ issues: TREE });
         await open(github);
-        const plan: string = JSON.stringify(session.get());
         const sent: number = github.requests.length;
         const sentBackend: number = github.backend.length;
         await step(5, "ArrowDown");
-        expect(JSON.stringify(session.get())).toBe(plan);
-        expect(session.get().undo).toHaveLength(0);
         expect(github.requests).toHaveLength(sent);
         expect(github.backend).toHaveLength(sentBackend);
         expect(JSON.stringify(stored)).not.toMatch(/I_|order/);
@@ -505,12 +499,12 @@ describe("live rows beside the sample plan (D5)", () => {
         await open(fakeGitHub({ issues: [{ n: 31, title: "Same number as a sample epic" }, { n: 12, title: "Same as a sample initiative" }] }));
         // Story #88, D8: the goal column holds an empty goal area per sprint; a drop there plans nothing.
         const goal: HTMLElement = $(".rd-bands__col--goals");
-        const plan: string = JSON.stringify(session.get());
+        const before: string = goal.textContent ?? "";
         await act(() => drag(row(31), "dragstart"));
         await act(() => drag(goal, "dragover"));
         await act(() => drag(goal, "drop"));
         await act(() => drag(row(31), "dragend"));
-        expect(JSON.stringify(session.get())).toBe(plan);
+        expect(goal.textContent).toBe(before);
         for (const row of rows()) {
             expect(row.querySelector('[aria-haspopup="menu"]')).toBeNull();
             expect(row.textContent).not.toMatch(/Goal \d/);

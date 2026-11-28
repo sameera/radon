@@ -12,6 +12,7 @@ import { DEFAULT_BACKLOG_WIDTH, Divider, fit, limits } from "./grooming.tsx";
 import { assignBands, BandRows } from "./bandrows.tsx";
 import { currentSprint, loadProgress, localToday, type Progress } from "./progress.ts";
 import { buildTree, filterTree, type LiveIssue } from "./backlogload.ts";
+import { SprintGoal } from "./goalcard.tsx";
 
 export type BandEntry =
     | { kind: "milestone"; milestone: Milestone; sprints: Sprint[]; start: string | null }
@@ -96,6 +97,8 @@ interface CardProps {
     detail: string;
     // Set for the current sprint only: its card alone carries the glow and the bar (G31, G32).
     progress?: Progress | null;
+    // The sprint's goal; the no-sprint band has none (D8, G9).
+    goal?: VNode | null;
 }
 
 function ProgressBar({ progress }: { progress: Progress }): VNode {
@@ -115,15 +118,16 @@ function ProgressBar({ progress }: { progress: Progress }): VNode {
     );
 }
 
-// A sprint card in the goal column: the sprint's name and dates, and the progress bar of the
-// current sprint. Its height leaves room for the goal that the sprint-goals epic adds (D17).
-function SprintCard({ name, detail, progress }: CardProps): VNode {
+// A sprint card in the goal column: the sprint's name and dates, its goal, and the progress bar of
+// the current sprint (D17, story #103).
+function SprintCard({ name, detail, progress, goal }: CardProps): VNode {
     return (
         <div class={`rd-band__card${progress ? " is-current" : ""}`}>
             <div class="rd-band__label">
                 <b class="rd-band__name">{name}</b>
                 <span class="rd-band__dates rd-text-small">{detail}</span>
             </div>
+            {goal}
             {progress && <ProgressBar progress={progress} />}
         </div>
     );
@@ -338,6 +342,19 @@ export function BandPage({ live, backlogWidth, onBacklogWidth }: BandPageProps):
                                         name={entry.sprint.name}
                                         detail={`${formatDate(entry.sprint.start)} – ${formatDate(entry.sprint.end)}`}
                                         progress={sync?.ok && sync.progress?.sprint === entry.sprint.id ? sync.progress : null}
+                                        goal={
+                                            sync?.ok && repo ? (
+                                                <SprintGoal
+                                                    key={`${repo.owner}/${repo.name}#${entry.sprint.id}`}
+                                                    gateway={live.gateway}
+                                                    repo={repo}
+                                                    sprint={entry.sprint.id}
+                                                    sprintName={entry.sprint.name}
+                                                    saved={sync.goals[entry.sprint.id] ?? ""}
+                                                    mayEdit={sync.mayEdit}
+                                                />
+                                            ) : null
+                                        }
                                     >
                                         <BandRows
                                             issues={issues}

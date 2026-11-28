@@ -34,42 +34,6 @@ export function SettingsIcon(): VNode {
     );
 }
 
-export function ChevronIcon({ open }: { open: boolean }): VNode {
-    return (
-        <svg {...SVG} stroke-linecap="round" stroke-linejoin="round" style={open ? undefined : "transform: rotate(-90deg)"}>
-            <path d="M4 6l4 4 4-4" />
-        </svg>
-    );
-}
-
-export function MoreIcon(): VNode {
-    return (
-        <svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
-            <circle cx="3" cy="8" r="1.3" />
-            <circle cx="8" cy="8" r="1.3" />
-            <circle cx="13" cy="8" r="1.3" />
-        </svg>
-    );
-}
-export function GripIcon(): VNode {
-    return (
-        <svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
-            <circle cx="6" cy="4" r="1.1" />
-            <circle cx="10" cy="4" r="1.1" />
-            <circle cx="6" cy="8" r="1.1" />
-            <circle cx="10" cy="8" r="1.1" />
-            <circle cx="6" cy="12" r="1.1" />
-            <circle cx="10" cy="12" r="1.1" />
-        </svg>
-    );
-}
-export function PlusIcon(): VNode {
-    return (
-        <svg {...SVG} stroke-linecap="round" aria-hidden="true">
-            <path d="M8 3v10M3 8h10" />
-        </svg>
-    );
-}
 export function SidebarIcon(): VNode {
     return (
         <svg {...SVG} stroke-linecap="round" stroke-linejoin="round">
@@ -78,14 +42,6 @@ export function SidebarIcon(): VNode {
         </svg>
     );
 }
-export function CloseIcon(): VNode {
-    return (
-        <svg {...SVG} stroke-linecap="round">
-            <path d="M4 4l8 8M12 4l-8 8" />
-        </svg>
-    );
-}
-
 // A neutral person mark. It stands in for an avatar picture that did not load.
 export function PersonIcon(): VNode {
     return (

@@ -7,7 +7,6 @@ import type { GitHubGateway } from "./gateway.ts";
 import { mountApp, type PreferenceStore } from "./mount.tsx";
 import { createRepoStore, type Repo, type RepoStore } from "./repo.tsx";
 import { createSignInController } from "./signin.ts";
-import { createSessionStore } from "./session.ts";
 
 const ds = (file: string): string => readFileSync(resolve(__dirname, "../../design-system", file), "utf8");
 
@@ -50,7 +49,6 @@ async function open(o: { gateway: GitHubGateway; repo?: RepoStore; prefs?: Prefe
     const login: string = o.login ?? "ada";
     await act(async () => {
         unmount = await mountApp(root, {
-            session: createSessionStore(),
             signIn: createSignInController({ status: async () => login, signIn: async () => ({ login }), signOut: async () => undefined }),
             gateway: o.gateway,
             prefs: o.prefs,

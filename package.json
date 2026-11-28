@@ -9,7 +9,8 @@
     "typecheck": "nx run-many -t typecheck",
     "test": "nx run-many -t test",
     "affected": "nx affected -t typecheck test build",
-    "aws:setup": "nx run infra:setup"
+    "aws:setup": "nx run infra:setup",
+    "aws:settings": "nx run infra:settings"
   },
   "nx": {
     "includedScripts": []

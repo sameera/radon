@@ -1,6 +1,13 @@
 // The real AWS calls the commands make. Only the commands import this file; the stacks and the
 // tests never do (G3).
 import { CloudFormationClient, DescribeStacksCommand } from "@aws-sdk/client-cloudformation";
+import {
+    GetFunctionConfigurationCommand,
+    LambdaClient,
+    UpdateFunctionConfigurationCommand,
+    waitUntilFunctionUpdatedV2,
+} from "@aws-sdk/client-lambda";
+import { GetSecretValueCommand, PutSecretValueCommand, SecretsManagerClient } from "@aws-sdk/client-secrets-manager";
 import { BOOTSTRAP_STACK } from "./names.ts";
 import type { Outputs } from "./setup.ts";
 
@@ -48,4 +55,37 @@ export async function healthOk(backendUrl: string, attempts: number = 6): Promis
         await new Promise((r) => setTimeout(r, 5000));
     }
     return false;
+}
+
+const secrets: SecretsManagerClient = new SecretsManagerClient({});
+const lambda: LambdaClient = new LambdaClient({});
+
+export async function putSecret(id: string, value: string): Promise<void> {
+    await secrets.send(new PutSecretValueCommand({ SecretId: id, SecretString: value }));
+}
+
+// The value of a store, or null when it has none yet.
+export async function readSecret(id: string): Promise<string | null> {
+    try {
+        const res = await secrets.send(new GetSecretValueCommand({ SecretId: id }));
+        return res.SecretString ?? null;
+    } catch (err) {
+        if (err instanceof Error && err.name === "ResourceNotFoundException") {
+            return null;
+        }
+        throw err;
+    }
+}
+
+// Sets RAIDEN_SETTINGS_VERSION, which holds no secret, so Lambda starts fresh instances that read
+// the stores again (D7). Every other configuration value is kept.
+export async function recycleFunction(functionName: string, version: string): Promise<void> {
+    const current = await lambda.send(new GetFunctionConfigurationCommand({ FunctionName: functionName }));
+    await lambda.send(
+        new UpdateFunctionConfigurationCommand({
+            FunctionName: functionName,
+            Environment: { Variables: { ...current.Environment?.Variables, RAIDEN_SETTINGS_VERSION: version } },
+        }),
+    );
+    await waitUntilFunctionUpdatedV2({ client: lambda, maxWaitTime: 300 }, { FunctionName: functionName });
 }

@@ -12,3 +12,8 @@
 - **Choice:** The distribution uses a cache policy whose minimum TTL is one year, and the files carry `Cache-Control: no-cache`.
 - **Why:** CloudFront caches a `no-cache` response for the minimum TTL and passes the header to the browser, so the edge keeps files until the invalidation and the browser still revalidates (D11).
 - **Refuted alternative:** The managed CachingOptimized policy, whose minimum TTL of one second would make the edge go to the bucket on almost every request.
+
+## 2026-11-27 — The settings command takes no arguments at all
+- **Choice:** `pnpm aws:settings` refuses every argument and asks for each value; piped standard input answers the prompts line by line.
+- **Why:** With no arguments the client secret can never reach shell history or the process list (G8), and one prompt path serves both a terminal and a pipe.
+- **Refuted alternative:** Flags for the client ID and addresses with only the secret prompted, which needs argument parsing that a secret flag could slip through.

@@ -1,12 +1,13 @@
-// The backend stack: the Raiden table, the backend function, its function URL, its role and its
-// log group (D2, D4, D5).
+// The backend stack: the Raiden table, the backend function, its function URL, its role, its
+// log group and its two settings stores (D2, D4, D5, D6).
 import { CfnOutput, Duration, RemovalPolicy, Stack, type StackProps } from "aws-cdk-lib";
 import { AttributeType, BillingMode, Table } from "aws-cdk-lib/aws-dynamodb";
 import { PolicyStatement, Role, ServicePrincipal } from "aws-cdk-lib/aws-iam";
 import { Architecture, Code, Function as LambdaFunction, FunctionUrlAuthType, Runtime } from "aws-cdk-lib/aws-lambda";
 import { LogGroup, RetentionDays } from "aws-cdk-lib/aws-logs";
+import { CfnSecret } from "aws-cdk-lib/aws-secretsmanager";
 import type { Construct } from "constructs";
-import { FUNCTION_NAME, TABLE_NAME } from "./names.ts";
+import { CLIENT_SECRET_NAME, FUNCTION_NAME, SIGNIN_SETTINGS_NAME, TABLE_NAME } from "./names.ts";
 
 export interface BackendStackProps extends StackProps {
     // The backend zip. The build is repeatable, so an unchanged checkout gives the same asset
@@ -35,7 +36,21 @@ export class BackendStack extends Stack {
             removalPolicy: RemovalPolicy.RETAIN,
         });
 
-        // No managed policy: the role may use only its table and its own logs (G12).
+        // Two stores created with no value. The stack never writes one, so a later stack change can
+        // never reset what the settings command wrote, and the secret is in no template (D6, G7).
+        // The client secret has a store of its own, so the web view update can read the client ID
+        // without ever reading the secret (G9).
+        const clientSecret: CfnSecret = new CfnSecret(this, "ClientSecret", {
+            name: CLIENT_SECRET_NAME,
+            description: "Raiden: the GitHub App's client secret. Written by pnpm aws:settings.",
+        });
+        const signInSettings: CfnSecret = new CfnSecret(this, "SignInSettings", {
+            name: SIGNIN_SETTINGS_NAME,
+            description:
+                "Raiden: the GitHub App's client ID, allowed return addresses and allowed origins. Written by pnpm aws:settings.",
+        });
+
+        // No managed policy: the role may use only its table, its two stores and its own logs (G12).
         const role: Role = new Role(this, "Role", {
             assumedBy: new ServicePrincipal("lambda.amazonaws.com"),
         });
@@ -43,6 +58,12 @@ export class BackendStack extends Stack {
             new PolicyStatement({
                 actions: ["dynamodb:DescribeTable", "dynamodb:Query", "dynamodb:PutItem", "dynamodb:DeleteItem"],
                 resources: [table.tableArn],
+            }),
+        );
+        role.addToPolicy(
+            new PolicyStatement({
+                actions: ["secretsmanager:GetSecretValue"],
+                resources: [clientSecret.ref, signInSettings.ref],
             }),
         );
         role.addToPolicy(
@@ -62,7 +83,12 @@ export class BackendStack extends Stack {
             logGroup: logs,
             memorySize: 256,
             timeout: Duration.seconds(30),
-            environment: { RAIDEN_TABLE: TABLE_NAME },
+            // Store identifiers only; the backend reads the values at start (D6).
+            environment: {
+                RAIDEN_TABLE: TABLE_NAME,
+                RAIDEN_CLIENT_SECRET_ID: clientSecret.ref,
+                RAIDEN_SIGNIN_SETTINGS_ID: signInSettings.ref,
+            },
         });
 
         // The backend answers preflights and origin checks itself, so the URL adds no
@@ -71,5 +97,7 @@ export class BackendStack extends Stack {
 
         new CfnOutput(this, "BackendUrl", { value: url.url });
         new CfnOutput(this, "FunctionName", { value: fn.functionName });
+        new CfnOutput(this, "ClientSecretArn", { value: clientSecret.ref });
+        new CfnOutput(this, "SignInSettingsArn", { value: signInSettings.ref });
     }
 }

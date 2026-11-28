@@ -83,6 +83,7 @@ describe("backend stack", () => {
             "AWS::Lambda::Permission",
             "AWS::Lambda::Url",
             "AWS::Logs::LogGroup",
+            "AWS::SecretsManager::Secret",
         ]);
     });
 });

@@ -1,5 +1,6 @@
 import { Fragment, type VNode } from "preact";
 import { useEffect, useState } from "preact/hooks";
+import { WorkItemIcon, workItemKind } from "./workitemicon.tsx";
 import { ExternalLink, repoPage } from "./links.tsx";
 import type { GitHubGateway } from "./gateway.ts";
 import type { Repo } from "./repo.tsx";
@@ -69,11 +70,13 @@ function sameRepoName(issue: LiveIssue, current: Repo | null): boolean {
 
 // An issue's number and title, linked to its page. An issue in another repository shows its
 // repository-qualified reference (D3).
-function LiveRef({ issue, current }: { issue: LiveIssue; current: Repo | null }): VNode {
+function LiveRef({ issue, current, icon = false }: { issue: LiveIssue; current: Repo | null; icon?: boolean }): VNode {
     const ref: string = sameRepoName(issue, current) ? `#${issue.number}` : `${issue.repo}#${issue.number}`;
+    const kind = workItemKind(issue.issueType ?? null, issue.labels ?? []);
     const body: VNode = (
         <>
             <span class="rd-ref__num">{ref}</span>
+            {icon && <span class="rd-ref__icon" data-kind={kind ?? "unknown"} role="img" aria-label={kind ?? "Issue"}><WorkItemIcon kind={kind} /></span>}
             <span class="rd-ref__title">{issue.title}</span>
         </>
     );
@@ -144,7 +147,7 @@ export function List({ groups, current, onStep }: ListProps): VNode {
                                 }
                             }}
                         >
-                            <LiveRef issue={issue} current={current} />
+                            <LiveRef issue={issue} current={current} icon />
                         </div>
                     ))}
                 </li>

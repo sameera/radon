@@ -267,7 +267,7 @@ function Backlog({ state, session, dnd, filter, onFilter, width, menu }: Backlog
                                 >
                                     <ChevronIcon open={open} />
                                 </button>
-                                <IssueRef num={init.num} title={init.title} />
+                                <IssueRef num={init.num} title={init.title} kind="initiative" />
                                 <span class="rd-bl-meta">{meta}</span>
                                 <ItemMenu state={state} session={session} menu={menu} kind="init" num={init.num} />
                             </div>
@@ -283,8 +283,7 @@ function Backlog({ state, session, dnd, filter, onFilter, width, menu }: Backlog
                                             onDragEnd={dnd.end}
                                             key={epic.num}
                                         >
-                                            <span class="rd-glyph rd-glyph--epic" aria-hidden="true" />
-                                            <IssueRef num={epic.num} title={epic.title} />
+                                            <IssueRef num={epic.num} title={epic.title} kind="epic" />
                                             <span class="rd-bl-meta">{goalLabel(state, eff)}</span>
                                             <ItemMenu state={state} session={session} menu={menu} kind="epic" num={epic.num} />
                                         </div>

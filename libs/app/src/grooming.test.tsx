@@ -56,6 +56,15 @@ describe("header", () => {
 });
 
 describe("backlog panel", () => {
+    it("places the selected type icon between each sample ID and title", async () => {
+        await open();
+        for (const [selector, kind] of [[".rd-bl-row--init", "initiative"], [".rd-bl-epic", "epic"]]) {
+            const parts = Array.from($(selector).querySelector(".rd-ref")!.children);
+            expect(parts.map((part) => part.className)).toEqual(["rd-ref__num", "rd-ref__icon", "rd-ref__title"]);
+            expect(parts[1]!.getAttribute("data-kind")).toBe(kind);
+        }
+    });
+
     it("nests each initiative's epics under its number and title", async () => {
         await open();
         const inits: HTMLElement[] = $$(".rd-bl-init");

@@ -65,3 +65,30 @@ func TestWriteBanStaysUntilWriteBack(t *testing.T) {
 		t.Error("product context lacks the write ban lasting until the write-back epic")
 	}
 }
+
+// Story #114 AC6, D10, G14: the design system's rule 4 names sprint assignments, beside sprint
+// goals, as Raiden data that gets edit controls, and still keeps an issue's own data read-only.
+func TestDesignRuleNamesSprintAssignments(t *testing.T) {
+	var rule string
+	for _, line := range strings.Split(read(t, "libs/design-system/README.md"), "\n") {
+		if strings.HasPrefix(line, "4. ") {
+			rule = line
+		}
+	}
+	if rule == "" {
+		t.Fatal("the design system has no rule 4")
+	}
+	for _, want := range []string{
+		"**Read-only on GitHub data.**",
+		"Nothing that shows an issue, iteration or field looks editable.",
+		"sprint goals",
+		"sprint assignments",
+	} {
+		if !strings.Contains(rule, want) {
+			t.Errorf("rule 4 lacks %q: %s", want, rule)
+		}
+	}
+	if !regexp.MustCompile(`Raiden data \(sprint goals and sprint assignments\) gets edit controls`).MatchString(rule) {
+		t.Errorf("rule 4 does not name sprint assignments as Raiden data with edit controls: %s", rule)
+	}
+}

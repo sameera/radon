@@ -9,7 +9,8 @@ import { useRepo, type Repo } from "./repo.tsx";
 import { LoadStatus, useBacklogLoad, type LiveSource, type LoadState } from "./livebacklog.tsx";
 import { syncGrooming, type Milestone, type Sprint, type SyncLoad } from "./groomingsync.ts";
 import { DEFAULT_BACKLOG_WIDTH, Divider, fit, limits } from "./grooming.tsx";
-import { assignBands, BandRows } from "./bandrows.tsx";
+import { assignBands, BandRows, shownBands } from "./bandrows.tsx";
+import { MOVE_MARKER, onlyMarker, useMoves } from "./moves.ts";
 import { currentSprint, loadProgress, localToday, type Progress } from "./progress.ts";
 import { buildTree, filterTree, type LiveIssue } from "./backlogload.ts";
 import { SprintGoal } from "./goalcard.tsx";
@@ -133,17 +134,66 @@ function SprintCard({ name, detail, progress, goal }: CardProps): VNode {
     );
 }
 
+// A band's drop target, for an editor (story #114, D8): whether a drag may drop here, and the
+// row identity a drop delivers.
+interface BandDrop {
+    accepts: (dt: DataTransfer | null) => boolean;
+    onDrop: (id: string) => void;
+    over: boolean;
+    onOver: (over: boolean) => void;
+}
+
 interface BandProps extends CardProps {
     // The band's key: the sprint's id, or none for the no-sprint band.
     band: { sprint: string } | { none: true };
     label: string;
     children?: VNode | null;
+    drop?: BandDrop;
 }
 
-// One band: the card first, then the rows, in this order at every width (D11, G43).
-function Band({ band, label, children, ...card }: BandProps): VNode {
+// One band: the card first, then the rows, in this order at every width (D11, G43). Its card and
+// rows take a dropped row; a milestone header and the "No milestone" break never do (G5).
+function Band({ band, label, children, drop, ...card }: BandProps): VNode {
+    const allow = (e: DragEvent): boolean => {
+        if (!drop?.accepts(e.dataTransfer)) {
+            return false;
+        }
+        e.preventDefault();
+        if (e.dataTransfer) {
+            e.dataTransfer.dropEffect = "move";
+        }
+        return true;
+    };
     return (
-        <div class="rd-band" data-sprint={"sprint" in band ? band.sprint : undefined} data-band={"none" in band ? "none" : undefined} role="group" aria-label={label}>
+        <div
+            class={`rd-band${drop?.over ? " is-over" : ""}`}
+            data-sprint={"sprint" in band ? band.sprint : undefined}
+            data-band={"none" in band ? "none" : undefined}
+            role="group"
+            aria-label={label}
+            onDragEnter={drop ? (e: DragEvent) => allow(e) && drop.onOver(true) : undefined}
+            onDragOver={drop ? (e: DragEvent) => allow(e) && !drop.over && drop.onOver(true) : undefined}
+            onDragLeave={
+                drop
+                    ? (e: DragEvent) => {
+                          const to = e.relatedTarget as Node | null;
+                          if (!to || !(e.currentTarget as HTMLElement).contains(to)) {
+                              drop.onOver(false);
+                          }
+                      }
+                    : undefined
+            }
+            onDrop={
+                drop
+                    ? (e: DragEvent) => {
+                          drop.onOver(false);
+                          if (allow(e)) {
+                              drop.onDrop(e.dataTransfer?.getData(MOVE_MARKER) ?? "");
+                          }
+                      }
+                    : undefined
+            }
+        >
             <SprintCard {...card} />
             <div class="rd-band__rows">{children}</div>
         </div>
@@ -253,8 +303,9 @@ export function BandPage({ live, backlogWidth, onBacklogWidth }: BandPageProps):
     const firstLoose: number = entries.findIndex((e: BandEntry) => e.kind === "sprint" && e.milestone === null);
     const loose: number = firstLoose > 0 ? firstLoose : -1;
     const issues: LiveIssue[] = state?.ok ? state.issues : [];
-    const assigned: Map<string, string | null> = useMemo(
-        () => (sync?.ok ? assignBands(issues, sync.sprints, sync.source) : new Map()),
+    // Each row's band as loaded: Raiden's sprint when it holds one, else GitHub's (story #114).
+    const loaded: Map<string, string | null> = useMemo(
+        () => (sync?.ok ? shownBands(assignBands(issues, sync.sprints, sync.source), sync.sprints, sync.assignments) : new Map()),
         [issues, sync],
     );
     // The lead's order inside each band, in page memory only, kept with the repository and person.
@@ -262,7 +313,50 @@ export function BandPage({ live, backlogWidth, onBacklogWidth }: BandPageProps):
     const [orders, setOrders] = useState<{ key: string; bands: Record<string, string[]> }>({ key: orderKey, bands: {} });
     const bandOrder = (band: string): string[] | null => (orders.key === orderKey ? (orders.bands[band] ?? null) : null);
     const setBandOrder = (band: string, ids: string[]): void =>
-        setOrders({ key: orderKey, bands: { ...(orders.key === orderKey ? orders.bands : {}), [band]: ids } });
+        setOrders((o) => ({ key: orderKey, bands: { ...(o.key === orderKey ? o.bands : {}), [band]: ids } }));
+    // Sprint moves, saved one at a time per row in Raiden's records (story #114, D6).
+    const mayEdit: boolean = sync?.ok === true && sync.mayEdit;
+    const { bands: assigned, move, notice } = useMoves({
+        gateway: live.gateway,
+        repo,
+        pageKey: orderKey,
+        loaded,
+        mayEdit,
+        numberOf: (id: string) => issues.find((i) => i.id === id)?.number ?? null,
+    });
+    // A dropped row lands at the top of its new band (D8).
+    const moveTo = (id: string, to: string | null): void => {
+        if (move(id, to)) {
+            const key: string = to ?? "";
+            setBandOrder(key, [id, ...(bandOrder(key) ?? []).filter((x: string) => x !== id)]);
+        }
+    };
+    // The row an editor is dragging now. A drop is taken only from it, with only the marker (G6).
+    const dragging = useRef<string | null>(null);
+    const [over, setOver] = useState<string | null | undefined>(undefined);
+    const onDragRow = mayEdit
+        ? (id: string | null): void => {
+              dragging.current = id;
+              if (id === null) {
+                  setOver(undefined);
+              }
+          }
+        : undefined;
+    const dropFor = (key: string | null): BandDrop | undefined =>
+        mayEdit
+            ? {
+                  accepts: (dt: DataTransfer | null) => dragging.current !== null && onlyMarker(dt),
+                  onDrop: (id: string) => {
+                      if (id !== "" && id === dragging.current) {
+                          moveTo(id, key);
+                      }
+                      dragging.current = null;
+                      setOver(undefined);
+                  },
+                  over: over === key,
+                  onOver: (on: boolean) => setOver((was) => (on ? key : was === key ? undefined : was)),
+              }
+            : undefined;
     const anyQuery: boolean = issues.some((i) => i.inQuery);
     const anyMatch: boolean = useMemo(() => filterTree(buildTree(issues), filter).length > 0, [issues, filter]);
     const emptyText: string | null = !anyQuery
@@ -292,6 +386,11 @@ export function BandPage({ live, backlogWidth, onBacklogWidth }: BandPageProps):
                     onInput={(e) => setFilter((e.currentTarget as HTMLInputElement).value)}
                 />
                 {state?.ok && <span class="rd-panel__sub">{`${count} ${count === 1 ? "issue" : "issues"}`}</span>}
+                {state?.ok && notice !== null && (
+                    <p class="rd-bands__notice rd-text-small" role="status">
+                        {notice}
+                    </p>
+                )}
                 {newInitiative !== null && (
                     <ExternalLink class="rd-backlog__new rd-text-small" href={newInitiative}>
                         New initiative in GitHub
@@ -338,6 +437,7 @@ export function BandPage({ live, backlogWidth, onBacklogWidth }: BandPageProps):
                                     )}
                                     <Band
                                         band={{ sprint: entry.sprint.id }}
+                                        drop={dropFor(entry.sprint.id)}
                                         label={sync?.ok && sync.progress?.sprint === entry.sprint.id ? `${entry.sprint.name}, current sprint` : entry.sprint.name}
                                         name={entry.sprint.name}
                                         detail={`${formatDate(entry.sprint.start)} – ${formatDate(entry.sprint.end)}`}
@@ -364,12 +464,13 @@ export function BandPage({ live, backlogWidth, onBacklogWidth }: BandPageProps):
                                             order={bandOrder(entry.sprint.id)}
                                             onOrder={(ids: string[]) => setBandOrder(entry.sprint.id, ids)}
                                             current={repo}
+                                            onDragRow={onDragRow}
                                         />
                                     </Band>
                                 </Fragment>
                             ),
                         )}
-                        <Band band={{ none: true }} label="Issues with no sprint" name="No sprint" detail="Issues with no sprint in GitHub">
+                        <Band band={{ none: true }} label="Issues with no sprint" name="No sprint" detail="Issues with no sprint in GitHub" drop={dropFor(null)}>
                             <BandRows
                                 issues={issues}
                                 band={null}
@@ -378,6 +479,7 @@ export function BandPage({ live, backlogWidth, onBacklogWidth }: BandPageProps):
                                 order={bandOrder("")}
                                 onOrder={(ids: string[]) => setBandOrder("", ids)}
                                 current={repo}
+                                onDragRow={onDragRow}
                             />
                         </Band>
                     </>

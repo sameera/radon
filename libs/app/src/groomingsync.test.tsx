@@ -64,6 +64,7 @@ describe("Grooming sync (story #85)", () => {
         expect(out).toEqual({
             ok: true,
             goals: {},
+            assignments: new Map(),
             mayEdit: false,
             source: { project: "P", field: "F" },
             sprints: [
@@ -108,6 +109,7 @@ describe("Grooming sync: milestones (story #86)", () => {
         expect(await syncGrooming(gateway, WIDGETS)).toEqual({
             ok: true,
             goals: {},
+            assignments: new Map(),
             mayEdit: false,
             source: null,
             sprints: [],
@@ -138,5 +140,26 @@ describe("Grooming sync: goals (story #103)", () => {
             sync: () => ({ ok: true, status: 200, body: { source: null, sprints: [], milestones: [], goals: [{ sprint: 1, text: "x" }] } }),
         });
         expect(await syncGrooming(gateway, WIDGETS)).toEqual({ ok: false, cause: "other" });
+    });
+});
+
+describe("Grooming sync: sprint assignments (story #114)", () => {
+    it("reads each saved assignment, with null as the no-sprint mark (D3)", async () => {
+        const gateway = fakeGitHub({ issues: [], sync: { sprints: [SPRINT], assignments: { I_1: "F#a1", I_2: null } } });
+        const out = await syncGrooming(gateway, WIDGETS);
+        expect(out.ok && [...out.assignments]).toEqual([
+            ["I_1", "F#a1"],
+            ["I_2", null],
+        ]);
+    });
+
+    it("fails the sync on an unreadable assignment", async () => {
+        for (const assignments of [{}, [{ issue: "I_1" }], [{ issue: 1, sprint: "F#a1" }], [{ issue: "I_1", sprint: 3 }]]) {
+            const gateway = fakeGitHub({
+                issues: [],
+                sync: () => ({ ok: true, status: 200, body: { source: null, sprints: [], milestones: [], assignments } }),
+            });
+            expect(await syncGrooming(gateway, WIDGETS)).toEqual({ ok: false, cause: "other" });
+        }
     });
 });

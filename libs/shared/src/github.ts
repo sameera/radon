@@ -17,8 +17,9 @@ export interface GitHubRequest {
 export type GitHubFailureKind = "sign-in-needed" | "network" | "rate-limit" | "permission" | "other";
 
 // The named causes Raiden's backend may give for a failure. Any other text is dropped, so nothing
-// the backend says can carry a token or request detail to a page.
-export const BACKEND_REASONS = ["project-unreadable"] as const;
+// the backend says can carry a token or request detail to a page. "unknown-sprint" is a move to a
+// sprint the backend no longer holds (story #114).
+export const BACKEND_REASONS = ["project-unreadable", "unknown-sprint"] as const;
 export type BackendReason = (typeof BACKEND_REASONS)[number];
 
 export type GitHubResult =

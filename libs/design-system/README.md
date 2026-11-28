@@ -23,7 +23,7 @@ Raiden puts agile views inside GitHub Projects pages. Its UI must sit flush with
 1. **Blend, then mark.** Neutrals (`rd-canvas`, `rd-fg`, `rd-border`) track GitHub's so an injected view looks native. `rd-brand` teal marks every surface Raiden owns: the sprint goal, the current sprint, the today line, primary actions.
 2. **Shape before color.** Epics are diamonds, stories are circles, decision records are squares. Every status pill carries a word. Color reinforces; it never carries meaning alone.
 3. **One glow per view.** `rd-shadow-glow` is Raiden's signature. Use it on the sprint-goal card or the active-sprint column, never both.
-4. **Read-only on GitHub data.** Nothing that shows an issue, iteration or field looks editable. Only Raiden data (sprint goals) gets edit controls.
+4. **Read-only on GitHub data.** Nothing that shows an issue, iteration or field looks editable. Only Raiden data (sprint goals and sprint assignments) gets edit controls. A row's drag and its keyboard move edit the issue's sprint in Raiden; the issue's title, number, iteration and fields still look read-only, and a status flag on a row is not a control.
 
 ## Content
 

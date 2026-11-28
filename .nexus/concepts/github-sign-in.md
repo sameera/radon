@@ -1,8 +1,8 @@
 ---
 title: GitHub Sign-In
 aliases: [sign in with github, github sign-in, sign-in flow, signed-in user]
-touches: [github-client, raiden-app-shell, raiden-page-host, raiden-web-view, web-repository-picker, web-view-sign-out]
-last_updated_by: "#58"
+touches: [github-client, raiden-app-shell, raiden-page-host, raiden-web-view, web-repository-picker, web-view-sign-out, grooming-sync]
+last_updated_by: "#81"
 status: active
 verification: verified
 ---
@@ -13,9 +13,9 @@ A person signs in with GitHub from the Raiden tab in the extension or from the w
 
 ## How It Works
 
-Both hosts use the GitHub App web sign-in flow. The host builds GitHub's authorize address with a random state, a one-time verifier and its challenge. The address asks for no scope. The read-only access (Issues, Projects and Metadata, read only) comes from the App's registration.
+Both hosts use the GitHub App web sign-in flow. The host builds GitHub's authorize address with a random state, a one-time verifier and its challenge. The address asks for no scope. The read-only access comes from the App's registration: Issues, Projects and Metadata on the repository, and Projects on the organization, all read only.
 
-The code comes back to the host. The host checks the state, then sends the code and verifier to the team backend. The backend adds the App's client secret, asks GitHub for the tokens, and returns them with the username. The backend keeps nothing. It also renews tokens. It answers only the extension's origin and the web view's origin, and it refuses any other origin before it calls GitHub.
+The code comes back to the host. The host checks the state, then sends the code and verifier to the team backend. The backend adds the App's client secret, asks GitHub for the tokens, and returns them with the username. The backend keeps no token and no code. It also renews tokens. It answers only the extension's origin and the web view's origin, and it refuses any other origin before it calls GitHub.
 
 The extension signs in through the browser's sign-in window, which a background worker opens. The Raiden tab never navigates. The web view redirects the whole page to GitHub and back. It strips the code from the address before the shell mounts. A cancelled or denied sign-in leaves the person signed out, with a "sign-in did not finish" message.
 
@@ -37,6 +37,7 @@ The extension keeps its record in extension storage, and only the worker reads i
 - [raiden-page-host](raiden-page-host.md) — the extension host signs in through its worker and keeps the record in extension storage.
 - [raiden-web-view](raiden-web-view.md) — the web view signs in by full-page redirect and keeps its record in local storage.
 - [web-repository-picker](web-repository-picker.md) — the login from sign-in tags and checks the picker's stored repository and list.
+- [grooming-sync](grooming-sync.md) — the backend reads GitHub with the lead's token during the Grooming sync, and the organization Projects permission lets it read organization projects.
 - [web-view-sign-out](web-view-sign-out.md) — sign out ends the web view's sign-in only, and the next sign-in asks for the account chooser.
 
 ## Decision Log
@@ -52,3 +53,6 @@ The web view repository picker uses this page: the login from sign-in tags and c
 
 ### 2026-11-22 — #58 — Sign-out is an optional host step, so the shell stays free of hosts
 The sign-in port gains an optional sign-out step, and the shell shows Sign out only when the host supplies it. The web view supplies it and the extension does not, so the extension is exactly as it was. Only the host knows where its sign-in record lives, and the shell must never import from a host. The behaviour of sign out has its own page, web-view-sign-out, which also records the reciprocal link. Refuted alternative: none.
+
+### 2026-11-28 — #81 — The App reads organization projects, and the backend receives the token on data requests
+The repository-level Projects permission does not reach a project an organization owns, so the App gains the organization-level Projects permission, read only, and no other permission. Without it no organization repository would get synced sprints. A project owned by a person stays unreadable until #84. The backend now receives the lead's token on the Grooming sync, so "keeps nothing" narrows to "keeps no token and no code": it now stores the repository's synced records. Refuted alternative: keep the App's permissions unchanged and leave sprints to #84. No team would update its App, but organization repositories, the main case, would get no sprints.

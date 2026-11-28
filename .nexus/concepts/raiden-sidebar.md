@@ -2,7 +2,7 @@
 title: Raiden Sidebar
 aliases: [sidebar, collapsed sidebar, sidebar rail, sidebar tooltip, not-planned count]
 touches: [raiden-app-shell, grooming-plan]
-last_updated_by: "#73"
+last_updated_by: "#81"
 status: active
 verification: verified
 ---
@@ -13,7 +13,7 @@ The sidebar lists the Raiden pages in groups: Sprint goal, Grooming, Timeline an
 
 ## How It Works
 
-Selecting an item changes only the page the shell shows, never the address. Exactly one item is marked as current. A button at the top of the sidebar collapses it to a rail of icons and expands it again.
+Selecting an item changes only the page the shell shows, never the address. Exactly one item is marked as current. A button at the top of the sidebar collapses it to a rail of icons and expands it again. Below 760 pixels, the expanded sidebar overlays the page.
 
 The Grooming item shows a count badge of the epics not planned in any goal. The shell works the count out from the shared session state, with the same effective-goal rule as the Grooming header count. So the count changes on every plan change, on any page, with no reload. The badge hides at zero. While the live backlog shows, the shell passes no count, so the badge and the count in the tooltip are hidden. The item's accessible name gives the count in words, for example "Grooming, 3 epics not planned".
 
@@ -43,3 +43,6 @@ Split from raiden-app-shell, which was past the 400-word cap before epic #12 add
 
 ### 2026-11-26 — #73 — The not-planned count hides while the backlog is live
 The plan still runs on sample issue numbers, so beside a live backlog the not-planned count would describe a different set of epics than the backlog shows. The lead chose at the clarification gate to hide the sidebar count and the header's planned-epics count until the plan goes live. Invariant 2 is struck and replaced by invariant 7, which holds only while the counts show. Refuted alternative: keep both counts running on the sample plan. It keeps a working feature until the plan goes live, but the page would show numbers that disagree with the backlog beside them.
+
+### 2026-11-28 — #81 — Below 760 pixels the expanded sidebar overlays the page
+Grooming must fit a 360-pixel window with the sidebar in either state. The expanded sidebar now overlays the page below 760 pixels, and the page keeps a margin the width of the collapsed rail, so the lead's stored collapse choice stays true. Refuted alternative: force the sidebar collapsed below 760 pixels. It is simpler, but it overrides the lead's stored choice.

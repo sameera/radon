@@ -3,7 +3,7 @@
 #   scripts/emulator.sh start   run aws-emulator in the foreground (port 9297)
 #   scripts/emulator.sh setup   create the DynamoDB table (emulator must be running)
 #   scripts/emulator.sh serve   run the Go handler behind HTTP on 127.0.0.1:8080 (needs env loaded)
-#   scripts/emulator.sh build   build the Lambda zip at .tmp/lambda.zip (linux/arm64, bootstrap)
+#   scripts/emulator.sh build   build the Lambda zip at .tmp/lambda.zip (linux/arm64, bootstrap, repeatable)
 #   scripts/emulator.sh env     print exports; use: eval "$(scripts/emulator.sh env)"
 # State is in memory. Restarting the emulator wipes it; rerun "setup".
 set -euo pipefail
@@ -46,10 +46,16 @@ case "${1:-}" in
         cd "$ROOT/backend" && exec go run ./cmd/local
         ;;
     build)
-        mkdir -p "$ROOT/.tmp/lambda"
-        (cd "$ROOT/backend" && GOOS=linux GOARCH=arm64 CGO_ENABLED=0 go build -o "$ROOT/.tmp/lambda/bootstrap" ./cmd/lambda)
-        (cd "$ROOT/.tmp/lambda" && rm -f ../lambda.zip && zip -q ../lambda.zip bootstrap)
-        echo ".tmp/lambda.zip ready"
+        # Repeatable: the same source gives the same zip, whatever the checkout path, the
+        # version-control state or the time, so an unchanged deploy uploads no new code (D8).
+        OUT="${RAIDEN_LAMBDA_DIR:-$ROOT/.tmp}"
+        mkdir -p "$OUT/lambda"
+        (cd "$ROOT/backend" && GOOS=linux GOARCH=arm64 CGO_ENABLED=0 GOFLAGS= \
+            go build -trimpath -buildvcs=false -ldflags="-buildid=" -o "$OUT/lambda/bootstrap" ./cmd/lambda)
+        chmod 755 "$OUT/lambda/bootstrap"
+        touch -t 198001010000 "$OUT/lambda/bootstrap"
+        (cd "$OUT/lambda" && rm -f ../lambda.zip && TZ=UTC zip -q -X ../lambda.zip bootstrap)
+        echo "$OUT/lambda.zip ready"
         ;;
     *)
         echo "usage: $0 start|setup|serve|build|env" >&2

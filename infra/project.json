@@ -65,6 +65,14 @@
                 "command": "node infra/src/commands/update-backend.ts",
                 "cwd": "{workspaceRoot}"
             }
+        },
+        "update-web": {
+            "executor": "nx:run-commands",
+            "cache": false,
+            "options": {
+                "command": "node infra/src/commands/update-web.ts",
+                "cwd": "{workspaceRoot}"
+            }
         }
     }
 }

@@ -11,7 +11,8 @@ import {
     UpdateFunctionConfigurationCommand,
     waitUntilFunctionUpdatedV2,
 } from "@aws-sdk/client-lambda";
-import { ListObjectsV2Command, PutObjectCommand, S3Client } from "@aws-sdk/client-s3";
+import { CloudFrontClient, CreateInvalidationCommand, waitUntilInvalidationCompleted } from "@aws-sdk/client-cloudfront";
+import { DeleteObjectsCommand, ListObjectsV2Command, PutObjectCommand, S3Client } from "@aws-sdk/client-s3";
 import { GetSecretValueCommand, PutSecretValueCommand, SecretsManagerClient } from "@aws-sdk/client-secrets-manager";
 import { BOOTSTRAP_STACK } from "./names.ts";
 import type { Outputs } from "./setup.ts";
@@ -114,9 +115,44 @@ export async function listRemote(bucket: string): Promise<Map<string, string>> {
     return out;
 }
 
-export async function putObject(bucket: string, file: LocalFile, type: string): Promise<void> {
+export async function putObject(
+    bucket: string,
+    file: LocalFile,
+    headers: { contentType: string; cacheControl: string },
+): Promise<void> {
     await s3.send(
-        new PutObjectCommand({ Bucket: bucket, Key: file.key, Body: await readFile(file.path), ContentType: type }),
+        new PutObjectCommand({
+            Bucket: bucket,
+            Key: file.key,
+            Body: await readFile(file.path),
+            ContentType: headers.contentType,
+            CacheControl: headers.cacheControl,
+        }),
+    );
+}
+
+export async function deleteObjects(bucket: string, keys: string[]): Promise<void> {
+    for (let i = 0; i < keys.length; i += 1000) {
+        const batch: string[] = keys.slice(i, i + 1000);
+        await s3.send(
+            new DeleteObjectsCommand({ Bucket: bucket, Delete: { Objects: batch.map((Key: string) => ({ Key })) } }),
+        );
+    }
+}
+
+const cloudfront: CloudFrontClient = new CloudFrontClient({});
+
+// One invalidation for every path, which counts as one path in the free monthly allowance (D10).
+export async function invalidateAll(distributionId: string): Promise<void> {
+    const res = await cloudfront.send(
+        new CreateInvalidationCommand({
+            DistributionId: distributionId,
+            InvalidationBatch: { CallerReference: `raiden-${Date.now()}`, Paths: { Quantity: 1, Items: ["/*"] } },
+        }),
+    );
+    await waitUntilInvalidationCompleted(
+        { client: cloudfront, maxWaitTime: 900 },
+        { DistributionId: distributionId, Id: res.Invalidation!.Id! },
     );
 }
 

@@ -34,8 +34,15 @@ export function fakeWeb(over: Partial<WebDeps> = {}, settings: string | null = '
             { key: "main.js", md5: "2", path: "dist/apps/web/main.js" },
         ],
         listRemote: async () => new Map([["main.js", "2"]]),
-        putObject: async (bucket: string, file: { key: string }, type: string) => {
-            calls.push(`put ${bucket} ${file.key} ${type}`);
+        putObject: async (bucket: string, file: { key: string }, headers: { contentType: string; cacheControl: string }) => {
+            calls.push(`put ${bucket} ${file.key} ${headers.contentType}`);
+            calls.push(`cache-control ${file.key} ${headers.cacheControl}`);
+        },
+        deleteObjects: async (bucket: string, keys: string[]) => {
+            calls.push(`delete ${bucket} ${keys.join(",")}`);
+        },
+        invalidate: async (distributionId: string) => {
+            calls.push(`invalidate ${distributionId}`);
         },
         log: (line: string) => {
             lines.push(line);

@@ -1,12 +1,18 @@
 // Story #97: the setup command (D1, D2, D13, R1, G2, G4).
 import { describe, expect, it } from "vitest";
 import { runSetup, type SetupDeps } from "../src/setup.ts";
-import { BACKEND_STACK } from "../src/names.ts";
+import { BACKEND_STACK, WEB_STACK } from "../src/names.ts";
+import { fakeWeb } from "./fakes.ts";
 
-function fake(over: Partial<SetupDeps> = {}): { deps: SetupDeps; calls: string[]; lines: string[] } {
-    const calls: string[] = [];
-    const lines: string[] = [];
+function fake(
+    over: Partial<SetupDeps> = {},
+    settings: string | null = null,
+): { deps: SetupDeps; calls: string[]; lines: string[] } {
+    const web = fakeWeb({}, settings);
+    const calls: string[] = web.calls;
+    const lines: string[] = web.lines;
     const deps: SetupDeps = {
+        ...web.deps,
         bootstrapExists: async () => {
             calls.push("bootstrapExists");
             return true;
@@ -19,7 +25,7 @@ function fake(over: Partial<SetupDeps> = {}): { deps: SetupDeps; calls: string[]
         },
         outputs: async (stack: string) => {
             calls.push(`outputs ${stack}`);
-            return stack === BACKEND_STACK ? { BackendUrl: "https://abc.lambda-url.us-east-1.on.aws/" } : null;
+            return web.deps.outputs(stack);
         },
         health: async (url: string) => {
             calls.push(`health ${url}`);
@@ -70,5 +76,27 @@ describe("setup", () => {
         });
         await expect(runSetup(deps)).rejects.toThrow(/stack failed/);
         expect(calls.some((c) => c.startsWith("health"))).toBe(false);
+    });
+
+    it("deploys the backend stack, then the web hosting stack, and prints the web view address (D2)", async () => {
+        const { deps, calls, lines } = fake();
+        const result = await runSetup(deps);
+        expect(calls.indexOf(`deploy ${WEB_STACK}`)).toBeGreaterThan(calls.indexOf(`deploy ${BACKEND_STACK}`));
+        expect(result.webViewUrl).toBe("https://d1.cloudfront.net/");
+        expect(lines.join("\n")).toContain("Web view address: https://d1.cloudfront.net/");
+    });
+
+    it("skips the web view upload before the settings exist and names the settings command", async () => {
+        const { deps, calls, lines } = fake({}, null);
+        await runSetup(deps);
+        expect(calls.some((c) => c.startsWith("build") || c.startsWith("put"))).toBe(false);
+        expect(lines.join("\n")).toContain("pnpm aws:settings");
+    });
+
+    it("builds and uploads the web view once the settings exist", async () => {
+        const { deps, calls } = fake({}, '{"clientId":"Iv1.abc"}');
+        await runSetup(deps);
+        expect(calls.some((c) => c.startsWith("build"))).toBe(true);
+        expect(calls.some((c) => c.startsWith("put"))).toBe(true);
     });
 });

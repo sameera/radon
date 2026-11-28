@@ -1,3 +1,7 @@
+import { spawn } from "node:child_process";
+import { createHash } from "node:crypto";
+import { readdir, readFile } from "node:fs/promises";
+import { join, relative, sep } from "node:path";
 // The real AWS calls the commands make. Only the commands import this file; the stacks and the
 // tests never do (G3).
 import { CloudFormationClient, DescribeStacksCommand } from "@aws-sdk/client-cloudformation";
@@ -7,9 +11,11 @@ import {
     UpdateFunctionConfigurationCommand,
     waitUntilFunctionUpdatedV2,
 } from "@aws-sdk/client-lambda";
+import { ListObjectsV2Command, PutObjectCommand, S3Client } from "@aws-sdk/client-s3";
 import { GetSecretValueCommand, PutSecretValueCommand, SecretsManagerClient } from "@aws-sdk/client-secrets-manager";
 import { BOOTSTRAP_STACK } from "./names.ts";
 import type { Outputs } from "./setup.ts";
+import type { LocalFile } from "./upload.ts";
 
 const cfn: CloudFormationClient = new CloudFormationClient({});
 
@@ -88,4 +94,55 @@ export async function recycleFunction(functionName: string, version: string): Pr
         }),
     );
     await waitUntilFunctionUpdatedV2({ client: lambda, maxWaitTime: 300 }, { FunctionName: functionName });
+}
+
+const s3: S3Client = new S3Client({});
+
+// Each stored key with the MD5 of its content. A single-part upload's ETag is that MD5.
+export async function listRemote(bucket: string): Promise<Map<string, string>> {
+    const out: Map<string, string> = new Map();
+    let token: string | undefined;
+    do {
+        const res = await s3.send(new ListObjectsV2Command({ Bucket: bucket, ContinuationToken: token }));
+        for (const o of res.Contents ?? []) {
+            if (o.Key && o.ETag) {
+                out.set(o.Key, o.ETag.replaceAll('"', ""));
+            }
+        }
+        token = res.IsTruncated ? res.NextContinuationToken : undefined;
+    } while (token);
+    return out;
+}
+
+export async function putObject(bucket: string, file: LocalFile, type: string): Promise<void> {
+    await s3.send(
+        new PutObjectCommand({ Bucket: bucket, Key: file.key, Body: await readFile(file.path), ContentType: type }),
+    );
+}
+
+// Every file of a build folder, keyed by its path inside the folder.
+export async function listLocal(dir: string): Promise<LocalFile[]> {
+    const entries = await readdir(dir, { recursive: true, withFileTypes: true });
+    const files: LocalFile[] = [];
+    for (const e of entries.filter((e) => e.isFile())) {
+        const path: string = join(e.parentPath, e.name);
+        const md5: string = createHash("md5").update(await readFile(path)).digest("hex");
+        files.push({ key: relative(dir, path).split(sep).join("/"), md5, path });
+    }
+    return files.sort((a, b) => a.key.localeCompare(b.key));
+}
+
+// Runs the existing web view build through Nx with the deployment's values in its environment.
+// They win over any local settings file (D9).
+export function buildWeb(env: Record<string, string>): Promise<string> {
+    return new Promise((resolve, reject) => {
+        const child = spawn("pnpm", ["exec", "nx", "run", "web:build"], {
+            stdio: "inherit",
+            env: { ...process.env, ...env },
+        });
+        child.on("error", reject);
+        child.on("exit", (code: number | null) =>
+            code === 0 ? resolve("dist/apps/web") : reject(new Error(`the web view build failed with exit code ${code}`)),
+        );
+    });
 }

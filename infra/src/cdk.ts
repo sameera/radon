@@ -29,7 +29,10 @@ export function bootstrapArgs(): string[] {
 
 export function runCdk(args: string[]): Promise<void> {
     return new Promise((resolve, reject) => {
-        const child = spawn("pnpm", ["exec", "cdk", ...args], { stdio: "inherit" });
+        // The app reads which stack is being deployed, so a web view update needs no backend build.
+        const stack: string = args[0] === "deploy" ? (args[1] ?? "") : "";
+        const env = { ...process.env, RAIDEN_DEPLOY_STACK: stack };
+        const child = spawn("pnpm", ["exec", "cdk", ...args], { stdio: "inherit", env });
         child.on("error", reject);
         child.on("exit", (code: number | null) =>
             code === 0 ? resolve() : reject(new Error(`cdk ${args[0]} failed with exit code ${code}`)),

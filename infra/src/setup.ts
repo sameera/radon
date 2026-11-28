@@ -1,17 +1,17 @@
-// The setup command: one idempotent path that bootstraps AWS CDK if needed, deploys the stacks,
-// checks the backend and prints the addresses (D1, D2, D13). AWS is reached only through the
-// injected dependencies, so the order and the failures are tested without credentials.
+// The setup command: one idempotent path that bootstraps AWS CDK if needed, deploys the backend
+// stack and the web hosting stack, checks the backend, uploads the web view once settings exist,
+// and prints both addresses (D1, D2, D13). AWS is reached only through the injected
+// dependencies, so the order and the failures are tested without credentials.
 import { BACKEND_STACK } from "./names.ts";
+import { deployWebStack, uploadWebView, type WebDeps } from "./update-web.ts";
+import { readClientId } from "./web-build.ts";
 
 export type Outputs = Record<string, string>;
 
-export interface SetupDeps {
+export interface SetupDeps extends WebDeps {
     bootstrapExists(): Promise<boolean>;
     bootstrap(): Promise<void>;
-    deploy(stack: string): Promise<void>;
-    outputs(stack: string): Promise<Outputs | null>;
     health(url: string): Promise<boolean>;
-    log(line: string): void;
 }
 
 export interface SetupResult {
@@ -42,9 +42,21 @@ export async function runSetup(deps: SetupDeps): Promise<SetupResult> {
         await deps.bootstrap();
     }
     const backendUrl: string = await deployBackend(deps);
-    const webViewUrl: string | null = null;
+    const backend: Outputs = (await deps.outputs(BACKEND_STACK)) ?? {};
+    const web: Outputs = await deployWebStack(deps);
+    const webViewUrl: string = web.WebViewUrl!;
+    const hasSettings: boolean = (await readClientId(deps.readSecret, backend)) !== null;
+    if (hasSettings) {
+        await uploadWebView(deps, backend, web);
+    }
     deps.log("");
     deps.log(`Backend address: ${backendUrl}`);
-    deps.log(`Web view address: ${webViewUrl ?? "(not hosted yet)"}`);
+    deps.log(`Web view address: ${webViewUrl}`);
+    if (!hasSettings) {
+        deps.log("");
+        deps.log("The web view is not uploaded yet: the backend has no settings.");
+        deps.log("Register the web view address as a callback URL in the GitHub App, then run pnpm aws:settings,");
+        deps.log("then pnpm aws:setup again to build and upload the web view.");
+    }
     return { backendUrl, webViewUrl };
 }

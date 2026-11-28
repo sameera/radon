@@ -1,0 +1,58 @@
+// The web view update: deploy the web hosting stack, build the web view against the deployment,
+// and upload the changed files (D2, D9, D10). Setup runs the same path once settings exist.
+import { BACKEND_STACK, WEB_STACK } from "./names.ts";
+import type { Outputs } from "./setup.ts";
+import { contentType, planUpload, type LocalFile } from "./upload.ts";
+import { readClientId, webBuildEnv } from "./web-build.ts";
+
+export interface WebDeps {
+    deploy(stack: string): Promise<void>;
+    outputs(stack: string): Promise<Outputs | null>;
+    readSecret(id: string): Promise<string | null>;
+    // Runs the existing web view build with these values in its environment; returns its folder.
+    buildWeb(env: Record<string, string>): Promise<string>;
+    listLocal(dir: string): Promise<LocalFile[]>;
+    // Each stored key with the MD5 of its content.
+    listRemote(bucket: string): Promise<Map<string, string>>;
+    putObject(bucket: string, file: LocalFile, contentType: string): Promise<void>;
+    log(line: string): void;
+}
+
+export interface WebUpdateResult {
+    webViewUrl: string;
+    uploaded: number;
+}
+
+// Deploys the web hosting stack (a no-op when nothing changed) and returns its outputs.
+export async function deployWebStack(deps: Pick<WebDeps, "deploy" | "outputs">): Promise<Outputs> {
+    await deps.deploy(WEB_STACK);
+    const web: Outputs | null = await deps.outputs(WEB_STACK);
+    if (!web?.WebViewUrl || !web.BucketName || !web.DistributionId) {
+        throw new Error(`stack ${WEB_STACK} is missing its outputs`);
+    }
+    return web;
+}
+
+export async function runWebUpdate(deps: WebDeps): Promise<WebUpdateResult> {
+    const backend: Outputs | null = await deps.outputs(BACKEND_STACK);
+    if (!backend?.BackendUrl || !backend.SignInSettingsArn) {
+        throw new Error("the backend is not deployed; run pnpm aws:setup first");
+    }
+    const web: Outputs = await deployWebStack(deps);
+    return uploadWebView(deps, backend, web);
+}
+
+export async function uploadWebView(deps: WebDeps, backend: Outputs, web: Outputs): Promise<WebUpdateResult> {
+    const clientId: string | null = await readClientId(deps.readSecret, backend);
+    const env: Record<string, string> = webBuildEnv(backend.BackendUrl!, web.WebViewUrl!, clientId);
+    const dir: string = await deps.buildWeb(env);
+    const local: LocalFile[] = await deps.listLocal(dir);
+    // Every type is checked before the first upload, so a bad file uploads nothing.
+    const types: Map<string, string> = new Map(local.map((f) => [f.key, contentType(f.key)]));
+    const plan = planUpload(local, await deps.listRemote(web.BucketName!));
+    for (const f of plan.uploads) {
+        await deps.putObject(web.BucketName!, f, types.get(f.key)!);
+    }
+    deps.log(plan.uploads.length ? `Uploaded ${plan.uploads.length} changed file(s).` : "The web view is unchanged.");
+    return { webViewUrl: web.WebViewUrl!, uploaded: plan.uploads.length };
+}

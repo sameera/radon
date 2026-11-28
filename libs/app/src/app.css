@@ -59,6 +59,8 @@
 .rd-bl-row--init .rd-ref__title { font-weight: 600; }
 .rd-bl-row.is-planned .rd-ref__title { color: var(--rd-fg-muted); }
 .rd-bl-row .rd-ref { flex: 1; min-width: 0; }
+.rd-backlog .rd-ref__icon { display: inline-flex; flex: none; align-items: center; color: var(--rd-accent); }
+.rd-backlog .rd-ref__icon svg { display: block; width: 18px; height: 18px; }
 .rd-bl-meta { color: var(--rd-fg-muted); font-size: 12px; white-space: nowrap; font-variant-numeric: tabular-nums; }
 .rd-goals__list { display: flex; flex-direction: column; gap: var(--rd-space-3); }
 .rd-goal-card { display: flex; gap: var(--rd-space-3); padding: var(--rd-space-4); border: 1px solid var(--rd-border); border-radius: var(--rd-radius-md); background: var(--rd-canvas); box-shadow: var(--rd-shadow-sm); }

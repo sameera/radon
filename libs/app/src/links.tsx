@@ -1,5 +1,6 @@
 import type { ComponentChildren, VNode } from "preact";
 import { useRepo } from "./repo.tsx";
+import { WorkItemIcon, type WorkItemKind } from "./workitemicon.tsx";
 
 // The address of a page in the current repository, or null when no repository is known.
 export function repoPage(repoUrl: string | undefined, path: string): string | null {
@@ -34,15 +35,17 @@ export function ExternalLink({ href, class: className, children }: ExternalLinkP
 interface IssueRefProps {
     num: number;
     title: string;
+    kind?: WorkItemKind;
 }
 
 // The number and title of one issue. The whole reference is a link to the issue in the current
 // repository. With no repository address it is plain text.
-export function IssueRef({ num, title }: IssueRefProps): VNode {
+export function IssueRef({ num, title, kind }: IssueRefProps): VNode {
     const repoUrl: string | undefined = useRepo()?.url;
     const body: VNode = (
         <>
             <span class="rd-ref__num">#{num}</span>
+            {kind && <span class="rd-ref__icon" data-kind={kind} role="img" aria-label={kind}><WorkItemIcon kind={kind} /></span>}
             <span class="rd-ref__title">{title}</span>
         </>
     );

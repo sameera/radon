@@ -7,6 +7,8 @@ import type { GitHubGateway } from "../gateway.ts";
 export interface FakeIssue {
     n: number;
     title?: string;
+    issueType?: string;
+    labels?: string[];
     // The parent: a number in the same repository, or "owner/name#n" for another repository.
     parent?: number | string;
     state?: "OPEN" | "CLOSED";
@@ -62,6 +64,8 @@ export function fakeGitHub(o: FakeOptions): FakeGitHub {
             id: idOf(issue.repo, issue.n),
             number: issue.n,
             title: issue.title ?? `Issue ${issue.n}`,
+            issueType: issue.issueType ? { name: issue.issueType } : null,
+            labels: { nodes: (issue.labels ?? []).map((name) => ({ name })) },
             state: issue.state ?? "OPEN",
             url: `https://github.com/${issue.repo}/issues/${issue.n}`,
             repository: { nameWithOwner: issue.repo },

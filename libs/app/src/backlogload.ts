@@ -20,6 +20,8 @@ export interface LiveIssue {
     id: string;
     number: number;
     title: string;
+    issueType?: string | null;
+    labels?: string[];
     // GitHub's state, for example "OPEN" or "CLOSED".
     state: string;
     // "owner/name" of the issue's own repository.
@@ -38,7 +40,7 @@ export type BacklogLoad =
 
 // The fields read for each issue, and its ancestor chain to the inline depth: three full levels,
 // then the next parent's identity only.
-const FIELDS: string = "id number title state repository { nameWithOwner }";
+const FIELDS: string = "id number title state issueType { name } labels(first: 50) { nodes { name } } repository { nameWithOwner }";
 export const INLINE_DEPTH: number = 3;
 function chain(levels: number): string {
     return levels === 0 ? "parent { id }" : `parent { ${FIELDS} ${chain(levels - 1)} }`;
@@ -136,6 +138,13 @@ export function readIssue(node: unknown, inQuery: boolean, into: Map<string, Liv
     if (typeof node.state !== "string" || !isRecord(node.repository) || typeof node.repository.nameWithOwner !== "string") {
         throw new LoadFailed("other");
     }
+    if (node.issueType !== null && node.issueType !== undefined && (!isRecord(node.issueType) || typeof node.issueType.name !== "string")) {
+        throw new LoadFailed("other");
+    }
+    if (node.labels !== undefined && (!isRecord(node.labels) || !Array.isArray(node.labels.nodes) ||
+        node.labels.nodes.some((label: unknown) => !isRecord(label) || typeof label.name !== "string"))) {
+        throw new LoadFailed("other");
+    }
     const parent: unknown = node.parent;
     let parentId: string | null = null;
     if (isRecord(parent)) {
@@ -156,6 +165,8 @@ export function readIssue(node: unknown, inQuery: boolean, into: Map<string, Liv
         id: node.id,
         number: node.number,
         title: node.title,
+        issueType: isRecord(node.issueType) ? node.issueType.name as string : null,
+        labels: isRecord(node.labels) ? (node.labels.nodes as { name: string }[]).map((label) => label.name) : [],
         state: node.state,
         repo: node.repository.nameWithOwner,
         parentId,
@@ -259,7 +270,7 @@ export function buildTree(issues: LiveIssue[]): TreeNode[] {
         }
         let parent: LiveIssue | undefined = byId.get(issue.parentId);
         if (!parent) {
-            parent = { id: issue.parentId, number: 0, title: "", state: "", repo: "", parentId: null, inQuery: false, hidden: true };
+            parent = { id: issue.parentId, number: 0, title: "", issueType: null, labels: [], state: "", repo: "", parentId: null, inQuery: false, hidden: true };
             byId.set(parent.id, parent);
         }
         return parent;

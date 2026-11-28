@@ -116,15 +116,15 @@ afterEach(async () => {
 });
 
 describe("reading the backlog from GitHub (D1)", () => {
-    it("shows the ID, type icon, then title for each supported issue type", async () => {
+    it("shows the type icon, ID, then title for each supported issue type", async () => {
         const types = ["Milestone", "Initiative", "Epic", "Decision Record", "Story", "Bug", "Task"];
         const kinds = ["milestone", "initiative", "epic", "decision", "story", "bug", "task"];
         await open(fakeGitHub({ issues: types.map((issueType, i) => ({ n: i + 1, title: `Item ${i + 1}`, issueType })) }));
         for (let i = 0; i < types.length; i++) {
             const parts = Array.from(row(i + 1).querySelector(".rd-ref")!.children);
-            expect(parts.map((part) => part.className)).toEqual(["rd-ref__num", "rd-ref__icon", "rd-ref__title"]);
-            expect(parts[1]!.getAttribute("data-kind")).toBe(kinds[i]);
-            expect(parts[1]!.querySelector("svg")).toBeTruthy();
+            expect(parts.map((part) => part.className)).toEqual(["rd-ref__icon", "rd-ref__num", "rd-ref__title"]);
+            expect(parts[0]!.getAttribute("data-kind")).toBe(kinds[i]);
+            expect(parts[0]!.querySelector("svg")).toBeTruthy();
         }
     });
 

@@ -76,8 +76,8 @@ function LiveRef({ issue, current, icon = false }: { issue: LiveIssue; current: 
     const kind = workItemKind(issue.issueType ?? null, issue.labels ?? []);
     const body: VNode = (
         <>
-            <span class="rd-ref__num">{ref}</span>
             {icon && <span class="rd-ref__icon" data-kind={kind ?? "unknown"} role="img" aria-label={kind ?? "Issue"}><WorkItemIcon kind={kind} /></span>}
+            <span class="rd-ref__num">{ref}</span>
             <span class="rd-ref__title">{issue.title}</span>
         </>
     );

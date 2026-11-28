@@ -1,6 +1,6 @@
 ---
 concept: grooming-sprint-bands
-source_sha: c1cde6af5ae8bfde02668a639d73d3a357d9a25a
+source_sha: 69fd5732a8929b3f15e7bf13e14e6f568fd3266b
 generated: 2026-11-28
 ---
 
@@ -20,3 +20,5 @@ generated: 2026-11-28
 - `libs/app/src/nosprint.test.tsx` — the no-sprint band
 - `libs/app/src/stack.test.tsx` — stacking below 760 pixels and focus order
 - `libs/app/src/removal.test.tsx` — no sample page, the sign-in note without a live connection, one goal card per sprint
+- `libs/app/src/flags.test.tsx` — placement by Raiden's sprint and the flag
+- `libs/app/src/moves.test.tsx` — drops on every band

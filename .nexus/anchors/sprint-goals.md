@@ -1,6 +1,6 @@
 ---
 concept: sprint-goals
-source_sha: c1cde6af5ae8bfde02668a639d73d3a357d9a25a
+source_sha: 69fd5732a8929b3f15e7bf13e14e6f568fd3266b
 generated: 2026-11-28
 ---
 

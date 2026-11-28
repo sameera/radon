@@ -1,8 +1,8 @@
 ---
 title: Grooming Sync
 aliases: [sprint sync, milestone sync, raiden records, repository partition, sync source, origin marker]
-touches: [grooming-sprint-bands, github-client, github-sign-in, sprint-goals]
-last_updated_by: "#82"
+touches: [grooming-sprint-bands, github-client, github-sign-in, sprint-goals, grooming-sprint-assignments]
+last_updated_by: "#83"
 status: active
 verification: verified
 ---
@@ -37,6 +37,7 @@ A sync updates renamed or re-dated items in place and deletes items GitHub no lo
 - [github-client](github-client.md) — the sync request goes through the shared client to the team's configured backend, with the token and the same renewal and failure kinds.
 - [github-sign-in](github-sign-in.md) — the backend reads GitHub with the token the sign-in issued, and the App's read-only organization Projects permission lets it read organization projects.
 - [sprint-goals](sprint-goals.md) — the answer carries every goal record and the may-edit flag, and a sync never changes a goal.
+- [grooming-sprint-assignments](grooming-sprint-assignments.md) — the answer carries every sprint assignment of the repository, and a sync never changes one.
 
 ## Decision Log
 
@@ -45,3 +46,6 @@ The records are shared by the whole team, so the backend must read them from Git
 
 ### 2026-11-28 — #82 — The sync answer carries the goals and the may-edit flag
 The page reads sprint goals only from the sync's answer, which already returns the whole partition, so there is no separate goal read and no extra failure path. The may-edit flag comes from the caller's role in the repository read the sync already makes, so the page adds no request. Goal records are keyed to sprints, so invariant 3 already keeps a sync from touching them. The sprint-goals page names this page as a neighbour, so this page names it back. Refuted alternative: a separate goal read when Grooming opens. It keeps the sync unchanged, but it adds a request and a failure path with no benefit.
+
+### 2026-11-28 — #83 — Reciprocal link from grooming-sprint-assignments
+The sync's answer now also carries every sprint assignment for the repository, which grooming-sprint-assignments records. Invariant 3 already keeps the sync away from records keyed to an issue.

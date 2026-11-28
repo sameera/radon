@@ -1,6 +1,6 @@
 ---
 concept: live-backlog-rows
-source_sha: 6324cccef4b14fcfe27c8f46c656e693875acf29
+source_sha: 69fd5732a8929b3f15e7bf13e14e6f568fd3266b
 generated: 2026-11-28
 ---
 
@@ -15,3 +15,4 @@ generated: 2026-11-28
 - `libs/app/src/bandrows.test.tsx` — band rows and crumbs
 - `libs/app/src/outsideparents.test.tsx` — outside parents, deep ancestor rounds, parents in another repository, loops
 - `libs/app/src/app.css` — row depth, crumb and outside-parent styles
+- `libs/app/src/keymoves.test.tsx` — Alt+Shift band moves and Alt-only reorder

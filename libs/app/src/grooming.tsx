@@ -32,7 +32,8 @@ import {
 import { ExternalLink, IssueRef, repoPage } from "./links.tsx";
 import { useRepo } from "./repo.tsx";
 import { GROOMING_SPRINT, INITIATIVES } from "./sample.ts";
-import { LiveBacklog, type LiveSource } from "./livebacklog.tsx";
+import type { LiveSource } from "./livebacklog.tsx";
+import { BandPage } from "./bands.tsx";
 import type { SessionStore } from "./session.ts";
 
 // What is being dragged. It is tracked here, never in the drag data, so only drags that started
@@ -549,10 +550,10 @@ const BIG_STEP: number = 64;
 
 // The preferred width is the lead's choice. The shown width is that choice fitted between the
 // two panels' minimum widths at the current size.
-function limits(space: number): { min: number; max: number } {
+export function limits(space: number): { min: number; max: number } {
     return { min: MIN_BACKLOG, max: space > 0 ? Math.max(MIN_BACKLOG, space - MIN_GOALS - DIVIDER_WIDTH) : FALLBACK_MAX };
 }
-function fit(preferred: number, space: number): number {
+export function fit(preferred: number, space: number): number {
     const { min, max } = limits(space);
     return Math.min(max, Math.max(min, preferred));
 }
@@ -561,12 +562,19 @@ interface DividerProps {
     width: number;
     min: number;
     max: number;
+    // Which side of the divider the backlog is on. The arrow keys and a drag move the divider in
+    // their own direction, so with the backlog on the right, Left widens it (D16).
+    side?: "left" | "right";
+    // The width a reset (double click or Enter) returns to.
+    defaultWidth?: number;
     onChange: (value: number, final: boolean) => void;
 }
 
-function Divider({ width, min, max, onChange }: DividerProps): VNode {
+export function Divider({ width, min, max, side = "left", defaultWidth = DEFAULT_BACKLOG_WIDTH, onChange }: DividerProps): VNode {
     const drag = useRef<{ x: number; width: number } | null>(null);
     const clamp = (v: number): number => Math.min(max, Math.max(min, v));
+    // How far the backlog grows when the divider moves `dx` to the right.
+    const grow = (dx: number): number => (side === "left" ? dx : -dx);
     return (
         <div
             class="rd-divider"
@@ -583,30 +591,30 @@ function Divider({ width, min, max, onChange }: DividerProps): VNode {
             }}
             onPointerMove={(e: PointerEvent) => {
                 if (drag.current) {
-                    onChange(clamp(drag.current.width + e.clientX - drag.current.x), false);
+                    onChange(clamp(drag.current.width + grow(e.clientX - drag.current.x)), false);
                 }
             }}
             onPointerUp={(e: PointerEvent) => {
                 if (drag.current) {
-                    onChange(clamp(drag.current.width + e.clientX - drag.current.x), true);
+                    onChange(clamp(drag.current.width + grow(e.clientX - drag.current.x)), true);
                     drag.current = null;
                     (e.currentTarget as HTMLElement).releasePointerCapture?.(e.pointerId);
                 }
             }}
-            onDblClick={() => onChange(clamp(DEFAULT_BACKLOG_WIDTH), true)}
+            onDblClick={() => onChange(clamp(defaultWidth), true)}
             onKeyDown={(e: KeyboardEvent) => {
                 const step: number = e.shiftKey ? BIG_STEP : STEP;
                 const next: number | null =
                     e.key === "ArrowLeft"
-                        ? width - step
+                        ? width + grow(-step)
                         : e.key === "ArrowRight"
-                          ? width + step
+                          ? width + grow(step)
                           : e.key === "Home"
                             ? min
                             : e.key === "End"
                               ? max
                               : e.key === "Enter"
-                                ? DEFAULT_BACKLOG_WIDTH
+                                ? defaultWidth
                                 : null;
                 if (next !== null) {
                     e.preventDefault();
@@ -617,14 +625,23 @@ function Divider({ width, min, max, onChange }: DividerProps): VNode {
     );
 }
 
-export function GroomingPage({
+// For a signed-in lead with a live GitHub connection, Grooming is the band view alone. A host with
+// no live connection keeps the sample page (D8, G26, G27).
+export function GroomingPage(props: GroomingProps): VNode {
+    return props.live ? (
+        <BandPage live={props.live} backlogWidth={props.backlogWidth} onBacklogWidth={props.onBacklogWidth} />
+    ) : (
+        <SampleGroomingPage {...props} />
+    );
+}
+
+function SampleGroomingPage({
     session,
     state,
     showIssues,
     onShowIssues,
     backlogWidth = DEFAULT_BACKLOG_WIDTH,
     onBacklogWidth,
-    live,
 }: GroomingProps): VNode {
     const [filter, setFilter] = useState<string>("");
     const panelsRef = useRef<HTMLDivElement>(null);
@@ -709,7 +726,7 @@ export function GroomingPage({
                 </div>
                 <div class="rd-groom__actions">
                     <div class="rd-groom__sum">
-                        {!live && <b class="rd-groom__summary">{`${planned} of ${totalEpics(INITIATIVES)} epics planned`}</b>}
+                        <b class="rd-groom__summary">{`${planned} of ${totalEpics(INITIATIVES)} epics planned`}</b>
                         <span class="rd-groom__save-state" role="status">
                             {unsaved ? "Unsaved changes" : "All changes saved"}
                         </span>
@@ -734,26 +751,15 @@ export function GroomingPage({
                 </div>
             </header>
             <div class="rd-groom__panels" ref={panelsRef}>
-                {live ? (
-                    <LiveBacklog
-                        source={live}
-                        width={shownWidth}
-                        filter={filter}
-                        onFilter={setFilter}
-                        over={dnd.over?.target === "backlog"}
-                        zone={takeOutZone(dnd, state, session)}
-                    />
-                ) : (
-                    <Backlog
-                        state={state}
-                        session={session}
-                        dnd={dnd}
-                        filter={filter}
-                        onFilter={setFilter}
-                        width={shownWidth}
-                        menu={menu}
-                    />
-                )}
+                <Backlog
+                    state={state}
+                    session={session}
+                    dnd={dnd}
+                    filter={filter}
+                    onFilter={setFilter}
+                    width={shownWidth}
+                    menu={menu}
+                />
                 <Divider
                     width={shownWidth}
                     min={minWidth}

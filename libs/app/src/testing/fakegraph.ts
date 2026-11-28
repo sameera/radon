@@ -16,6 +16,10 @@ export interface FakeIssue {
     inQuery?: boolean;
     // The parent cannot be read: GitHub answers no parent and no error at this issue (R2).
     hiddenParent?: boolean;
+    // The issue's iteration values on its project items: [project, field, iteration].
+    sprints?: [string, string, string][];
+    // GitHub reports that not all of the issue's project values were returned.
+    moreValues?: boolean;
 }
 
 export interface FakeOptions {
@@ -27,10 +31,21 @@ export interface FakeOptions {
     override?: (index: number, request: GitHubRequest) => GitHubResult | undefined | Promise<GitHubResult | undefined>;
     // The repository is unreadable: GitHub answers NOT_FOUND on the repository field.
     cannotRead?: boolean;
+    // What Raiden's backend answers to the Grooming sync. Defaults to an empty partition.
+    sync?: FakeSync | ((request: GitHubRequest) => GitHubResult | Promise<GitHubResult>);
+}
+
+export interface FakeSync {
+    source?: { project: string; field: string } | null;
+    sprints?: Record<string, unknown>[];
+    milestones?: Record<string, unknown>[];
 }
 
 export interface FakeGitHub extends GitHubGateway {
+    // Requests to GitHub's API.
     requests: GitHubRequest[];
+    // Requests to Raiden's backend, kept apart so GitHub request indexes stay as they were.
+    backend: GitHubRequest[];
 }
 
 const INLINE: number = 3;
@@ -66,6 +81,15 @@ export function fakeGitHub(o: FakeOptions): FakeGitHub {
             url: `https://github.com/${issue.repo}/issues/${issue.n}`,
             repository: { nameWithOwner: issue.repo },
         };
+        if (path[0] === "search") {
+            out.projectItems = {
+                pageInfo: { hasNextPage: issue.moreValues === true },
+                nodes: (issue.sprints ?? []).map(([project, field, iteration]) => ({
+                    project: { id: project },
+                    fieldValues: { pageInfo: { hasNextPage: false }, nodes: [{}, { iterationId: iteration, field: { id: field } }] },
+                })),
+            };
+        }
         const pid: string | null = parentId(issue);
         if (issue.hiddenParent) {
             // What GitHub really answers for a parent the viewer cannot read: no parent and no
@@ -85,7 +109,20 @@ export function fakeGitHub(o: FakeOptions): FakeGitHub {
 
     const gateway: FakeGitHub = {
         requests: [],
+        backend: [],
         async request(request: GitHubRequest): Promise<GitHubResult> {
+            if (request.to === "backend") {
+                gateway.backend.push(request);
+                if (typeof o.sync === "function") {
+                    return o.sync(request);
+                }
+                const sync: FakeSync = o.sync ?? {};
+                return {
+                    ok: true,
+                    status: 200,
+                    body: { repository: 1, source: sync.source ?? null, sprints: sync.sprints ?? [], milestones: sync.milestones ?? [] },
+                };
+            }
             const index: number = gateway.requests.length;
             gateway.requests.push(request);
             const forced = await o.override?.(index, request);
@@ -95,6 +132,25 @@ export function fakeGitHub(o: FakeOptions): FakeGitHub {
             errors.length = 0;
             const body = request.body as { query: string; variables: Record<string, unknown> };
             const vars = body.variables;
+            if (body.query.startsWith("query Progress")) {
+                // Every item of the project: one per issue that has a value on it, open or closed.
+                const items = [...byId.values()].flatMap((issue) =>
+                    (issue.sprints ?? [])
+                        .filter(([project]) => project === vars.project)
+                        .map(([, field, iteration]) => ({
+                            content: { state: issue.state ?? "OPEN", repository: { nameWithOwner: issue.repo } },
+                            fieldValues: { pageInfo: { hasNextPage: issue.moreValues === true }, nodes: [{}, { iterationId: iteration, field: { id: field } }] },
+                        })),
+                );
+                const start: number = vars.cursor ? Number(vars.cursor) : 0;
+                const page = items.slice(start, start + 100);
+                const end: number = start + page.length;
+                return {
+                    ok: true,
+                    status: 200,
+                    body: { data: { node: { items: { pageInfo: { hasNextPage: end < items.length, endCursor: String(end) }, nodes: page } } } },
+                };
+            }
             if (Array.isArray(vars.ids)) {
                 const nodes = (vars.ids as string[]).map((id, i) => (byId.has(id) ? node(byId.get(id)!, 0, ["nodes", i]) : null));
                 return { ok: true, status: 200, body: { data: { nodes }, ...(errors.length ? { errors: [...errors] } : {}) } };

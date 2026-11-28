@@ -140,7 +140,7 @@ describe("saved choices (G6, G7, G8)", () => {
     it("opens with defaults when a stored value is of the wrong kind", async () => {
         stubMedia(false);
         localStorage.setItem("raiden:sidebarCollapsed", JSON.stringify("yes"));
-        localStorage.setItem("raiden:backlogWidth", "not json{");
+        localStorage.setItem("raiden:groomBacklogWidth", "not json{");
         localStorage.setItem("raiden:showIssues", JSON.stringify(3));
         await open();
         expect(shadow().querySelector(".rd-nav")).not.toBeNull();

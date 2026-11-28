@@ -52,3 +52,43 @@ describe("extension worker GitHub requests", () => {
         expect(await worker.handle({ type: "raiden/status" }, own)).toEqual({ login: null });
     });
 });
+
+// Story #85, D1, G37: the worker sends the backend route too, so the token stays out of the tab.
+describe("worker: backend route", () => {
+    it("passes a backend request to the shared client and answers with its result only", async () => {
+        const calls: string[] = [];
+        const worker = createWorker({
+            settings: { clientId: "Iv1.x", backendUrl: "https://api.team.example" },
+            extensionId: "ext",
+            redirectUri: "https://ext.chromiumapp.org/",
+            launch: async () => undefined,
+            storage: {
+                get: async () => ({ accessToken: "at1", login: "octo" }),
+                set: async () => undefined,
+            },
+            fetch: (async (url: string) => {
+                calls.push(url);
+                return Response.json({ sprints: [] });
+            }) as unknown as typeof fetch,
+        });
+        const answer = await worker.handle(
+            { type: "raiden/github", request: { to: "backend", path: "/grooming/sync", method: "POST", body: { owner: "a", name: "b" } } },
+            { id: "ext" },
+        );
+        expect(calls).toEqual(["https://api.team.example/grooming/sync"]);
+        expect(JSON.stringify(answer)).not.toContain("at1");
+        expect(answer).toEqual({ ok: true, status: 200, body: { sprints: [] } });
+    });
+
+    it("refuses an unknown destination", async () => {
+        const worker = createWorker({
+            settings: { clientId: "Iv1.x", backendUrl: "https://api.team.example" },
+            extensionId: "ext",
+            redirectUri: "https://ext.chromiumapp.org/",
+            launch: async () => undefined,
+            storage: { get: async () => ({ accessToken: "at1", login: "octo" }), set: async () => undefined },
+            fetch: (async () => Response.json({})) as unknown as typeof fetch,
+        });
+        expect(await worker.handle({ type: "raiden/github", request: { to: "evil", path: "/x" } }, { id: "ext" })).toEqual({ ok: false, kind: "other" });
+    });
+});

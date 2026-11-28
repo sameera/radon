@@ -1,8 +1,8 @@
 ---
 title: GitHub Client
 aliases: [github gateway, shared github client, github requests]
-touches: [github-sign-in, raiden-app-shell, raiden-page-host, raiden-web-view, web-repository-picker, web-view-sign-out, live-backlog]
-last_updated_by: "#73"
+touches: [github-sign-in, raiden-app-shell, raiden-page-host, raiden-web-view, web-repository-picker, web-view-sign-out, live-backlog, grooming-sync]
+last_updated_by: "#81"
 status: active
 verification: verified
 ---
@@ -15,15 +15,15 @@ Every GitHub request Raiden makes in either host goes through one shared client.
 
 Each host gives the shell a GitHub gateway, the same way it gives the preference store. A page asks the gateway for GitHub data. In the web view, the gateway runs the client in the page. In the extension, the gateway passes the request to the background worker, which runs the client. So the token stays out of the github.com tab.
 
-The client accepts only a path on GitHub's API, so it cannot send the token to another address. It adds the token and reads the answer. Before a request, it renews the token when the stored expiry has passed. After a rejected-credentials answer, it renews once and retries once. GitHub refresh tokens work once, so the client first checks whether another request or tab has already renewed. After a failed renewal it reads the storage again before it gives up.
+The client accepts only a path on GitHub's API or on the team's configured backend, so it cannot send the token to another address. It adds the token and reads the answer. Before a request, it renews the token when the stored expiry has passed. After a rejected-credentials answer, it renews once and retries once. GitHub refresh tokens work once, so the client first checks whether another request or tab has already renewed. After a failed renewal it reads the storage again before it gives up.
 
-The client never throws. It returns plain data: a success with its status and body, or a failure with a kind. The kinds are sign-in needed, network, rate limit, permission and other. A missing, rejected or unrenewable sign-in is sign-in needed, and the host drops its record. A 403 or 404 reads as permission, because a GitHub App that is not installed answers not found. A 429 or an exhausted rate limit reads as rate limit.
+The client never throws. It returns plain data: a success with its status and body, or a failure with a kind. The kinds are sign-in needed, network, rate limit, permission and other. A missing, rejected or unrenewable sign-in is sign-in needed, and the host drops its record. A 403 or 404 reads as permission, because a GitHub App that is not installed answers not found. A 429 or an exhausted rate limit reads as rate limit. A failed backend request keeps its kind and may add one reason from a fixed list, and the client drops any other text the backend sends.
 
 ## Key Invariants
 
 1. Every GitHub request in either host carries the signed-in user's token.
 2. Only one piece of code sends GitHub requests, so both hosts get the same answer.
-3. The token never leaves the client, and the client sends it only to GitHub's API.
+3. The token never leaves the client, and the client sends it only to GitHub's API and to the team's configured backend.
 4. A failed sign-in is a different failure kind from network, rate-limit, permission and other errors.
 5. Requests that fail together share one renewal.
 
@@ -36,6 +36,7 @@ The client never throws. It returns plain data: a success with its status and bo
 - [web-repository-picker](web-repository-picker.md) — the picker's list requests go through the client as the signed-in person.
 - [web-view-sign-out](web-view-sign-out.md) — sign out takes the client's refresh lock so a renewal cannot sign the person back in.
 - [live-backlog](live-backlog.md) — every live backlog request goes through this client, and its failure kinds become the backlog's named failure causes.
+- [grooming-sync](grooming-sync.md) — the Grooming sync request goes through this client to the team's backend, with the token, the same renewal and the same failure kinds.
 
 ## Decision Log
 
@@ -53,3 +54,6 @@ Sign out takes the same browser lock that the client takes around a token renewa
 
 ### 2026-11-26 — #73 — Reciprocal link from live-backlog
 The live-backlog page names this page as a neighbour, so this page names it back.
+
+### 2026-11-28 — #81 — The client also sends the token to the team's configured backend
+The Grooming sync runs in the backend as the signed-in lead, so the client gains a second permitted destination: the team's configured backend. It adds the token there the same way, and a rejected-credentials answer from the backend gets the same single renewal and retry. A backend failure may carry one reason from a fixed list, so the page can name an unreadable project apart from an unreadable repository, while free backend text never reaches a page. Refuted alternative: a new failure kind for each backend cause. It is more explicit, but every host and page would have to learn each new kind.

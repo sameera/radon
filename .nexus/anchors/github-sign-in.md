@@ -1,6 +1,6 @@
 ---
 concept: github-sign-in
-source_sha: cf8224cdad3e8cb8b011bb987bd6ddaec91901ca
+source_sha: 6324cccef4b14fcfe27c8f46c656e693875acf29
 generated: 2026-11-28
 ---
 
@@ -12,7 +12,7 @@ generated: 2026-11-28
 - `backend/internal/handler/auth.go` — stateless token exchange and renewal, origin check, refused-token vs outage statuses (#47)
 - `apps/extension/src/worker.ts` — extension worker owning the sign-in record (#47)
 - `apps/web/src/csp.ts` — web view content security policy (#45)
-- `docs/setup/github-app.md` — App registration setup (#45)
+- `docs/setup/github-app.md` — App registration with the read-only organization Projects permission
 - `libs/app/src/app.tsx` — sign-in gate: shows only the sign-in screen when signed out (#47)
 - `libs/app/src/remember.ts` — login tags the stored values (#56)
 - `libs/shared/src/signin.ts` — sign-in core: authorize address, account chooser option (#63)

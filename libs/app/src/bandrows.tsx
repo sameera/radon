@@ -58,10 +58,12 @@ interface BandRowsProps {
     current: Repo | null;
     // Set for editors: rows can be dragged onto another band (story #114, D8).
     onDragRow?: (id: string | null) => void;
+    // The unsynced-with-GitHub flag's words, by issue identity (story #115).
+    flags?: Map<string, string>;
 }
 
 // One band's rows in today's list form, limited to the band's issues (D7, G21, G25).
-export function BandRows({ issues, band, assigned, filter, order, onOrder, current, onDragRow }: BandRowsProps): VNode | null {
+export function BandRows({ issues, band, assigned, filter, order, onOrder, current, onDragRow, flags }: BandRowsProps): VNode | null {
     const inBand = (issue: LiveIssue): boolean => issue.inQuery && assigned.get(issue.id) === band;
     const tree: TreeNode[] = useMemo(
         () => buildTree(issues.map((i) => (i.inQuery && !inBand(i) ? { ...i, inQuery: false, elsewhere: true } : i))),
@@ -92,7 +94,7 @@ export function BandRows({ issues, band, assigned, filter, order, onOrder, curre
     };
     return (
         <div class="rd-band__list" ref={ref}>
-            <List groups={groupItems(shown)} current={current} onStep={step} onDragRow={onDragRow} />
+            <List groups={groupItems(shown)} current={current} onStep={step} onDragRow={onDragRow} flags={flags} />
         </div>
     );
 }

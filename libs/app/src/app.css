@@ -175,3 +175,5 @@
 /* ---------- Sprint moves (story #114) ---------- */
 .rd-band.is-over { box-shadow: var(--rd-shadow-glow); border-radius: var(--rd-radius-md); }
 .rd-bands__notice { margin: 0; color: var(--rd-fg-muted); }
+/* The unsynced-with-GitHub flag: a worded attention pill at the row's end (story #115, G14). */
+.rd-lb-flag { flex: none; white-space: nowrap; }

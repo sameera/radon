@@ -112,11 +112,13 @@ interface ListProps {
     // Set for an editor only: a row can be dragged, carrying only Raiden's row marker, and this
     // hears its start (the row's identity) and its end (null) (story #114, D8, G6, G26).
     onDragRow?: (id: string | null) => void;
+    // A row's unsynced-with-GitHub flag, by issue identity: worded status, never a control (G14).
+    flags?: Map<string, string>;
 }
 
 // The backlog list. Only an editor's rows can be dragged, to move the issue to another sprint's
 // band; Alt+Up and Alt+Down move an item one place inside its band.
-export function List({ groups, current, onStep, onDragRow }: ListProps): VNode {
+export function List({ groups, current, onStep, onDragRow, flags }: ListProps): VNode {
     return (
         <ul class="rd-lb-list">
             {groups.map((group: ListGroup) => (
@@ -166,6 +168,7 @@ export function List({ groups, current, onStep, onDragRow }: ListProps): VNode {
                             }}
                         >
                             <LiveRef issue={issue} current={current} icon />
+                            {flags?.has(issue.id) && <span class="rd-pill rd-pill--attention rd-lb-flag">{flags.get(issue.id)}</span>}
                         </div>
                     ))}
                 </li>

@@ -303,10 +303,15 @@ export function BandPage({ live, backlogWidth, onBacklogWidth }: BandPageProps):
     const firstLoose: number = entries.findIndex((e: BandEntry) => e.kind === "sprint" && e.milestone === null);
     const loose: number = firstLoose > 0 ? firstLoose : -1;
     const issues: LiveIssue[] = state?.ok ? state.issues : [];
-    // Each row's band as loaded: Raiden's sprint when it holds one, else GitHub's (story #114).
-    const loaded: Map<string, string | null> = useMemo(
-        () => (sync?.ok ? shownBands(assignBands(issues, sync.sprints, sync.source), sync.sprints, sync.assignments) : new Map()),
+    // Each row's GitHub sprint, and its band as loaded: Raiden's sprint when it holds one, else
+    // GitHub's (stories #114, #115, D4, D7).
+    const github: Map<string, string | null> = useMemo(
+        () => (sync?.ok ? assignBands(issues, sync.sprints, sync.source) : new Map()),
         [issues, sync],
+    );
+    const loaded: Map<string, string | null> = useMemo(
+        () => (sync?.ok ? shownBands(github, sync.sprints, sync.assignments) : new Map()),
+        [github, sync],
     );
     // The lead's order inside each band, in page memory only, kept with the repository and person.
     const orderKey: string = JSON.stringify([live.login, repo?.owner, repo?.name]);
@@ -324,6 +329,19 @@ export function BandPage({ live, backlogWidth, onBacklogWidth }: BandPageProps):
         mayEdit,
         numberOf: (id: string) => issues.find((i) => i.id === id)?.number ?? null,
     });
+    // The unsynced-with-GitHub flag: a row whose shown band differs from its GitHub sprint names
+    // that sprint, or says GitHub has none. Rows that agree carry no flag (story #115, D4, G9).
+    const flags: Map<string, string> = useMemo(() => {
+        const names: Map<string, string> = new Map((sync?.ok ? sync.sprints : []).map((s: Sprint) => [s.id, s.name]));
+        const out: Map<string, string> = new Map();
+        for (const [id, band] of assigned) {
+            const theirs: string | null = github.get(id) ?? null;
+            if (band !== theirs) {
+                out.set(id, theirs === null ? "In GitHub: no sprint" : `In GitHub: ${names.get(theirs) ?? theirs}`);
+            }
+        }
+        return out;
+    }, [assigned, github, sync]);
     // A dropped row lands at the top of its new band (D8).
     const moveTo = (id: string, to: string | null): void => {
         if (move(id, to)) {
@@ -465,12 +483,13 @@ export function BandPage({ live, backlogWidth, onBacklogWidth }: BandPageProps):
                                             onOrder={(ids: string[]) => setBandOrder(entry.sprint.id, ids)}
                                             current={repo}
                                             onDragRow={onDragRow}
+                                            flags={flags}
                                         />
                                     </Band>
                                 </Fragment>
                             ),
                         )}
-                        <Band band={{ none: true }} label="Issues with no sprint" name="No sprint" detail="Issues with no sprint in GitHub" drop={dropFor(null)}>
+                        <Band band={{ none: true }} label="Issues with no sprint" name="No sprint" detail="Issues that have no sprint" drop={dropFor(null)}>
                             <BandRows
                                 issues={issues}
                                 band={null}
@@ -480,6 +499,7 @@ export function BandPage({ live, backlogWidth, onBacklogWidth }: BandPageProps):
                                 onOrder={(ids: string[]) => setBandOrder("", ids)}
                                 current={repo}
                                 onDragRow={onDragRow}
+                                flags={flags}
                             />
                         </Band>
                     </>

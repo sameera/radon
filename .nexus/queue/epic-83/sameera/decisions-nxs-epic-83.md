@@ -17,3 +17,8 @@
 - **Choice:** add `unknown-sprint` to the shared `BACKEND_REASONS`, so a refused move can say "That sprint no longer exists."
 - **Why:** D6 step 6 names "the sprint no longer exists" as its own failure cause; a 409 alone reads as "other".
 - **Refuted alternative:** map every 409 to that cause, which would also mislabel an `unknown-issue` refusal.
+
+## 2026-11-28 — The flag is an attention Pill reading "In GitHub: <sprint>"
+- **Choice:** the design system's `rd-pill rd-pill--attention` span at the row's end, worded "In GitHub: Sprint 14" or "In GitHub: no sprint"; it compares the row's shown band, moves included, with its GitHub sprint.
+- **Why:** the Pill is the design system's worded status with an attention tint, and comparing the shown band flags a fresh move at once.
+- **Refuted alternative:** an icon with a tooltip, which carries the state by color and hover alone.

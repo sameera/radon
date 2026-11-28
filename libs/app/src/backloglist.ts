@@ -7,25 +7,29 @@ import type { LiveIssue, TreeNode } from "./backlogload.ts";
 export interface ListItem {
     issue: LiveIssue;
     chain: LiveIssue[];
+    // Rows above it in the same band: a band row under a band row is indented (D7).
+    depth?: number;
+}
+
+// A band's items (D7): every issue in the band is a row, indented under a band row above it. An
+// ancestor outside the band shows only as a crumb in the chain above its group.
+export function flattenBand(tree: TreeNode[], inBand: (issue: LiveIssue) => boolean, chain: LiveIssue[] = [], depth: number = 0): ListItem[] {
+    const out: ListItem[] = [];
+    for (const node of tree) {
+        if (inBand(node.issue)) {
+            out.push({ issue: node.issue, chain, depth });
+            out.push(...flattenBand(node.children, inBand, chain, depth + 1));
+        } else {
+            out.push(...flattenBand(node.children, inBand, [...chain, node.issue], depth));
+        }
+    }
+    return out;
 }
 
 // A run of items with the same parent. `chain` is empty for items at the top.
 export interface ListGroup {
     chain: LiveIssue[];
     items: ListItem[];
-}
-
-// The items in tree order: depth first, each level in the tree's own order.
-export function flattenTree(tree: TreeNode[], chain: LiveIssue[] = []): ListItem[] {
-    const out: ListItem[] = [];
-    for (const node of tree) {
-        if (node.children.length === 0) {
-            out.push({ issue: node.issue, chain });
-        } else {
-            out.push(...flattenTree(node.children, [...chain, node.issue]));
-        }
-    }
-    return out;
 }
 
 // The items in the lead's order. Items the order does not name keep their tree order, after the

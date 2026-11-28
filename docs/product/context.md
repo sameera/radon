@@ -23,7 +23,7 @@ Raiden is a self-hostable Chrome extension that injects agile views into GitHub 
 
 - **No multi-tenant SaaS.** Each team self-hosts.
 - **No standalone app replacing GitHub.** Users stay on github.com.
-- **No issue editing in Raiden.** Issues, fields and iterations are edited in GitHub directly. Raiden edits only its own data (e.g. sprint goals).
+- **No issue editing in Raiden.** Issues, fields and iterations are edited in GitHub directly, until the write-back epic. Raiden edits only its own records (e.g. sprint goals). Raiden never writes to GitHub until the write-back epic.
 - **No generic-project feature that degrades the Nexus experience.**
 
 ## Personas
@@ -89,7 +89,7 @@ Runs sprints on GitHub Projects iterations.
 
 1. **Stay inside GitHub.** Never make the user switch tools.
 2. **Nexus first.** Generic support never costs Nexus users.
-3. **GitHub is the source of truth.** Issues are edited in GitHub; Raiden stores and edits only what GitHub cannot hold.
+3. **GitHub is the source of truth for issues.** Issues are edited in GitHub. Raiden owns its milestone, sprint, sprint goal and sprint assignment records, and syncs milestones and sprints from GitHub.
 4. **Team-owned.** Self-hosted; the team owns its data.
 
 ## Company Scale

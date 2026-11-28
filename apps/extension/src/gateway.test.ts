@@ -20,4 +20,10 @@ describe("extension gateway", () => {
         });
         expect(await broken.request({ path: "/u" })).toEqual({ ok: false, kind: "other" });
     });
+    it("keeps the backend's named cause, and drops an unknown one (story #85)", async () => {
+        const named = await extensionGateway(async () => ({ ok: false, kind: "permission", reason: "project-unreadable" })).request({ path: "/x" });
+        expect(named).toEqual({ ok: false, kind: "permission", reason: "project-unreadable" });
+        const unknown = await extensionGateway(async () => ({ ok: false, kind: "permission", reason: "anything" })).request({ path: "/x" });
+        expect(unknown).toEqual({ ok: false, kind: "permission" });
+    });
 });

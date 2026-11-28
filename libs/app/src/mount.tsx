@@ -35,7 +35,7 @@ export interface AppOptions {
 
 const SHOW_ISSUES: string = "showIssues";
 const SIDEBAR_COLLAPSED: string = "sidebarCollapsed";
-const BACKLOG_WIDTH: string = "backlogWidth";
+const BACKLOG_WIDTH: string = "groomBacklogWidth";
 
 // Mounts the Raiden app into a shadow root (or any element). The stored preferences are read
 // before the first render, so the page never flashes the wrong state. Returns a function that

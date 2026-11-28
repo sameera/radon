@@ -158,7 +158,7 @@ describe("web view sign-out (#60)", () => {
         r.local.setItem("raiden:repositories", JSON.stringify({ login: "octo", repos: [] }));
         r.local.setItem("raiden:showIssues", "false");
         r.local.setItem("raiden:sidebarCollapsed", "true");
-        r.local.setItem("raiden:backlogWidth", "400");
+        r.local.setItem("raiden:groomBacklogWidth", "400");
         r.session.setItem(PENDING_KEY, pendingFor("s1"));
     };
     const ports = (r: Rig, locks = fakeLocks()) => ({ locks, port: webSignInPort({ ...r.deps, locks }) });
@@ -180,7 +180,7 @@ describe("web view sign-out (#60)", () => {
         await ports(r).port.signOut!();
         expect(r.local.getItem("raiden:showIssues")).toBe("false");
         expect(r.local.getItem("raiden:sidebarCollapsed")).toBe("true");
-        expect(r.local.getItem("raiden:backlogWidth")).toBe("400");
+        expect(r.local.getItem("raiden:groomBacklogWidth")).toBe("400");
     });
 
     it("removes the record first, under the refresh lock, then writes the marker and reloads at its own address (D5, D6)", async () => {

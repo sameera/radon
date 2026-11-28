@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Start the DynamoDB emulator in the background if needed, then run the backend.
+# Start the DynamoDB emulator in the background if needed, create the table, then run the backend.
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -21,5 +21,6 @@ if ! aws dynamodb list-tables >/dev/null 2>&1; then
     fi
 fi
 
+./scripts/emulator.sh setup
 set -a; source .env.backend.local; set +a
 ./scripts/emulator.sh serve

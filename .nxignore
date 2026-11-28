@@ -1,0 +1,2 @@
+# Gitignored files Nx must still hash as task inputs.
+!.env.frontend.local

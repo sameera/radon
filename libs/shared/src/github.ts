@@ -4,7 +4,9 @@
 import { refreshTokens, SignInError, type RecordStore, type SignInRecord, type TeamSettings } from "./signin.ts";
 
 export interface GitHubRequest {
-    // An absolute path on GitHub's API, for example "/repos/acme/widgets/issues".
+    // Where the request goes: GitHub's API (the default), or the team's configured backend (D1).
+    to?: "github" | "backend";
+    // An absolute path on the destination, for example "/repos/acme/widgets/issues".
     path: string;
     method?: "GET" | "POST";
     query?: Record<string, string>;
@@ -14,7 +16,14 @@ export interface GitHubRequest {
 // "sign-in-needed" covers a missing, rejected or unrenewable sign-in. The rest stay apart from it (G19).
 export type GitHubFailureKind = "sign-in-needed" | "network" | "rate-limit" | "permission" | "other";
 
-export type GitHubResult = { ok: true; status: number; body: unknown } | { ok: false; kind: GitHubFailureKind };
+// The named causes Raiden's backend may give for a failure. Any other text is dropped, so nothing
+// the backend says can carry a token or request detail to a page.
+export const BACKEND_REASONS = ["project-unreadable"] as const;
+export type BackendReason = (typeof BACKEND_REASONS)[number];
+
+export type GitHubResult =
+    | { ok: true; status: number; body: unknown }
+    | { ok: false; kind: GitHubFailureKind; reason?: BackendReason };
 
 export interface GitHubClient {
     status(): Promise<string | null>;
@@ -35,16 +44,36 @@ const API_VERSION: string = "2022-11-28";
 const SAFE_PATH: RegExp = /^\/[A-Za-z0-9._~!$&'()*+,;=:@%/-]*$/;
 const SIGN_IN_NEEDED: GitHubResult = { ok: false, kind: "sign-in-needed" };
 
-// Only an absolute path on GitHub's API is accepted, so the token cannot be sent elsewhere (G21).
-export function apiAddress(request: GitHubRequest): string | null {
+// Only an absolute path on GitHub's API, or on the team's configured backend, is accepted, so the
+// token cannot be sent elsewhere (G21, D1).
+export function apiAddress(request: GitHubRequest, settings?: TeamSettings): string | null {
     if (typeof request?.path !== "string" || !SAFE_PATH.test(request.path) || request.path.startsWith("//")) {
         return null;
     }
     if (request.path.split("/").includes("..")) {
         return null;
     }
-    const url: URL = new URL(request.path, API_ORIGIN);
-    if (url.origin !== API_ORIGIN) {
+    let url: URL;
+    if (request.to === "backend") {
+        let base: URL;
+        try {
+            base = new URL(settings?.backendUrl ?? "");
+        } catch {
+            return null;
+        }
+        if (base.protocol !== "https:" && base.protocol !== "http:") {
+            return null;
+        }
+        url = new URL(base.pathname.replace(/\/+$/, "") + request.path, base.origin);
+        if (url.origin !== base.origin) {
+            return null;
+        }
+    } else if (request.to === undefined || request.to === "github") {
+        url = new URL(request.path, API_ORIGIN);
+        if (url.origin !== API_ORIGIN) {
+            return null;
+        }
+    } else {
         return null;
     }
     for (const [name, value] of Object.entries(request.query ?? {})) {
@@ -127,11 +156,15 @@ export function createGitHubClient(deps: GitHubClientDeps): GitHubClient {
     }
 
     function send(url: string, request: GitHubRequest, record: SignInRecord): Promise<Response> {
-        const headers: Record<string, string> = {
-            authorization: `Bearer ${record.accessToken}`,
-            accept: "application/vnd.github+json",
-            "x-github-api-version": API_VERSION,
-        };
+        // The backend gets the token header and a JSON body only, the headers its preflight allows.
+        const headers: Record<string, string> =
+            request.to === "backend"
+                ? { authorization: `Bearer ${record.accessToken}` }
+                : {
+                      authorization: `Bearer ${record.accessToken}`,
+                      accept: "application/vnd.github+json",
+                      "x-github-api-version": API_VERSION,
+                  };
         const init: RequestInit = { method: request.method ?? "GET", headers };
         if (request.body !== undefined && init.method === "POST") {
             headers["content-type"] = "application/json";
@@ -160,7 +193,7 @@ export function createGitHubClient(deps: GitHubClientDeps): GitHubClient {
             }
         },
         async request(request: GitHubRequest): Promise<GitHubResult> {
-            const url: string | null = apiAddress(request);
+            const url: string | null = apiAddress(request, deps.settings);
             if (!url || (request.method !== undefined && request.method !== "GET" && request.method !== "POST")) {
                 return { ok: false, kind: "other" };
             }
@@ -194,7 +227,15 @@ export function createGitHubClient(deps: GitHubClientDeps): GitHubClient {
                 return { ok: false, kind: "network" };
             }
             if (!res.ok) {
-                return { ok: false, kind: failureKind(res) };
+                const kind: GitHubFailureKind = failureKind(res);
+                if (request.to === "backend") {
+                    const body: unknown = await readBody(res).catch(() => null);
+                    const reason: unknown = typeof body === "object" && body !== null ? (body as { error?: unknown }).error : undefined;
+                    if (BACKEND_REASONS.includes(reason as BackendReason)) {
+                        return { ok: false, kind, reason: reason as BackendReason };
+                    }
+                }
+                return { ok: false, kind };
             }
             return { ok: true, status: res.status, body: await readBody(res) };
         },

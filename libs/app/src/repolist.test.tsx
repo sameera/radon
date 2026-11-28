@@ -178,7 +178,9 @@ describe("repository breadcrumb in the banner (D1, D2, G1, G17)", () => {
         expect(crumb()).toBeNull();
         // The live backlog reads the repository's issues; the repository list is never read.
         expect(calls.filter((c) => c.path.startsWith("/user/")).length).toBe(0);
-        expect(calls.every((c) => c.path === "/graphql")).toBe(true);
+        // Opening Grooming also syncs through Raiden's backend (story #85, D1); that is its only other request.
+        expect(calls.filter((c) => c.to !== "backend").every((c) => c.path === "/graphql")).toBe(true);
+        expect(calls.filter((c) => c.to === "backend").every((c) => c.path === "/grooming/sync")).toBe(true);
     });
 });
 

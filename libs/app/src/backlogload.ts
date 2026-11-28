@@ -32,6 +32,16 @@ export interface LiveIssue {
     inQuery: boolean;
     // A parent GitHub would not show to the lead (R2). It has no number, title or link.
     hidden?: boolean;
+    // A query issue shown in another band: it is in the query, but only a crumb here (D7).
+    elsewhere?: boolean;
+    // A query issue's iteration values on its project items (D6). Read for query issues only.
+    iterations?: IterationValue[];
+}
+
+export interface IterationValue {
+    project: string;
+    field: string;
+    iteration: string;
 }
 
 export type BacklogLoad =
@@ -46,6 +56,16 @@ function chain(levels: number): string {
     return levels === 0 ? "parent { id }" : `parent { ${FIELDS} ${chain(levels - 1)} }`;
 }
 export const ISSUE_SELECTION: string = `${FIELDS} ${chain(INLINE_DEPTH)}`;
+// Each query issue's iteration values, read in the same answer (D6). GitHub reports whether more
+// project items or values exist; then the load fails, so no issue lands in the wrong band (G24).
+const VALUES: number = 50;
+export const SPRINT_SELECTION: string = `projectItems(first: ${VALUES}) {
+  pageInfo { hasNextPage }
+  nodes { project { id } fieldValues(first: ${VALUES}) {
+    pageInfo { hasNextPage }
+    nodes { ... on ProjectV2ItemFieldIterationValue { iterationId field { ... on ProjectV2IterationField { id } } } }
+  } }
+}`;
 
 // Ancestors past the inline depth, read together by identity (D2).
 const ANCESTORS: string = `query Ancestors($ids: [ID!]!) {
@@ -61,7 +81,7 @@ const SEARCH: string = `query Backlog($owner: String!, $name: String!, $q: Strin
   search(type: ISSUE, query: $q, first: ${PAGE}, after: $cursor) {
     issueCount
     pageInfo { hasNextPage endCursor }
-    nodes { ... on Issue { ${ISSUE_SELECTION} } }
+    nodes { ... on Issue { ${ISSUE_SELECTION} ${SPRINT_SELECTION} } }
   }
 }`;
 
@@ -161,7 +181,9 @@ export function readIssue(node: unknown, inQuery: boolean, into: Map<string, Liv
         throw new LoadFailed("other");
     }
     const known: LiveIssue | undefined = into.get(node.id);
+    const iterations: IterationValue[] | undefined = node.projectItems === undefined ? known?.iterations : readIterations(node.projectItems);
     into.set(node.id, {
+        ...(iterations ? { iterations } : {}),
         id: node.id,
         number: node.number,
         title: node.title,
@@ -173,6 +195,31 @@ export function readIssue(node: unknown, inQuery: boolean, into: Map<string, Liv
         inQuery: inQuery || (known?.inQuery ?? false),
     });
     unknown.delete(node.id);
+}
+
+function readIterations(items: unknown): IterationValue[] {
+    if (!isRecord(items) || !isRecord(items.pageInfo) || !Array.isArray(items.nodes)) {
+        throw new LoadFailed("other");
+    }
+    if (items.pageInfo.hasNextPage !== false) {
+        throw new LoadFailed("other");
+    }
+    const out: IterationValue[] = [];
+    for (const item of items.nodes) {
+        if (!isRecord(item) || !isRecord(item.project) || typeof item.project.id !== "string" || !isRecord(item.fieldValues)) {
+            throw new LoadFailed("other");
+        }
+        const values = item.fieldValues;
+        if (!isRecord(values.pageInfo) || values.pageInfo.hasNextPage !== false || !Array.isArray(values.nodes)) {
+            throw new LoadFailed("other");
+        }
+        for (const v of values.nodes) {
+            if (isRecord(v) && typeof v.iterationId === "string" && isRecord(v.field) && typeof v.field.id === "string") {
+                out.push({ project: item.project.id, field: v.field.id, iteration: v.iterationId });
+            }
+        }
+    }
+    return out;
 }
 
 // One backlog load: every page of the query, as the signed-in lead (D1, D4, D7).

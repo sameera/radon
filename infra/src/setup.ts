@@ -19,7 +19,7 @@ export interface SetupResult {
     webViewUrl: string | null;
 }
 
-export async function deployBackend(deps: SetupDeps): Promise<string> {
+export async function deployBackend(deps: Pick<SetupDeps, "deploy" | "outputs" | "health">): Promise<string> {
     await deps.deploy(BACKEND_STACK);
     const out: Outputs | null = await deps.outputs(BACKEND_STACK);
     const backendUrl: string | undefined = out?.BackendUrl;

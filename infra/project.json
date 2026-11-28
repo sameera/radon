@@ -49,6 +49,22 @@
                 "cwd": "{workspaceRoot}",
                 "tty": true
             }
+        },
+        "update-backend": {
+            "executor": "nx:run-commands",
+            "cache": false,
+            "dependsOn": [
+                {
+                    "target": "build",
+                    "projects": [
+                        "backend"
+                    ]
+                }
+            ],
+            "options": {
+                "command": "node infra/src/commands/update-backend.ts",
+                "cwd": "{workspaceRoot}"
+            }
         }
     }
 }

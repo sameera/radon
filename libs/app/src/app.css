@@ -182,7 +182,7 @@
    section break rather than another sibling band. */
 .rd-band { border-top: 1px dotted var(--rd-border-muted); padding-top: var(--rd-space-2); }
 .rd-milestone + .rd-band { border-top: 1px solid var(--rd-border); }
-.rd-band__card { min-height: var(--rd-space-8, 32px); padding: var(--rd-space-3); border-radius: var(--rd-radius-md); background: var(--rd-canvas); }
+.rd-band__card { min-height: var(--rd-space-8, 32px); padding: var(--rd-space-3); border-radius: var(--rd-radius-md); }
 .rd-band__rows { border-radius: var(--rd-radius-md); background: var(--rd-canvas); padding: var(--rd-space-2); }
 .rd-band__rows:empty { display: none; }
 .rd-band__label { display: flex; flex-wrap: wrap; gap: var(--rd-space-2); align-items: baseline; }

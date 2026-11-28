@@ -31,6 +31,7 @@ Self-hosted per team; no multi-tenant SaaS.
 ## Infrastructure
 
 - **Hosting**: AWS
+- **Infrastructure as code**: AWS CDK in TypeScript (`infra/`), deployed by `pnpm aws:setup`, `pnpm aws:settings`, `pnpm aws:update-backend` and `pnpm aws:update-web`. See [deploy-aws.md](../setup/deploy-aws.md)
 - **CI/CD**: GitHub Actions
 
 ## Development

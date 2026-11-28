@@ -3,6 +3,9 @@
 Raiden signs users in through a GitHub App that your team registers. Raiden's code asks for no
 permission. The permissions come from this registration (D8, G11).
 
+To deploy the backend and the web view to AWS from a terminal, follow [Deploy Raiden to AWS](deploy-aws.md) after you
+register the App.
+
 ## Register the App
 
 1. In GitHub, go to **Settings → Developer settings → GitHub Apps → New GitHub App**.
@@ -48,7 +51,11 @@ organization's owner to approve the new permission. Sprints do not sync for an o
 
 ## Give the backend its settings
 
-The backend keeps no tokens. It needs these environment values, or an AWS secret that fills them:
+**On AWS**, run `pnpm aws:settings`. It asks for each value below, reads the client secret at a hidden prompt, stores
+them in AWS Secrets Manager and restarts the backend so it uses them at once. See
+[Deploy Raiden to AWS](deploy-aws.md#change-the-settings).
+
+**For a local backend**, the backend keeps no tokens. It needs these environment values:
 
 | Name | Value |
 |---|---|

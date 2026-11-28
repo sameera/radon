@@ -1,0 +1,78 @@
+{
+    "name": "infra",
+    "projectType": "application",
+    "sourceRoot": "infra/src",
+    "tags": [
+        "scope:infra"
+    ],
+    "targets": {
+        "typecheck": {
+            "executor": "nx:run-commands",
+            "options": {
+                "command": "tsc --noEmit -p infra/tsconfig.json",
+                "cwd": "{workspaceRoot}"
+            }
+        },
+        "test": {
+            "executor": "nx:run-commands",
+            "inputs": [
+                "default",
+                "{workspaceRoot}/backend/**/*",
+                "{workspaceRoot}/scripts/emulator.sh"
+            ],
+            "options": {
+                "command": "vitest run --root infra",
+                "cwd": "{workspaceRoot}"
+            }
+        },
+        "setup": {
+            "executor": "nx:run-commands",
+            "cache": false,
+            "dependsOn": [
+                {
+                    "target": "build",
+                    "projects": [
+                        "backend"
+                    ]
+                }
+            ],
+            "options": {
+                "command": "node infra/src/commands/setup.ts",
+                "cwd": "{workspaceRoot}"
+            }
+        },
+        "settings": {
+            "executor": "nx:run-commands",
+            "cache": false,
+            "options": {
+                "command": "node infra/src/commands/settings.ts",
+                "cwd": "{workspaceRoot}",
+                "tty": true
+            }
+        },
+        "update-backend": {
+            "executor": "nx:run-commands",
+            "cache": false,
+            "dependsOn": [
+                {
+                    "target": "build",
+                    "projects": [
+                        "backend"
+                    ]
+                }
+            ],
+            "options": {
+                "command": "node infra/src/commands/update-backend.ts",
+                "cwd": "{workspaceRoot}"
+            }
+        },
+        "update-web": {
+            "executor": "nx:run-commands",
+            "cache": false,
+            "options": {
+                "command": "node infra/src/commands/update-web.ts",
+                "cwd": "{workspaceRoot}"
+            }
+        }
+    }
+}

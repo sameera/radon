@@ -11,6 +11,7 @@ Early code. Nx monorepo with a Preact/TypeScript frontend and a Go backend.
 - `libs/shared/` — host-agnostic TypeScript (repo-nav parsing, Raiden address and host). Imported as `@raiden/shared`.
 - `libs/design-system/` — tokens and components. Imported as `@raiden/design-system`.
 - `backend/` — Go Lambda, wrapped as an Nx project by `backend/project.json`.
+- `infra/` — AWS CDK (TypeScript) definition of the deployment and its four `pnpm aws:*` commands. Guide: [docs/setup/deploy-aws.md](docs/setup/deploy-aws.md). Its build, test and typecheck targets never call AWS.
 
 Libs must not import from apps. Apps must not import from each other.
 

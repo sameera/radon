@@ -68,12 +68,11 @@ Both files are ignored by Git. With the emulator running and its table set up as
 
 In another shell, build and serve the web view:
 
-    pnpm exec nx run raiden:dev --skip-nx-cache
+    pnpm exec nx run raiden:dev
 
-The web and extension builds load `.env.frontend.local` themselves (`scripts/env.ts`), so there is no
-need to source it first; values already exported win over the file. The file is an Nx input, so
-changing it invalidates the cached build. `--skip-nx-cache` is still the safe habit after a settings
-change.
+The dev target reads its web settings directly from `.env.frontend.local` and rebuilds
+`dist/apps/web-local` each time it starts. Restart the target after changing the file.
+For `web:build` and `extension:build`, exported values take precedence over the file.
 
 Open `http://localhost:4210/` and sign in. The callback URL must match `RAIDEN_WEB_RETURN_URL` and `RAIDEN_ALLOWED_REDIRECTS` exactly, including the trailing slash. `RAIDEN_ALLOWED_ORIGINS` uses the origin only, without that slash. The backend must be running for the code exchange.
 

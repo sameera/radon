@@ -1,6 +1,6 @@
 ---
 concept: grooming-sprint-bands
-source_sha: 6324cccef4b14fcfe27c8f46c656e693875acf29
+source_sha: c1cde6af5ae8bfde02668a639d73d3a357d9a25a
 generated: 2026-11-28
 ---
 
@@ -9,13 +9,14 @@ generated: 2026-11-28
 
 # Code Anchors: Grooming Sprint Bands
 
-- `libs/app/src/bands.tsx` — the band view: placing sprints under milestones, headers, cards, current sprint, stacked layout, combined load
+- `libs/app/src/bands.tsx` — the band view: placing sprints under milestones, headers, cards with their goal, current sprint, stacked layout, combined load
 - `libs/app/src/bandrows.tsx` — one band's issue rows
 - `libs/app/src/progress.ts` — current sprint and its progress over all its issues
-- `libs/app/src/grooming.tsx` — shows the band view for a live connection and the sample page otherwise
+- `libs/app/src/grooming.tsx` — shows the band view for a live connection and the sign-in note otherwise
 - `libs/app/src/app.css` — band, card, header, glow, progress and stacking styles
 - `libs/app/src/bands.test.tsx` — banding, placement, headers and load gating
 - `libs/app/src/columns.test.tsx` — two columns, goal column left, card contents
 - `libs/app/src/current.test.tsx` — current sprint glow and progress
 - `libs/app/src/nosprint.test.tsx` — the no-sprint band
 - `libs/app/src/stack.test.tsx` — stacking below 760 pixels and focus order
+- `libs/app/src/removal.test.tsx` — no sample page, the sign-in note without a live connection, one goal card per sprint

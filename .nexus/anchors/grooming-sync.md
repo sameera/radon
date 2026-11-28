@@ -1,6 +1,6 @@
 ---
 concept: grooming-sync
-source_sha: 6324cccef4b14fcfe27c8f46c656e693875acf29
+source_sha: c1cde6af5ae8bfde02668a639d73d3a357d9a25a
 generated: 2026-11-28
 ---
 
@@ -9,13 +9,13 @@ generated: 2026-11-28
 
 # Code Anchors: Grooming Sync
 
-- `backend/internal/handler/sync.go` — the Grooming sync: origin and token checks, GitHub reads as the caller, source pick, synced-record reconcile, partition answer
+- `backend/internal/handler/sync.go` — the Grooming sync: origin and token checks, GitHub reads as the caller, source pick, synced-record reconcile, partition answer with goals and the may-edit flag
 - `backend/internal/handler/sync_test.go` — sync tests: refusals, source pick and keep, synced-only writes, rename and removal
 - `backend/internal/store/store.go` — repository partition reads, writes and deletes in the single table
 - `backend/internal/handler/handler.go` — routes the sync request when sign-in and the store are configured
 - `backend/cmd/lambda/main.go` — gives the handler the table store
 - `backend/cmd/local/main.go` — gives the local server the table store
-- `libs/app/src/groomingsync.ts` — sends the sync through the gateway and reads the answer into sprints, milestones and a named cause
+- `libs/app/src/groomingsync.ts` — sends the sync through the gateway and reads the answer into sprints, milestones, goals, the may-edit flag and a named cause
 - `libs/app/src/groomingsync.test.tsx` — sync answer reading and cause naming
 - `docs/setup/github-app.md` — deploying the backend's data path: table, permissions, cross-origin rule
 - `docs/system/standards/standards.md` — Raiden owns its milestone and sprint records, synced from GitHub

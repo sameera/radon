@@ -1,6 +1,6 @@
 ---
 concept: raiden-sidebar
-source_sha: 6324cccef4b14fcfe27c8f46c656e693875acf29
+source_sha: c1cde6af5ae8bfde02668a639d73d3a357d9a25a
 generated: 2026-11-28
 ---
 
@@ -9,10 +9,9 @@ generated: 2026-11-28
 
 # Code Anchors: Raiden Sidebar
 
-- `libs/app/src/sidebar.tsx` — sidebar items, collapse toggle and rail, Grooming count badge, tooltips (#26, #28)
+- `libs/app/src/sidebar.tsx` — sidebar items, collapse toggle and rail, tooltips (#26, #28)
 - `libs/app/src/tooltip.tsx` — tooltip on hover and keyboard focus, Escape to hide (#28)
-- `libs/app/src/app.tsx` — passes no not-planned count while the live backlog shows
-- `libs/app/src/count.test.tsx` — not-planned count tests (#28)
+- `libs/app/src/app.tsx` — draws the sidebar with the current page and no count
 - `libs/app/src/tooltip.test.tsx` — tooltip tests (#28)
 - `libs/app/src/shell.test.tsx` — sidebar rail tests (#26, #28)
 - `libs/design-system/components/SidebarItem.md` — sidebar item guideline, collapsed rail, count option (#26, #28)

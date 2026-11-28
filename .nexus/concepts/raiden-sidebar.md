@@ -1,23 +1,21 @@
 ---
 title: Raiden Sidebar
-aliases: [sidebar, collapsed sidebar, sidebar rail, sidebar tooltip, not-planned count]
-touches: [raiden-app-shell, grooming-plan]
-last_updated_by: "#81"
+aliases: [sidebar, collapsed sidebar, sidebar rail, sidebar tooltip]
+touches: [raiden-app-shell]
+last_updated_by: "#82"
 status: active
 verification: verified
 ---
 
 # Raiden Sidebar
 
-The sidebar lists the Raiden pages in groups: Sprint goal, Grooming, Timeline and Settings. Selecting an item shows its page. The Grooming item shows how many epics are not planned in any goal, and every item shows a tooltip with its name.
+The sidebar lists the Raiden pages in groups: Sprint goal, Grooming, Timeline and Settings. Selecting an item shows its page, and every item shows a tooltip with its name. No item shows a count.
 
 ## How It Works
 
 Selecting an item changes only the page the shell shows, never the address. Exactly one item is marked as current. A button at the top of the sidebar collapses it to a rail of icons and expands it again. Below 760 pixels, the expanded sidebar overlays the page.
 
-The Grooming item shows a count badge of the epics not planned in any goal. The shell works the count out from the shared session state, with the same effective-goal rule as the Grooming header count. So the count changes on every plan change, on any page, with no reload. The badge hides at zero. While the live backlog shows, the shell passes no count, so the badge and the count in the tooltip are hidden. The item's accessible name gives the count in words, for example "Grooming, 3 epics not planned".
-
-Each item shows a tooltip with its page name while the pointer is over it or it has keyboard focus, collapsed or not. The Grooming tooltip adds the count, for example "Grooming, 3 not planned". The tooltip hides when the pointer or focus leaves, or when Escape is pressed. It never takes focus and never catches the pointer. It is hidden from assistive technology, because the item's name already says the same.
+Each item shows a tooltip with its page name while the pointer is over it or it has keyboard focus, collapsed or not. The tooltip hides when the pointer or focus leaves, or when Escape is pressed. It never takes focus and never catches the pointer. It is hidden from assistive technology, because the item's name already says the same.
 
 The sidebar item and the tooltip are design-system controls, each with its own guideline page.
 
@@ -25,16 +23,15 @@ The sidebar item and the tooltip are design-system controls, each with its own g
 
 1. Selecting an item never changes the address, and exactly one item is marked as current.
 2. ~~The not-planned count plus the header's planned-epics count always equals the total number of epics.~~ Replaced by invariant 7.
-3. The Grooming item shows no count when every epic is planned.
-4. The Grooming tooltip's count always equals the badge count.
+3. ~~The Grooming item shows no count when every epic is planned.~~ Retired with the count.
+4. ~~The Grooming tooltip's count always equals the badge count.~~ Retired with the count.
 5. A tooltip never takes focus and never stops a click on what lies under it.
 6. In the collapsed rail, each item keeps its accessible name.
-7. While the not-planned count and the header's planned-epics count show, they add up to the total number of epics. While the live backlog shows, neither count shows.
+7. ~~While the not-planned count and the header's planned-epics count show, they add up to the total number of epics. While the live backlog shows, neither count shows.~~ Retired with the count.
 
 ## Integration Points
 
-- [raiden-app-shell](raiden-app-shell.md) — the shell draws the sidebar, keeps its collapsed choice through the preference store, and passes it the not-planned count.
-- [grooming-plan](grooming-plan.md) — the not-planned count is derived from the Grooming session state with the header count's rule.
+- [raiden-app-shell](raiden-app-shell.md) — the shell draws the sidebar, keeps its collapsed choice through the preference store, and tells it which page is current.
 
 ## Decision Log
 
@@ -46,3 +43,6 @@ The plan still runs on sample issue numbers, so beside a live backlog the not-pl
 
 ### 2026-11-28 — #81 — Below 760 pixels the expanded sidebar overlays the page
 Grooming must fit a 360-pixel window with the sidebar in either state. The expanded sidebar now overlays the page below 760 pixels, and the page keeps a margin the width of the collapsed rail, so the lead's stored collapse choice stays true. Refuted alternative: force the sidebar collapsed below 760 pixels. It is simpler, but it overrides the lead's stored choice.
+
+### 2026-11-28 — #82 — The Grooming item's not-planned count is removed
+The count described epics planned into sample goals, and the sample goals and the plan are deleted, so nothing is left to count. Invariants 3, 4 and 7 are struck with the count, and the not-planned count alias goes. The grooming-plan page is retired, so its edge is dropped. Refuted alternative: none.

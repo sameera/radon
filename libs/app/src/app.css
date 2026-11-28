@@ -196,6 +196,14 @@
 /* The current sprint (story #91): its card carries the page's one glow, and its progress bar. */
 .rd-band__card.is-current { box-shadow: var(--rd-shadow-glow); }
 .rd-band__progress { margin: var(--rd-space-2) 0 0; }
+/* The sprint goal on its card (story #103): plain text for readers, a one-line field that grows
+   and wraps for goal editors (D7). */
+.rd-band__goal { margin: var(--rd-space-2) 0 0; color: var(--rd-fg); white-space: pre-wrap; overflow-wrap: anywhere; }
+.rd-band__goal-edit { margin: var(--rd-space-2) 0 0; display: flex; flex-direction: column; gap: var(--rd-space-1); }
+.rd-band__goal-field { width: 100%; height: auto; min-height: 32px; field-sizing: content; overflow-wrap: anywhere; font: inherit; }
+.rd-band__goal-state { margin: 0; color: var(--rd-fg-muted); }
+.rd-band__goal-failed { display: flex; flex-wrap: wrap; align-items: center; gap: var(--rd-space-2); }
+.rd-band__goal-failed .rd-band__goal-state { color: var(--rd-danger); }
 
 /* Below 760px the columns stack (story #92, D11): each band shows its card above its rows, the
    divider hides, and long titles and crumbs wrap, so a 360px page never scrolls sideways. */

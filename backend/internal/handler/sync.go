@@ -190,6 +190,7 @@ func onlyNotFoundAt(errs []graphError, field string) bool {
 const repoQuery = `query Repo($owner: String!, $name: String!) {
   repository(owner: $owner, name: $name) {
     databaseId
+    viewerPermission
     projectsV2(first: 100) {
       nodes { id createdAt fields(first: 100) { nodes { ... on ProjectV2IterationField { id createdAt } } } }
     }
@@ -448,8 +449,9 @@ func (p *syncPlan) reconcile(existing map[string]store.Item, prefix string, desi
 func runGroomingSync(ctx context.Context, gh *graphClient, records store.Records, owner, name string) (map[string]any, *syncError) {
 	var repo struct {
 		Repository *struct {
-			DatabaseID int64 `json:"databaseId"`
-			ProjectsV2 struct {
+			DatabaseID       int64  `json:"databaseId"`
+			ViewerPermission string `json:"viewerPermission"`
+			ProjectsV2       struct {
 				Nodes []linkedProject `json:"nodes"`
 			} `json:"projectsV2"`
 		} `json:"repository"`
@@ -551,7 +553,10 @@ func runGroomingSync(ctx context.Context, gh *graphClient, records store.Records
 		delete(existing, sk)
 	}
 	slog.DebugContext(ctx, "grooming sync done", "writes", len(plan.puts), "deletes", len(plan.deletes))
-	return partitionAnswer(repo.Repository.DatabaseID, source, existing), nil
+	answer := partitionAnswer(repo.Repository.DatabaseID, source, existing)
+	// D3: the may-edit flag comes from the repository read the sync already made.
+	answer["mayEdit"] = isGoalEditor(repo.Repository.ViewerPermission)
+	return answer, nil
 }
 
 func origin(attrs map[string]string) string {
@@ -561,8 +566,8 @@ func origin(attrs map[string]string) string {
 	return "raiden"
 }
 
-// partitionAnswer is the whole partition the page needs: the sync source and every sprint and
-// milestone record, synced or Raiden-owned.
+// partitionAnswer is the whole partition the page needs: the sync source, every sprint and
+// milestone record, synced or Raiden-owned, and every sprint goal (D2).
 func partitionAnswer(repoID int64, source *syncSource, items map[string]store.Item) map[string]any {
 	keys := make([]string, 0, len(items))
 	for sk := range items {
@@ -590,7 +595,13 @@ func partitionAnswer(repoID int64, source *syncSource, items map[string]store.It
 			})
 		}
 	}
-	answer := map[string]any{"repository": repoID, "source": nil, "sprints": sprints, "milestones": milestones}
+	goals := []map[string]string{}
+	for _, sk := range keys {
+		if strings.HasPrefix(sk, goalPrefix+sprintPrefix) {
+			goals = append(goals, map[string]string{"sprint": strings.TrimPrefix(sk, goalPrefix+sprintPrefix), "text": items[sk].Attrs["text"]})
+		}
+	}
+	answer := map[string]any{"repository": repoID, "source": nil, "sprints": sprints, "milestones": milestones, "goals": goals}
 	if source != nil {
 		answer["source"] = source
 	}

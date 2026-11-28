@@ -42,7 +42,15 @@ export interface SyncSource {
 export type SyncCause = "signed-out" | "cannot-read" | "rate-limit" | "cannot-read-project" | "backend-unavailable" | "other";
 
 export type SyncLoad =
-    | { ok: true; source: SyncSource | null; sprints: Sprint[]; milestones: Milestone[] }
+    | {
+          ok: true;
+          source: SyncSource | null;
+          sprints: Sprint[];
+          milestones: Milestone[];
+          // Saved sprint goals by sprint id, and whether the caller may edit them (story #103, D2, D3).
+          goals: Record<string, string>;
+          mayEdit: boolean;
+      }
     | { ok: false; cause: SyncCause };
 
 function causeOf(result: GitHubResult & { ok: false }): SyncCause {
@@ -125,5 +133,24 @@ export async function syncGrooming(gateway: GitHubGateway, repo: Repo): Promise<
     if (sprints.includes(null) || milestones.includes(null)) {
         return { ok: false, cause: "other" };
     }
-    return { ok: true, source, sprints: sprints as Sprint[], milestones: milestones as Milestone[] };
+    const goals: Record<string, string> = {};
+    if (body.goals !== undefined) {
+        if (!Array.isArray(body.goals)) {
+            return { ok: false, cause: "other" };
+        }
+        for (const g of body.goals) {
+            if (!isRecord(g) || !str(g.sprint) || !str(g.text)) {
+                return { ok: false, cause: "other" };
+            }
+            goals[g.sprint] = g.text;
+        }
+    }
+    return {
+        ok: true,
+        source,
+        sprints: sprints as Sprint[],
+        milestones: milestones as Milestone[],
+        goals,
+        mayEdit: body.mayEdit === true,
+    };
 }

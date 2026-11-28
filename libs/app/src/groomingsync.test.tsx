@@ -65,6 +65,8 @@ describe("Grooming sync (story #85)", () => {
         const out = await syncGrooming(gateway, WIDGETS);
         expect(out).toEqual({
             ok: true,
+            goals: {},
+            mayEdit: false,
             source: { project: "P", field: "F" },
             sprints: [
                 { id: "F#a1", field: "F", iteration: "a1", name: "Sprint 1", start: "2026-11-02", end: "2026-11-15", synced: true },
@@ -107,6 +109,8 @@ describe("Grooming sync: milestones (story #86)", () => {
         const gateway = fakeGitHub({ issues: [], sync: { milestones } });
         expect(await syncGrooming(gateway, WIDGETS)).toEqual({
             ok: true,
+            goals: {},
+            mayEdit: false,
             source: null,
             sprints: [],
             milestones: [
@@ -118,6 +122,23 @@ describe("Grooming sync: milestones (story #86)", () => {
 
     it("fails on an unreadable milestone", async () => {
         const gateway = fakeGitHub({ issues: [], sync: { milestones: [{ id: "M_1", title: "x" }] } });
+        expect(await syncGrooming(gateway, WIDGETS)).toEqual({ ok: false, cause: "other" });
+    });
+});
+
+describe("Grooming sync: goals (story #103)", () => {
+    it("reads the saved goals and the may-edit flag (D2, D3)", async () => {
+        const gateway = fakeGitHub({ issues: [], sync: { sprints: [SPRINT], goals: { "F#a1": "Ship it" }, mayEdit: true } });
+        const out = await syncGrooming(gateway, WIDGETS);
+        expect(out.ok && out.goals).toEqual({ "F#a1": "Ship it" });
+        expect(out.ok && out.mayEdit).toBe(true);
+    });
+
+    it("fails the sync on an unreadable goal", async () => {
+        const gateway = fakeGitHub({
+            issues: [],
+            sync: () => ({ ok: true, status: 200, body: { source: null, sprints: [], milestones: [], goals: [{ sprint: 1, text: "x" }] } }),
+        });
         expect(await syncGrooming(gateway, WIDGETS)).toEqual({ ok: false, cause: "other" });
     });
 });

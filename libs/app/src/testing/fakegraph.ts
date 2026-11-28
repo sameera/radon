@@ -35,12 +35,18 @@ export interface FakeOptions {
     cannotRead?: boolean;
     // What Raiden's backend answers to the Grooming sync. Defaults to an empty partition.
     sync?: FakeSync | ((request: GitHubRequest) => GitHubResult | Promise<GitHubResult>);
+    // What Raiden's backend answers to a goal write, when it returns a result. Otherwise the write
+    // is saved in `goals`, which every later sync answer of this fake returns.
+    goal?: (request: GitHubRequest) => GitHubResult | undefined | Promise<GitHubResult | undefined>;
 }
 
 export interface FakeSync {
     source?: { project: string; field: string } | null;
     sprints?: Record<string, unknown>[];
     milestones?: Record<string, unknown>[];
+    // Saved goals, by sprint id.
+    goals?: Record<string, string>;
+    mayEdit?: boolean;
 }
 
 export interface FakeGitHub extends GitHubGateway {
@@ -48,6 +54,8 @@ export interface FakeGitHub extends GitHubGateway {
     requests: GitHubRequest[];
     // Requests to Raiden's backend, kept apart so GitHub request indexes stay as they were.
     backend: GitHubRequest[];
+    // The goals the fake backend holds, by sprint id.
+    goals: Record<string, string>;
 }
 
 const INLINE: number = 3;
@@ -114,9 +122,23 @@ export function fakeGitHub(o: FakeOptions): FakeGitHub {
     const gateway: FakeGitHub = {
         requests: [],
         backend: [],
+        goals: typeof o.sync === "object" ? { ...(o.sync.goals ?? {}) } : {},
         async request(request: GitHubRequest): Promise<GitHubResult> {
             if (request.to === "backend") {
                 gateway.backend.push(request);
+                if (request.path === "/grooming/goal") {
+                    const forced = await o.goal?.(request);
+                    if (forced) {
+                        return forced;
+                    }
+                    const b = request.body as { sprint: string; text: string };
+                    if (b.text === "") {
+                        delete gateway.goals[b.sprint];
+                    } else {
+                        gateway.goals[b.sprint] = b.text;
+                    }
+                    return { ok: true, status: 200, body: { sprint: b.sprint, text: b.text } };
+                }
                 if (typeof o.sync === "function") {
                     return o.sync(request);
                 }
@@ -124,7 +146,14 @@ export function fakeGitHub(o: FakeOptions): FakeGitHub {
                 return {
                     ok: true,
                     status: 200,
-                    body: { repository: 1, source: sync.source ?? null, sprints: sync.sprints ?? [], milestones: sync.milestones ?? [] },
+                    body: {
+                        repository: 1,
+                        source: sync.source ?? null,
+                        sprints: sync.sprints ?? [],
+                        milestones: sync.milestones ?? [],
+                        goals: Object.entries(gateway.goals).map(([sprint, text]) => ({ sprint, text })),
+                        mayEdit: sync.mayEdit ?? false,
+                    },
                 };
             }
             const index: number = gateway.requests.length;

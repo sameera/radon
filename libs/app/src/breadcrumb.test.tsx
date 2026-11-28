@@ -7,7 +7,6 @@ import type { GitHubGateway } from "./gateway.ts";
 import { mountApp } from "./mount.tsx";
 import { createRepoStore, type Repo, type RepoStore } from "./repo.tsx";
 import { createSignInController } from "./signin.ts";
-import { createSessionStore } from "./session.ts";
 
 const ds = (file: string): string => readFileSync(resolve(__dirname, "../../design-system", file), "utf8");
 
@@ -37,7 +36,6 @@ const flush = (): Promise<void> => act(async () => void (await new Promise((r) =
 async function open(o: { login: string | null; repo: RepoStore; rows?: Repo[]; banner?: boolean }): Promise<void> {
     await act(async () => {
         unmount = await mountApp(root, {
-            session: createSessionStore(),
             signIn: createSignInController({ status: async () => o.login, signIn: async () => (o.login ? { login: o.login } : null) }),
             gateway: gatewayFor(o.rows ?? []),
             repo: o.repo,

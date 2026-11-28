@@ -42,7 +42,17 @@ export interface SyncSource {
 export type SyncCause = "signed-out" | "cannot-read" | "rate-limit" | "cannot-read-project" | "backend-unavailable" | "other";
 
 export type SyncLoad =
-    | { ok: true; source: SyncSource | null; sprints: Sprint[]; milestones: Milestone[] }
+    | {
+          ok: true;
+          source: SyncSource | null;
+          sprints: Sprint[];
+          milestones: Milestone[];
+          // Saved sprint goals by sprint id, and whether the caller may edit them (story #103, D2, D3).
+          goals: Record<string, string>;
+          mayEdit: boolean;
+          // Saved sprint assignments by issue identity; null is the no-sprint mark (story #114, D3).
+          assignments: Map<string, string | null>;
+      }
     | { ok: false; cause: SyncCause };
 
 function causeOf(result: GitHubResult & { ok: false }): SyncCause {
@@ -125,5 +135,37 @@ export async function syncGrooming(gateway: GitHubGateway, repo: Repo): Promise<
     if (sprints.includes(null) || milestones.includes(null)) {
         return { ok: false, cause: "other" };
     }
-    return { ok: true, source, sprints: sprints as Sprint[], milestones: milestones as Milestone[] };
+    const goals: Record<string, string> = {};
+    if (body.goals !== undefined) {
+        if (!Array.isArray(body.goals)) {
+            return { ok: false, cause: "other" };
+        }
+        for (const g of body.goals) {
+            if (!isRecord(g) || !str(g.sprint) || !str(g.text)) {
+                return { ok: false, cause: "other" };
+            }
+            goals[g.sprint] = g.text;
+        }
+    }
+    const assignments: Map<string, string | null> = new Map();
+    if (body.assignments !== undefined) {
+        if (!Array.isArray(body.assignments)) {
+            return { ok: false, cause: "other" };
+        }
+        for (const a of body.assignments) {
+            if (!isRecord(a) || !str(a.issue) || (a.sprint !== null && !str(a.sprint))) {
+                return { ok: false, cause: "other" };
+            }
+            assignments.set(a.issue, a.sprint);
+        }
+    }
+    return {
+        ok: true,
+        source,
+        assignments,
+        sprints: sprints as Sprint[],
+        milestones: milestones as Milestone[],
+        goals,
+        mayEdit: body.mayEdit === true,
+    };
 }

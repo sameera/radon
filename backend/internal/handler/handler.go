@@ -67,6 +67,18 @@ func (h *Handler) Handle(ctx context.Context, req events.APIGatewayV2HTTPRequest
 			return h.groomingSync(ctx, req), nil
 		}
 		return respond(http.StatusNotFound, map[string]string{"error": "not found"}), nil
+	case "POST /grooming/goal", "OPTIONS /grooming/goal":
+		route = routeKey
+		if h.Auth != nil && h.Store != nil {
+			return h.groomingGoal(ctx, req), nil
+		}
+		return respond(http.StatusNotFound, map[string]string{"error": "not found"}), nil
+	case "POST /grooming/move", "OPTIONS /grooming/move":
+		route = routeKey
+		if h.Auth != nil && h.Store != nil {
+			return h.groomingMove(ctx, req), nil
+		}
+		return respond(http.StatusNotFound, map[string]string{"error": "not found"}), nil
 	default:
 		return respond(http.StatusNotFound, map[string]string{"error": "not found"}), nil
 	}

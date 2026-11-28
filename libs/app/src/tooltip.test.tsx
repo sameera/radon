@@ -4,18 +4,13 @@ import { resolve } from "node:path";
 import { act } from "preact/test-utils";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { mountApp } from "./mount.tsx";
-import { planItem, unplanItem } from "./plan.ts";
-import { INITIATIVES } from "./sample.ts";
-import { createSessionStore, type SessionStore } from "./session.ts";
 
 let root: HTMLElement;
 let unmount: () => void;
-let session: SessionStore;
 
 async function open(): Promise<void> {
-    session = createSessionStore();
     await act(async () => {
-        unmount = await mountApp(root, { session, repoUrl: "https://github.com/acme/widgets" });
+        unmount = await mountApp(root, { repoUrl: "https://github.com/acme/widgets" });
     });
 }
 const $ = <T extends Element>(sel: string): T => root.querySelector<T>(sel)!;
@@ -95,30 +90,12 @@ describe("sidebar tooltips", () => {
         expect(tips().length).toBe(1);
     });
 
-    it("add how many epics are not planned to the Grooming tooltip", async () => {
+    // Story #104, G22: the Grooming item carries no count, so its tooltip is its name alone.
+    it("show only the page name on Grooming", async () => {
         await open();
-        await focus(item("Grooming"));
-        expect(tips()[0]!.textContent).toBe("Grooming, 4 not planned");
-        const badge: string = item("Grooming").querySelector(".rd-nav-item__count")!.textContent!;
-        expect(tips()[0]!.textContent).toBe(`Grooming, ${badge} not planned`);
-    });
-
-    it("keep the Grooming tooltip in step with the sidebar count", async () => {
-        await open();
-        await focus(item("Grooming"));
-        await act(() => session.change((s) => planItem(INITIATIVES, s, "init", 13, "g1")));
-        expect(tips()[0]!.textContent).toBe("Grooming, 2 not planned");
-        await act(() => session.change((s) => unplanItem(s, "epic", 31)));
-        expect(tips()[0]!.textContent).toBe("Grooming, 3 not planned");
-    });
-
-    it("show only the page name on Grooming when every epic is planned", async () => {
-        await open();
-        await act(() =>
-            session.change((s) => INITIATIVES.reduce((n, i) => planItem(INITIATIVES, n, "init", i.num, "g1"), s)),
-        );
         await focus(item("Grooming"));
         expect(tips()[0]!.textContent).toBe("Grooming");
+        expect(item("Grooming").querySelector(".rd-nav-item__count")).toBeNull();
     });
 
     it("also show while the sidebar is collapsed", async () => {
@@ -134,7 +111,7 @@ describe("sidebar tooltips", () => {
         const tip: HTMLElement = tips()[0]!;
         expect(tip.getAttribute("aria-hidden")).toBe("true");
         expect(tip.getAttribute("role")).toBeNull();
-        expect(item("Grooming").getAttribute("aria-label")).toBe("Grooming, 4 epics not planned");
+        expect(item("Grooming").getAttribute("aria-label")).toBe("Grooming");
         expect(item("Grooming").hasAttribute("aria-describedby")).toBe(false);
     });
 

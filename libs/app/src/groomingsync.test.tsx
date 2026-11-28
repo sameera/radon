@@ -6,7 +6,6 @@ import type { GitHubResult } from "@raiden/shared";
 import { mountApp, type PreferenceStore } from "./mount.tsx";
 import { createRepoStore, type Repo } from "./repo.tsx";
 import { createSignInController } from "./signin.ts";
-import { createSessionStore } from "./session.ts";
 import { fakeGitHub, type FakeGitHub } from "./testing/fakegraph.ts";
 import { syncGrooming, SYNC_PATH } from "./groomingsync.ts";
 
@@ -35,7 +34,6 @@ async function open(gateway: FakeGitHub): Promise<void> {
     await act(async () => {
         unmount = await mountApp(root, {
             prefs,
-            session: createSessionStore(),
             signIn: createSignInController({ status: async () => "ada", signIn: async () => ({ login: "ada" }) }),
             gateway,
             repo: createRepoStore(WIDGETS),
@@ -65,6 +63,9 @@ describe("Grooming sync (story #85)", () => {
         const out = await syncGrooming(gateway, WIDGETS);
         expect(out).toEqual({
             ok: true,
+            goals: {},
+            assignments: new Map(),
+            mayEdit: false,
             source: { project: "P", field: "F" },
             sprints: [
                 { id: "F#a1", field: "F", iteration: "a1", name: "Sprint 1", start: "2026-11-02", end: "2026-11-15", synced: true },
@@ -107,6 +108,9 @@ describe("Grooming sync: milestones (story #86)", () => {
         const gateway = fakeGitHub({ issues: [], sync: { milestones } });
         expect(await syncGrooming(gateway, WIDGETS)).toEqual({
             ok: true,
+            goals: {},
+            assignments: new Map(),
+            mayEdit: false,
             source: null,
             sprints: [],
             milestones: [
@@ -119,5 +123,43 @@ describe("Grooming sync: milestones (story #86)", () => {
     it("fails on an unreadable milestone", async () => {
         const gateway = fakeGitHub({ issues: [], sync: { milestones: [{ id: "M_1", title: "x" }] } });
         expect(await syncGrooming(gateway, WIDGETS)).toEqual({ ok: false, cause: "other" });
+    });
+});
+
+describe("Grooming sync: goals (story #103)", () => {
+    it("reads the saved goals and the may-edit flag (D2, D3)", async () => {
+        const gateway = fakeGitHub({ issues: [], sync: { sprints: [SPRINT], goals: { "F#a1": "Ship it" }, mayEdit: true } });
+        const out = await syncGrooming(gateway, WIDGETS);
+        expect(out.ok && out.goals).toEqual({ "F#a1": "Ship it" });
+        expect(out.ok && out.mayEdit).toBe(true);
+    });
+
+    it("fails the sync on an unreadable goal", async () => {
+        const gateway = fakeGitHub({
+            issues: [],
+            sync: () => ({ ok: true, status: 200, body: { source: null, sprints: [], milestones: [], goals: [{ sprint: 1, text: "x" }] } }),
+        });
+        expect(await syncGrooming(gateway, WIDGETS)).toEqual({ ok: false, cause: "other" });
+    });
+});
+
+describe("Grooming sync: sprint assignments (story #114)", () => {
+    it("reads each saved assignment, with null as the no-sprint mark (D3)", async () => {
+        const gateway = fakeGitHub({ issues: [], sync: { sprints: [SPRINT], assignments: { I_1: "F#a1", I_2: null } } });
+        const out = await syncGrooming(gateway, WIDGETS);
+        expect(out.ok && [...out.assignments]).toEqual([
+            ["I_1", "F#a1"],
+            ["I_2", null],
+        ]);
+    });
+
+    it("fails the sync on an unreadable assignment", async () => {
+        for (const assignments of [{}, [{ issue: "I_1" }], [{ issue: 1, sprint: "F#a1" }], [{ issue: "I_1", sprint: 3 }]]) {
+            const gateway = fakeGitHub({
+                issues: [],
+                sync: () => ({ ok: true, status: 200, body: { source: null, sprints: [], milestones: [], assignments } }),
+            });
+            expect(await syncGrooming(gateway, WIDGETS)).toEqual({ ok: false, cause: "other" });
+        }
     });
 });

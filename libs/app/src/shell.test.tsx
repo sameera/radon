@@ -40,7 +40,7 @@ describe("sidebar", () => {
         expect(groups).toEqual(["Sprint", "Roadmap"]);
         expect(items().map((e: HTMLElement) => e.textContent!.trim())).toEqual([
             "Sprint goal",
-            "Grooming4",
+            "Grooming",
             "Timeline",
             "Settings",
         ]);
@@ -56,7 +56,7 @@ describe("sidebar", () => {
 
     it("opens on Grooming and marks only the selected item as the current page", async () => {
         await open();
-        expect(current().map((e: HTMLElement) => e.textContent!.trim())).toEqual(["Grooming4"]);
+        expect(current().map((e: HTMLElement) => e.textContent!.trim())).toEqual(["Grooming"]);
         for (const label of ["Timeline", "Settings", "Sprint goal"]) {
             await act(() => item(label).click());
             expect(current().length).toBe(1);
@@ -128,7 +128,7 @@ describe("collapsible sidebar", () => {
         expect(toggle().getAttribute("aria-label")).toBe("Expand sidebar");
         await act(() => toggle().click());
         expect(nav().classList.contains("rd-nav--collapsed")).toBe(false);
-        expect(items().map((e) => e.textContent!.trim())).toEqual(["Sprint goal", "Grooming4", "Timeline", "Settings"]);
+        expect(items().map((e) => e.textContent!.trim())).toEqual(["Sprint goal", "Grooming", "Timeline", "Settings"]);
     });
 
     it("keeps each item's accessible name and its name for hover and focus in the rail", async () => {
@@ -136,7 +136,7 @@ describe("collapsible sidebar", () => {
         await act(() => toggle().click());
         expect(items().map((e) => e.getAttribute("aria-label"))).toEqual([
             "Sprint goal",
-            "Grooming, 4 epics not planned",
+            "Grooming",
             "Timeline",
             "Settings",
         ]);

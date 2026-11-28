@@ -2,8 +2,8 @@
 title: Grooming Undo and Save State
 aliases: [undo, save plan, unsaved changes, save state]
 touches: [grooming-plan]
-last_updated_by: "#8"
-status: active
+last_updated_by: "#82"
+status: deprecated
 verification: verified
 ---
 
@@ -37,3 +37,6 @@ The undo list and the saved plan live in the same in-memory session state as the
 
 ### 2026-11-22 — #8 — Multi-step Undo over the plan only, and unsaved means "differs from the saved plan"
 Story #18 says "Given I made a change, when I choose Undo", which means any change, not only destructive ones. Undo is therefore a button that goes back many steps over the plan only, because initiative expansion lives in the same session state and must not count as a change. The save state is derived by comparing the current plan with the saved plan, so it stays true after Undo. Save plan is immediate and local, because the backend epic has not yet decided what saving means. Refuted alternative: the mockup's single-step undo in a message that disappears after six seconds, shown only after destructive changes, with an unsaved flag set on any change. It is less UI, but it does not cover a change in general, a timed control is hard for keyboard and screen-reader users, and the flag would still claim unsaved changes after undoing back to the saved plan.
+
+### 2026-11-28 — #82 — Retired: Undo and Save plan are deleted
+Epic #82 deleted the sample plan, so Undo, Save plan and the save state have nothing left to act on. A sprint goal saves on its own when the lead leaves the field and has no undo, as the sprint-goals page states. Refuted alternative: goals join a page-wide Save and Undo. It gives one undo model, but a goal that waits for Save is invisible to the team.

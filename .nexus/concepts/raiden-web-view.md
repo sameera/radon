@@ -1,8 +1,8 @@
 ---
 title: Raiden Web View
 aliases: [web view, standalone web view, web host, raiden banner]
-touches: [raiden-banner, raiden-app-shell, raiden-page-host, github-sign-in, github-client, repository-context, web-repository-picker, web-view-sign-out]
-last_updated_by: "#66"
+touches: [raiden-banner, raiden-app-shell, raiden-page-host, github-sign-in, github-client, repository-context, web-repository-picker, web-view-sign-out, web-view-hosting]
+last_updated_by: "#82"
 status: active
 verification: verified
 ---
@@ -17,18 +17,16 @@ The web view is a second, thin host beside the extension. It mounts the same she
 
 Before the first paint, the host sets the theme from the system light or dark preference, declares the display font on the document, and builds its preference store. It then mounts the shell with the banner option, which carries the Raiden icon. The theme changes live when the system preference changes.
 
-Sidebar collapsed, Show issues and backlog width are kept in the browser's local storage for the web view's own address. A storage error or a value of the wrong kind gives the shell's defaults. These choices are separate from the Raiden tab's choices. The last repository picked and the last repository list are kept in the same storage, each tagged with the login of the person who wrote it.
+Sidebar collapsed and backlog width are kept in the browser's local storage for the web view's own address. A storage error or a value of the wrong kind gives the shell's defaults. These choices are separate from the Raiden tab's choices. The last repository picked and the last repository list are kept in the same storage, each tagged with the login of the person who wrote it.
 
-The build is static files with relative addresses, so it works at the root or under a sub-path of any HTTPS origin. The font, the icons and the offline page come from the same address. The team plans to serve it from S3 behind CloudFront; that hosting is separate work.
-
-An app manifest names the app Raiden, opens it in a standalone window and gives it the Raiden icon. An offline worker answers a failed page load with a Raiden page that says the web view needs a connection. Online, every request goes to the network, so the web view never runs an old build.
+The build, its hosting, the app manifest and the offline worker have their own page.
 
 ## Key Invariants
 
 1. The web view uses the same shell and stylesheet as the Raiden tab.
 2. The theme follows the system preference only.
 3. Preferences are never shared with the extension.
-4. The offline worker caches only the offline page and what it needs.
+4. ~~The offline worker caches only the offline page and what it needs.~~ Moved to web-view-hosting.
 5. The banner stays at the top of the window while the document scrolls.
 
 ## Integration Points
@@ -41,6 +39,7 @@ An app manifest names the app Raiden, opens it in a standalone window and gives 
 - [repository-context](repository-context.md) — the web view fills the shared repository from the repository menu and its remembered repository.
 - [web-repository-picker](web-repository-picker.md) — the menu's list, the remembered repository and the kept list live in the web view's banner and storage.
 - [web-view-sign-out](web-view-sign-out.md) — the web view supplies the sign-out step and reloads itself after it.
+- [web-view-hosting](web-view-hosting.md) — the hosting page covers how the web view's build is served, installed and kept fresh.
 
 ## Decision Log
 
@@ -58,3 +57,9 @@ The web view supplies the sign-out step, because only the host knows where its r
 
 ### 2026-11-24 — #66 — The web view's repository choice opens a searchable menu from the breadcrumb
 The list the web view already keeps now sits behind a breadcrumb that opens a searchable menu, so a person with hundreds of repositories can type to narrow them. The list, the storage and the login tag stay as they were. The menu's behavior is on its own page. Refuted alternative: keep the browser's drop-down, which narrows only by its own rules and cannot show a no-match message.
+
+### 2026-11-28 — #96 — Split the build and hosting out to web-view-hosting
+The deployment replaced the plan to host the web view later with real hosting, and adding it pushed this page past the word cap. The build, its hosting, the app manifest, the offline worker and the offline worker's invariant moved to web-view-hosting. This page keeps the host: the shell mount, the theme, the preferences and the banner. A task about deploying or caching the web view loads the hosting page, and a task about the shell loads this one.
+
+### 2026-11-28 — #82 — The web view no longer keeps the Show issues choice
+The Show issues switch is deleted with the sample Grooming page, so the shell no longer reads or writes that choice. A value stored earlier stays in local storage, unused. Refuted alternative: none.

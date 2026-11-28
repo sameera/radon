@@ -1,19 +1,19 @@
 ---
 title: Grooming Plan
 aliases: [grooming page, sprint goals plan, backlog planning]
-touches: [raiden-app-shell, raiden-page-host, grooming-undo-save, grooming-backlog-view, grooming-plan-moves, grooming-github-links, raiden-sidebar, live-backlog]
-last_updated_by: "#73"
-status: active
+touches: [grooming-undo-save, grooming-plan-moves]
+last_updated_by: "#82"
+status: deprecated
 verification: verified
 ---
 
 # Grooming Plan
 
-The Grooming page lets a lead plan the next sprint. A backlog panel lists the repository's open issues for a signed-in person, or sample initiatives with their epics otherwise. A goals panel lists the sprint goals in priority order, and the lead places items into goals.
+The Grooming page lets a lead plan the next sprint. For a signed-in person, the band view shows each sprint as a band, with the goal column on the left and the repository's open issues in the backlog column on the right. Otherwise, a backlog panel lists sample initiatives with their epics, and a goals panel lists the sample sprint goals in priority order, where the lead places items into goals.
 
 ## How It Works
 
-The goals, the starting plan, the sprint dates and the sample backlog come from one sample-data source. The live backlog reads GitHub and changes no plan state. Plan controls send no request. Plan edits stay in one session state kept in memory and reset on reload. Every count, label and rank on the page is derived from that state.
+On the sample page, the goals, the starting plan, the sprint dates and the sample backlog come from one sample-data source. For a signed-in lead, sprints and milestones come from Raiden's records. The live backlog reads GitHub and changes no plan state. Plan controls send no request. Plan edits stay in one session state kept in memory and reset on reload. Every count, label and rank on the page is derived from that state.
 
 An item has at most one own plan. An epic's own plan overrides its initiative's goal. Every count uses each epic's effective goal, so an epic counts once. Taking an epic's own plan out leaves it in its initiative's goal when that initiative is planned. Dropping an item on the goal it is already in changes nothing. Deleting a goal removes only the own plans in it. Ranks are the goals' positions from 1 to n.
 
@@ -31,14 +31,8 @@ Goals can be added, edited and deleted. Drops, menus, buttons and goal fields al
 
 ## Integration Points
 
-- [raiden-app-shell](raiden-app-shell.md) — the shell shows Grooming as its first page, supplies the preference store that keeps the Show issues choice, and shows on the Grooming sidebar item the count of epics not planned, derived from the session state.
-- [raiden-page-host](raiden-page-host.md) — the host opens Grooming on every load of the Raiden address.
 - [grooming-undo-save](grooming-undo-save.md) — every plan change goes through the change path, which records the undo list and refreshes the save state.
-- [grooming-backlog-view](grooming-backlog-view.md) — the backlog filter and width change what the backlog shows, never the plan.
 - [grooming-plan-moves](grooming-plan-moves.md) — drag and drop, the item menus and the Take out of plan button change the plan through its one change path.
-- [grooming-github-links](grooming-github-links.md) — the backlog and goal rows show each issue reference as a link to GitHub, and opening one leaves the plan unchanged.
-- [raiden-sidebar](raiden-sidebar.md) — the Grooming sidebar item shows the count of epics not planned, derived from this session state with the header count's rule.
-- [live-backlog](live-backlog.md) — for a signed-in person the live backlog replaces the sample backlog, and the goals and the plan stay on sample data.
 
 ## Decision Log
 
@@ -53,3 +47,9 @@ Epic #12 would have pushed this page past the 400-word cap, so drag and drop, th
 
 ### 2026-11-26 — #73 — The backlog goes live while the plan stays on sample data
 Grooming shows the live backlog when the shell has a GitHub gateway and a signed-in person, and keeps the sample backlog otherwise. Both hosts always give both, and the backlog load is tied to the person, so there is nothing to read without them. The goals and the starting plan stay on sample data until their own epic. Invariant 4 is struck, because Try again on the live backlog sends a request to GitHub. The page keeps the rest of that rule in How It Works, and grooming-github-links holds the link behaviour. Refuted alternative: remove the sample backlog everywhere. It lost because a host with no sign-in would show an empty or failed backlog, and the plan rules would lose their drag and menu coverage.
+
+### 2026-11-28 — #81 — The band view replaces both panels for a signed-in lead
+For a signed-in person with a live GitHub connection, Grooming shows only the band view, and the sample goals panel, its ranking, Undo and Save plan do not show. Story #88 requires two columns, and sample goals beside real sprints would read as real data. A host with no live connection keeps the sample page until #82 removes it, so the plan rules on this page now hold only on the sample page. Refuted alternative: keep the sample goals panel beside the bands until #82. Nothing would be removed before its epic, but it breaks the two-column layout and puts sample goals next to real sprints.
+
+### 2026-11-28 — #82 — Retired: the sample page and its plan are deleted
+Epic #82 deleted the sample Grooming page: the sample goals and their ranks, the starting plan and its rules, the sample backlog, and the Show issues switch. Goals now live on the sprint cards and save to Raiden's backend, as the sprint-goals page states. A host with no live GitHub connection shows a sign-in note, as the grooming-sprint-bands page states. Story #104 requires that no sample goal appears, signed in or not, and keeping the plan would mean maintaining a model nobody uses. The edges to active pages are dropped, so only the edges to the two retired plan pages remain. Refuted alternative: keep the sample page, without goals, as a demo for hosts with no connection. It keeps a backlog for tests and screenshots, but it keeps the plan code alive for a path no real host uses.

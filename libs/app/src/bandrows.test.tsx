@@ -5,7 +5,6 @@ import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { mountApp, type PreferenceStore } from "./mount.tsx";
 import { createRepoStore, type Repo } from "./repo.tsx";
 import { createSignInController } from "./signin.ts";
-import { createSessionStore } from "./session.ts";
 import { fakeGitHub, type FakeGitHub, type FakeIssue } from "./testing/fakegraph.ts";
 
 const WIDGETS: Repo = { owner: "acme", name: "widgets", url: "https://github.com/acme/widgets" };
@@ -38,7 +37,6 @@ async function open(issues: FakeIssue[]): Promise<FakeGitHub> {
     await act(async () => {
         unmount = await mountApp(root, {
             prefs,
-            session: createSessionStore(),
             signIn: createSignInController({ status: async () => "ada", signIn: async () => ({ login: "ada" }) }),
             gateway,
             repo: createRepoStore(WIDGETS),

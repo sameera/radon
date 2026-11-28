@@ -2,8 +2,8 @@
 title: Grooming Plan Moves
 aliases: [item menu, keyboard planning, drag and drop, take out of plan]
 touches: [grooming-plan]
-last_updated_by: "#12"
-status: active
+last_updated_by: "#82"
+status: deprecated
 verification: verified
 ---
 
@@ -35,3 +35,6 @@ Each planned row in a goal has a Take out of plan icon button. Its accessible na
 
 ### 2026-11-22 — #12 — Split from grooming-plan, and the take-out button keeps the backlog-drop rule
 Split from grooming-plan when epic #12 would have pushed that page past the 400-word cap. A task about how a lead moves items loads this page, and a task about counts and own plans loads the plan page. Epic #12 made the goal-row take-out button an icon button named for the item and the goal, behind the same rule as a drop on the backlog panel. One shared rule means the button and the drop cannot drift apart, and the fallback to the initiative's goal comes with it. Without the focus rule, a keyboard user would lose focus each time a row vanishes. Links inside rows are not draggable, because a browser drags a link's address by default.
+
+### 2026-11-28 — #82 — Retired: planning moves are deleted
+Epic #82 deleted the Plan in Goal menu entries, the drops on goals, the Take out of plan button and its drop zone, because story #104 requires that no entry, drop or button plans an item into a goal. Live backlog rows were never dragged or planned, as the live-backlog-rows page states. Refuted alternative: none.

@@ -9,16 +9,28 @@ export interface Terminal {
 }
 
 export function openTerminal(): Terminal {
-    let muted: boolean = false;
+    // While a secret is typed, this holds its prompt; null otherwise.
+    let mutedPrompt: string | null = null;
     const rl: Interface = createInterface({ input: process.stdin, output: process.stdout, terminal: process.stdin.isTTY });
-    // readline echoes typed characters through this method; while muted, it writes nothing.
+    // readline echoes typed characters through this method. While muted it writes only the prompt:
+    // a redraw (after a backspace, say) clears the line and writes prompt and answer in one call,
+    // so the prompt stays on screen and the answer never appears.
     const internal = rl as unknown as { _writeToOutput: (s: string) => void };
     const write = internal._writeToOutput.bind(rl);
     internal._writeToOutput = (s: string): void => {
-        if (!muted) {
+        if (mutedPrompt === null) {
             write(s);
+        } else if (s.startsWith(mutedPrompt)) {
+            write(mutedPrompt);
         }
     };
+    // Ctrl+C at a prompt cancels the command. Without this listener readline only pauses, and
+    // Node exits with a warning about an unsettled await.
+    rl.on("SIGINT", () => {
+        process.stdout.write("\nCancelled. Nothing was stored.\n");
+        rl.close();
+        process.exit(130);
+    });
     const lines: AsyncIterator<string> = rl[Symbol.asyncIterator]();
     const question = async (prompt: string): Promise<string> => {
         if (process.stdin.isTTY) {
@@ -35,12 +47,12 @@ export function openTerminal(): Terminal {
             return answer.trim() || suggested || "";
         },
         askSecret: async (q: string): Promise<string> => {
-            process.stdout.write(`${q}: `);
-            muted = true;
+            const prompt: string = `${q}: `;
+            mutedPrompt = prompt;
             try {
-                return await question("");
+                return await question(prompt);
             } finally {
-                muted = false;
+                mutedPrompt = null;
                 if (process.stdin.isTTY) {
                     process.stdout.write("\n");
                 }

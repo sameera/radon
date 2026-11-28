@@ -3,6 +3,11 @@
     <head>
         <meta charset="utf-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <!-- A new build must be picked up on the next load, so neither the page nor its script is
+             taken from a cache. The offline worker answers a failed load with the offline page. -->
+        <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate" />
+        <meta http-equiv="Pragma" content="no-cache" />
+        <meta http-equiv="Expires" content="0" />
         <!-- Scripts only from this address. Network calls only to this address, GitHub's API and the
              team's backend, which the build adds at the placeholder (G22). -->
         <meta

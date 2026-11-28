@@ -15,6 +15,15 @@ describe("web view files (G9, G11)", () => {
         expect(html).not.toMatch(/(?:src|href)="\//);
     });
 
+    it("asks the browser not to cache the page, so a new build is picked up on the next load", () => {
+        const meta = (name: string): string | undefined =>
+            new RegExp(`<meta http-equiv="${name}" content="([^"]+)"`).exec(html)?.[1];
+        expect(meta("Cache-Control")).toMatch(/\bno-store\b/);
+        expect(meta("Cache-Control")).toMatch(/\bno-cache\b/);
+        expect(meta("Pragma")).toBe("no-cache");
+        expect(meta("Expires")).toBe("0");
+    });
+
     it("does not use extension code", () => {
         for (const file of readdirSync(here("."))) {
             if (file.endsWith(".test.ts")) continue;

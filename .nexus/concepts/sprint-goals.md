@@ -1,8 +1,8 @@
 ---
 title: Sprint Goals
 aliases: [sprint goal, goal field, goal editor, goal save, may-edit flag, goal cap, not saved]
-touches: [grooming-sprint-bands, grooming-sync, github-client]
-last_updated_by: "#82"
+touches: [grooming-sprint-bands, grooming-sync, github-client, grooming-sprint-assignments]
+last_updated_by: "#83"
 status: active
 verification: verified
 ---
@@ -34,8 +34,12 @@ On each write the backend asks GitHub for the caller's role, with the caller's t
 - [grooming-sprint-bands](grooming-sprint-bands.md) — each sprint card shows its sprint's goal, so goals come in band order.
 - [grooming-sync](grooming-sync.md) — the sync answer carries every goal record and the may-edit flag, and a sync never changes a goal.
 - [github-client](github-client.md) — the goal write goes through the shared client to the team's backend, with the same token renewal and failure kinds.
+- [grooming-sprint-assignments](grooming-sprint-assignments.md) — the may-edit flag that gives goal fields also gives row drags and Alt+Shift moves.
 
 ## Decision Log
 
 ### 2026-11-28 — #82 — One saved text goal per sprint, edited by maintain or admin, saved on leaving the field
 The lead needs the sprint goal beside the sprint's issues, and GitHub iterations have no goal field, so goals live in Raiden's own records. A goal is a separate record from the sprint, so a sync cannot overwrite or delete it. Only maintain or admin may write, because the backend is reachable from the internet and on a public repository anyone who can sign in could otherwise overwrite the team's goals. The role comes from the repository read the sync already makes, so no new App permission is needed. A goal saves when the lead leaves the field, because a goal that waits for a page Save is invisible to the team until someone clicks. One write at a time per card stops a slow early write from landing last. The cap is 200 characters, because the design system's 80 characters is writing guidance and would cut real goals mid-sentence. A failed save keeps text in the page only, because a stale draft resent later could overwrite a teammate's newer goal. Refuted alternative: goals join a page-wide Save and Undo. It gives one undo model, but the story saves on leaving the field.
+
+### 2026-11-28 — #83 — Reciprocal link from grooming-sprint-assignments
+The may-edit flag that gives a goal editor the goal fields now also lets that person move issues between sprints, which grooming-sprint-assignments records.

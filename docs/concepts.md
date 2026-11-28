@@ -4,7 +4,7 @@
 
 # Concept Atlas
 
-Orientation map of the concept store — 21 active concepts. Each links to its full page
+Orientation map of the concept store — 22 active concepts. Each links to its full page
 (behavior, invariants, decision history); code locations live in the matching
 `.nexus/anchors/<slug>.md` sidecar.
 
@@ -20,13 +20,14 @@ Orientation map of the concept store — 21 active concepts. Each links to its f
 - [Live Backlog](../.nexus/concepts/live-backlog.md) — For a signed-in person, the Grooming backlog loads the current repository's open issues from GitHub, with each issue's full chain of parent issues and its sprint values.
 - [Raiden Page Host](../.nexus/concepts/raiden-page-host.md) — The Raiden tab on a repository page opens the Raiden page in place of GitHub's content.
 - [Web View Sign-Out](../.nexus/concepts/web-view-sign-out.md) — A signed-in person can choose Sign out in the avatar menu of the web view's banner.
+- [Grooming Sync](../.nexus/concepts/grooming-sync.md) — When Grooming opens, Raiden's backend reads the repository's milestones and sprints from GitHub as the signed-in lead, updates Raiden's own records of them, and returns every record for the repository.
 - [Raiden Banner](../.nexus/concepts/raiden-banner.md) — The banner is the bar across the top of a host that has no GitHub page around Raiden.
 - [Grooming GitHub Links](../.nexus/concepts/grooming-github-links.md) — On the Grooming page, each initiative and epic issue reference opens that issue on GitHub in a new tab.
-- [Grooming Sync](../.nexus/concepts/grooming-sync.md) — When Grooming opens, Raiden's backend reads the repository's milestones and sprints from GitHub as the signed-in lead, updates Raiden's own records of them, and returns every record for the repository.
-- [Grooming Backlog View](../.nexus/concepts/grooming-backlog-view.md) — A lead can filter the Grooming backlog by title or issue number and change its width with a divider.
+- [Grooming Sprint Assignments](../.nexus/concepts/grooming-sprint-assignments.md) — A lead with the maintain or admin role moves an issue to another sprint in Grooming, by drag or with Alt+Shift+Down and Alt+Shift+Up.
 - [Live Backlog Rows](../.nexus/concepts/live-backlog-rows.md) — The live backlog shows each loaded issue once as a row, under a crumb of its parent issues.
-- [Repository Menu](../.nexus/concepts/repository-menu.md) — The repository menu is the searchable list a person opens from the repository breadcrumb in the web view's banner.
 - [Sprint Goals](../.nexus/concepts/sprint-goals.md) — Each sprint card in Grooming carries at most one sprint goal: one line of plain text that Raiden's backend saves in its own records, never in GitHub.
+- [Grooming Backlog View](../.nexus/concepts/grooming-backlog-view.md) — A lead can filter the Grooming backlog by title or issue number and change its width with a divider.
+- [Repository Menu](../.nexus/concepts/repository-menu.md) — The repository menu is the searchable list a person opens from the repository breadcrumb in the web view's banner.
 - [AWS Deployment](../.nexus/concepts/aws-deployment.md) — A lead deploys the Raiden backend and the web view into the team's own AWS account from a terminal.
 - [Backend Sign-In Settings](../.nexus/concepts/backend-settings.md) — On AWS, the backend's GitHub App settings live in two secret stores in the team's account.
 - [Web View Hosting](../.nexus/concepts/web-view-hosting.md) — The web view is a build of static files that any HTTPS address can serve.

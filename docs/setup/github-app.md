@@ -86,6 +86,11 @@ When a lead saves a sprint goal, Grooming sends `POST /grooming/goal`. The backe
 the repository and saves the goal only for the maintain or admin role. It writes the goal to Raiden's table only, never
 to GitHub.
 
+When a lead moves an issue to another sprint, Grooming sends `POST /grooming/move` with the issue's identity and the
+target sprint. The backend asks GitHub for the user's role on the repository and for the issue's repository, and saves
+the move only for the maintain or admin role and an issue of that repository. It writes the issue's sprint assignment
+to Raiden's table only, never to GitHub.
+
 **The table.** The backend keeps Raiden's records in one DynamoDB table. Name it in `RAIDEN_TABLE` (default `raiden`).
 It has a string partition key `pk` and a string sort key `sk`, as in `backend/local/table.json`. Each repository's
 records share one partition, keyed by GitHub's permanent identity for the repository.
@@ -96,11 +101,11 @@ records share one partition, keyed by GitHub's permanent identity for the reposi
 |---|---|
 | `dynamodb:DescribeTable` | The `/health` check |
 | `dynamodb:Query` | Reads a repository's records |
-| `dynamodb:PutItem` | Writes a synced sprint or milestone, or a sprint goal |
+| `dynamodb:PutItem` | Writes a synced sprint or milestone, a sprint goal, or an issue's sprint assignment |
 | `dynamodb:DeleteItem` | Deletes a sprint or milestone that GitHub no longer has, or a cleared sprint goal |
 
 **The request header.** The browser sends the signed-in user's GitHub token on the data request, in the
-`authorization` header. The backend answers the cross-origin preflight for `/grooming/sync` and `/grooming/goal` itself, and allows the
+`authorization` header. The backend answers the cross-origin preflight for `/grooming/sync`, `/grooming/goal` and `/grooming/move` itself, and allows the
 `content-type` and `authorization` headers for the origins in `RAIDEN_ALLOWED_ORIGINS` only. If API Gateway handles
 CORS for you instead, allow the `authorization` header there too. The backend never stores, logs or returns the token.
 

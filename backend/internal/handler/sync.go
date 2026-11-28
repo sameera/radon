@@ -567,7 +567,8 @@ func origin(attrs map[string]string) string {
 }
 
 // partitionAnswer is the whole partition the page needs: the sync source, every sprint and
-// milestone record, synced or Raiden-owned, and every sprint goal (D2).
+// milestone record, synced or Raiden-owned, every sprint goal (D2), and every sprint assignment
+// (story #114, D3).
 func partitionAnswer(repoID int64, source *syncSource, items map[string]store.Item) map[string]any {
 	keys := make([]string, 0, len(items))
 	for sk := range items {
@@ -601,7 +602,8 @@ func partitionAnswer(repoID int64, source *syncSource, items map[string]store.It
 			goals = append(goals, map[string]string{"sprint": strings.TrimPrefix(sk, goalPrefix+sprintPrefix), "text": items[sk].Attrs["text"]})
 		}
 	}
-	answer := map[string]any{"repository": repoID, "source": nil, "sprints": sprints, "milestones": milestones, "goals": goals}
+	answer := map[string]any{"repository": repoID, "source": nil, "sprints": sprints, "milestones": milestones, "goals": goals,
+		"assignments": assignmentsAnswer(keys, items)}
 	if source != nil {
 		answer["source"] = source
 	}

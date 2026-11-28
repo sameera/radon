@@ -6,7 +6,7 @@ import (
 	"testing"
 )
 
-// Story #85 AC6, D13, D14, G40, story #103: the setup instructions name the table, the backend's permission to
+// Story #85 AC6, D13, D14, G40, stories #103 and #114: the setup instructions name the table, the backend's permission to
 // read and write it, the request header the backend must accept, and the App's one new permission.
 func TestSetupDocNamesTheDataPath(t *testing.T) {
 	raw, err := os.ReadFile("../../../docs/setup/github-app.md")
@@ -21,6 +21,7 @@ func TestSetupDocNamesTheDataPath(t *testing.T) {
 		"`authorization`",
 		"POST /grooming/sync",
 		"POST /grooming/goal",
+		"POST /grooming/move",
 		"**Organization permissions**",
 		"**Projects:** Read-only",
 	} {

@@ -80,6 +80,17 @@ describe("GitHub client: the backend route (D1, G1)", () => {
         });
     });
 
+    // Story #114, D6: a move to a sprint the backend no longer holds names its cause.
+    it("carries the backend's unknown-sprint cause on a refused move", async () => {
+        const { fetchFn } = fake(() => new Response(JSON.stringify({ error: "unknown-sprint" }), { status: 409 }));
+        const client = createGitHubClient({ settings, records: memory(signed), fetch: fetchFn, now: () => 0 });
+        expect(await client.request({ to: "backend", path: "/grooming/move", method: "POST", body: {} })).toEqual({
+            ok: false,
+            kind: "other",
+            reason: "unknown-sprint",
+        });
+    });
+
     it("never passes on an unknown cause text from the backend", async () => {
         const { fetchFn } = fake(() => new Response(JSON.stringify({ error: "token ghu_123 bad" }), { status: 403 }));
         const client = createGitHubClient({ settings, records: memory(signed), fetch: fetchFn, now: () => 0 });

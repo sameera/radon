@@ -92,10 +92,13 @@ type graphGitHub struct {
 	milestones []fakeMilestone
 	// Milestones per page; 0 means all on one page.
 	milestonePage int
-	queries       []string
-	auths         []string
-	methods       []string
-	paths         []string
+	// The repository each issue identity belongs to, by GitHub's databaseId. An issue not named
+	// here does not exist for the caller (story #114).
+	issueRepos map[string]int
+	queries    []string
+	auths      []string
+	methods    []string
+	paths      []string
 }
 
 func iterJSON(list []fakeIteration) []map[string]any {
@@ -139,6 +142,22 @@ func (g *graphGitHub) server(t *testing.T) *httptest.Server {
 			write(map[string]any{"data": map[string]any{"repository": map[string]any{
 				"databaseId": g.databaseID, "viewerPermission": g.permission,
 			}}})
+		case strings.HasPrefix(in.Query, "query MoveCheck"):
+			if g.missingRepo {
+				write(map[string]any{"data": map[string]any{"repository": nil, "node": nil},
+					"errors": []any{map[string]any{"type": "NOT_FOUND", "path": []any{"repository"}}}})
+				return
+			}
+			repo := map[string]any{"databaseId": g.databaseID, "viewerPermission": g.permission}
+			id, _ := in.Variables["issue"].(string)
+			owner, ok := g.issueRepos[id]
+			if !ok {
+				write(map[string]any{"data": map[string]any{"repository": repo, "node": nil},
+					"errors": []any{map[string]any{"type": "NOT_FOUND", "path": []any{"node"}}}})
+				return
+			}
+			write(map[string]any{"data": map[string]any{"repository": repo,
+				"node": map[string]any{"repository": map[string]any{"databaseId": owner}}}})
 		case strings.HasPrefix(in.Query, "query Repo"):
 			if g.missingRepo {
 				write(map[string]any{"data": map[string]any{"repository": nil},
@@ -269,6 +288,11 @@ type syncAnswer struct {
 		Sprint string `json:"sprint"`
 		Text   string `json:"text"`
 	} `json:"goals"`
+	// Story #114: every sprint assignment record; a nil sprint is the no-sprint mark.
+	Assignments []struct {
+		Issue  string  `json:"issue"`
+		Sprint *string `json:"sprint"`
+	} `json:"assignments"`
 	MayEdit bool   `json:"mayEdit"`
 	Error   string `json:"error"`
 }

@@ -1,6 +1,17 @@
 // `pnpm aws:update-web` — builds the web view against the deployment and uploads it. It never
 // touches the backend, its code or its settings (G16), and never reads the client secret (G9).
-import { buildWeb, deleteObjects, invalidateAll, listLocal, listRemote, putObject, readSecret, stackOutputs } from "../aws.ts";
+import {
+    buildWeb,
+    deleteObjects,
+    invalidateAll,
+    lastInvalidated,
+    listLocal,
+    listRemote,
+    newestObject,
+    putObject,
+    readSecret,
+    stackOutputs,
+} from "../aws.ts";
 import { deployArgs, runCdk } from "../cdk.ts";
 import { runWebUpdate } from "../update-web.ts";
 
@@ -14,6 +25,8 @@ try {
         listRemote,
         putObject,
         deleteObjects,
+        newestObject,
+        lastInvalidated,
         invalidate: invalidateAll,
         log: (line: string) => console.log(line),
     });

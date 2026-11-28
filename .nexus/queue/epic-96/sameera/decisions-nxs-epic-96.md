@@ -27,3 +27,8 @@
 - **Choice:** The upload lists the bucket and compares each stored object's ETag with the local file's MD5.
 - **Why:** A single-part upload with S3-managed encryption has its MD5 as its ETag, so no extra metadata or state file is needed.
 - **Refuted alternative:** Storing a hash in object metadata, which needs one HEAD request per file.
+
+## 2026-11-27 — Retry clears the cache by comparing stored-file and invalidation times
+- **Choice:** When no file changed, the web view update still invalidates if the newest object in the bucket was written after the newest completed CloudFront invalidation was created (or none completed).
+- **Why:** A run that uploaded and then failed at the invalidation leaves no file difference, so only a time comparison lets the retry clear the cache while an unchanged deployment still clears none (G2, G23).
+- **Refuted alternative:** A local marker file recording a pending invalidation — lost on another machine or a fresh checkout.

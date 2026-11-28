@@ -41,6 +41,9 @@ export function fakeWeb(over: Partial<WebDeps> = {}, settings: string | null = '
         deleteObjects: async (bucket: string, keys: string[]) => {
             calls.push(`delete ${bucket} ${keys.join(",")}`);
         },
+        // By default the last invalidation came after the newest stored file: the edge is current.
+        newestObject: async () => new Date("2026-01-01T00:00:00Z"),
+        lastInvalidated: async () => new Date("2026-01-02T00:00:00Z"),
         invalidate: async (distributionId: string) => {
             calls.push(`invalidate ${distributionId}`);
         },

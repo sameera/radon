@@ -77,6 +77,27 @@ describe("web view update", () => {
         expect(calls.some((c) => /^(put|delete|invalidate)/.test(c))).toBe(false);
     });
 
+    it("clears the cache on a retry after the uploads landed but the invalidation failed (G23)", async () => {
+        const { deps, calls } = fakeWeb({
+            listLocal: async () => files,
+            listRemote: async () => new Map(files.map((f) => [f.key, f.md5])),
+            newestObject: async () => new Date("2026-03-02T00:00:00Z"),
+            lastInvalidated: async () => new Date("2026-03-01T00:00:00Z"),
+        });
+        await runWebUpdate(deps);
+        expect(calls.filter((c) => /^(put|delete|invalidate)/.test(c))).toEqual(["invalidate E1"]);
+    });
+
+    it("clears the cache when stored files were never invalidated (G23)", async () => {
+        const { deps, calls } = fakeWeb({
+            listLocal: async () => files,
+            listRemote: async () => new Map(files.map((f) => [f.key, f.md5])),
+            lastInvalidated: async () => null,
+        });
+        await runWebUpdate(deps);
+        expect(calls.filter((c) => /^(put|delete|invalidate)/.test(c))).toEqual(["invalidate E1"]);
+    });
+
     it("invalidates when a file was only removed", async () => {
         const { deps, calls } = fakeWeb({
             listLocal: async () => files,

@@ -16,6 +16,10 @@ export interface WebDeps {
     listRemote(bucket: string): Promise<Map<string, string>>;
     putObject(bucket: string, file: LocalFile, headers: { contentType: string; cacheControl: string }): Promise<void>;
     deleteObjects(bucket: string, keys: string[]): Promise<void>;
+    // When the newest stored file was written, or null for an empty bucket.
+    newestObject(bucket: string): Promise<Date | null>;
+    // When the newest completed invalidation was created, or null when none completed.
+    lastInvalidated(distributionId: string): Promise<Date | null>;
     // Sends one invalidation for every path and waits until it completes (D10).
     invalidate(distributionId: string): Promise<void>;
     log(line: string): void;
@@ -60,13 +64,27 @@ export async function uploadWebView(deps: WebDeps, backend: Outputs, web: Output
     if (plan.deletes.length) {
         await deps.deleteObjects(web.BucketName!, plan.deletes);
     }
-    // Only a change is invalidated, so a repeated run clears no cache (G2). The command reports
-    // success only once the edge serves the new files (G23).
+    // Only a change is invalidated, so a repeated run clears no cache (G2). A file stored after the
+    // last completed invalidation is also a change the edge has not seen: a run that uploaded and
+    // then failed at the invalidation gets it on the retry. The command reports success only once
+    // the edge serves the new files (G23).
     if (plan.uploads.length || plan.deletes.length) {
         deps.log(`Uploaded ${plan.uploads.length} and removed ${plan.deletes.length} file(s). Clearing the CloudFront cache...`);
+        await deps.invalidate(web.DistributionId!);
+    } else if (await edgeBehind(deps, web)) {
+        deps.log("The stored files are newer than the last cache clear. Clearing the CloudFront cache...");
         await deps.invalidate(web.DistributionId!);
     } else {
         deps.log("The web view is unchanged.");
     }
     return { webViewUrl: web.WebViewUrl!, uploaded: plan.uploads.length, deleted: plan.deletes.length };
+}
+
+async function edgeBehind(deps: WebDeps, web: Outputs): Promise<boolean> {
+    const newest: Date | null = await deps.newestObject(web.BucketName!);
+    if (!newest) {
+        return false;
+    }
+    const cleared: Date | null = await deps.lastInvalidated(web.DistributionId!);
+    return !cleared || newest.getTime() > cleared.getTime();
 }

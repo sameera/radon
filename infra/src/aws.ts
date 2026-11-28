@@ -11,7 +11,12 @@ import {
     UpdateFunctionConfigurationCommand,
     waitUntilFunctionUpdatedV2,
 } from "@aws-sdk/client-lambda";
-import { CloudFrontClient, CreateInvalidationCommand, waitUntilInvalidationCompleted } from "@aws-sdk/client-cloudfront";
+import {
+    CloudFrontClient,
+    CreateInvalidationCommand,
+    ListInvalidationsCommand,
+    waitUntilInvalidationCompleted,
+} from "@aws-sdk/client-cloudfront";
 import { DeleteObjectsCommand, ListObjectsV2Command, PutObjectCommand, S3Client } from "@aws-sdk/client-s3";
 import { GetSecretValueCommand, PutSecretValueCommand, SecretsManagerClient } from "@aws-sdk/client-secrets-manager";
 import { BOOTSTRAP_STACK } from "./names.ts";
@@ -115,6 +120,22 @@ export async function listRemote(bucket: string): Promise<Map<string, string>> {
     return out;
 }
 
+// When the newest stored file was written, or null for an empty bucket.
+export async function newestObject(bucket: string): Promise<Date | null> {
+    let newest: Date | null = null;
+    let token: string | undefined;
+    do {
+        const res = await s3.send(new ListObjectsV2Command({ Bucket: bucket, ContinuationToken: token }));
+        for (const o of res.Contents ?? []) {
+            if (o.LastModified && (!newest || o.LastModified > newest)) {
+                newest = o.LastModified;
+            }
+        }
+        token = res.IsTruncated ? res.NextContinuationToken : undefined;
+    } while (token);
+    return newest;
+}
+
 export async function putObject(
     bucket: string,
     file: LocalFile,
@@ -154,6 +175,22 @@ export async function invalidateAll(distributionId: string): Promise<void> {
         { client: cloudfront, maxWaitTime: 900 },
         { DistributionId: distributionId, Id: res.Invalidation!.Id! },
     );
+}
+
+// When the newest completed invalidation was created, or null when none completed.
+export async function lastInvalidated(distributionId: string): Promise<Date | null> {
+    let last: Date | null = null;
+    let marker: string | undefined;
+    do {
+        const res = await cloudfront.send(new ListInvalidationsCommand({ DistributionId: distributionId, Marker: marker }));
+        for (const i of res.InvalidationList?.Items ?? []) {
+            if (i.Status === "Completed" && i.CreateTime && (!last || i.CreateTime > last)) {
+                last = i.CreateTime;
+            }
+        }
+        marker = res.InvalidationList?.IsTruncated ? res.InvalidationList.NextMarker : undefined;
+    } while (marker);
+    return last;
 }
 
 // Every file of a build folder, keyed by its path inside the folder.
